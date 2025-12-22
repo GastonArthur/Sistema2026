@@ -999,8 +999,9 @@ export default function InventoryManagement() {
       await logActivity("CREATE_ITEM", "inventory", newItem.id, null, newItem, `Producto ${newItem.sku} creado`)
 
       toast({
-        title: "Éxito (Modo Offline)",
-        description: "Producto agregado localmente. Configura Supabase para persistir datos.",
+        title: "Modo Offline - Datos temporales",
+        description: "Producto agregado solo localmente. Configure Supabase para persistir los datos.",
+        variant: "destructive",
       })
 
       // Limpiar formulario
@@ -1745,8 +1746,9 @@ ${csvRows
       )
 
       toast({
-        title: "Éxito (Modo Offline)",
-        description: "Producto actualizado localmente",
+        title: "Modo Offline - Datos temporales",
+        description: "Producto actualizado solo localmente. Configure Supabase para persistir.",
+        variant: "destructive",
       })
       setEditingItem(null)
       return
@@ -1822,8 +1824,9 @@ ${csvRows
       await logActivity("DELETE_ITEM", "inventory", id, itemToDelete, null, `Producto ${itemToDelete.sku} eliminado`)
 
       toast({
-        title: "Éxito (Modo Offline)",
-        description: "Producto eliminado localmente",
+        title: "Modo Offline - Datos temporales",
+        description: "Producto eliminado solo localmente. Configure Supabase para persistir.",
+        variant: "destructive",
       })
       setDeleteConfirm({ show: false, type: "item", id: 0, name: "" })
       return

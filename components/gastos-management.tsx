@@ -476,8 +476,11 @@ export function GastosManagement({ isOpen, onClose, onUpdateExpenses }: GastosMa
         }
 
         toast({
-          title: "Éxito (Modo Offline)",
-          description: editingExpense ? "Gasto actualizado localmente" : "Gasto agregado localmente",
+          title: "Modo Offline - Datos temporales",
+          description: editingExpense
+            ? "Gasto actualizado solo localmente. Configure Supabase para persistir."
+            : "Gasto agregado solo localmente. Configure Supabase para persistir.",
+          variant: "destructive",
         })
 
         resetForm()
