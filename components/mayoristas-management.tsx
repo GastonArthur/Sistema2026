@@ -28,7 +28,7 @@ import {
   Mail,
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
-import { logActivity, hasPermission } from "@/lib/auth"
+import { logActivity, hasPermission, getCurrentUser } from "@/lib/auth"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 
 type InventoryItem = {
@@ -464,7 +464,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
               contact_person: newClient.contact_person,
               email: newClient.email,
               whatsapp: newClient.whatsapp,
-              created_by: 1, // Default admin user ID if not available from context
+              created_by: getCurrentUser()?.id,
             },
           ])
           .select()
@@ -599,7 +599,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
               .insert([
                 {
                   ...inlineNewClient,
-                  created_by: 1, // Default admin
+                  created_by: getCurrentUser()?.id,
                 },
               ])
               .select()
@@ -670,7 +670,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
               status: "pending",
               total_amount: totalAmount,
               notes: orderNotes,
-              created_by: 1, // Default admin
+              created_by: getCurrentUser()?.id,
             },
           ])
           .select()

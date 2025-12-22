@@ -37,7 +37,7 @@ const ADMIN_USER: User = {
   is_active: true,
   can_view_logs: true,
   can_view_wholesale: true,
-  created_at: new Date().toISOString(),
+  created_at: "2024-01-01T00:00:00.000Z",
 }
 
 // Datos persistentes para modo offline
