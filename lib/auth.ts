@@ -457,17 +457,20 @@ export const updateUser = async (
   try {
     const oldUser = await supabase.from("users").select("*").eq("id", userId).single()
 
+    const updateData: any = {
+      updated_by: getCurrentUser()?.id,
+    }
+    if (updates.name !== undefined) updateData.name = updates.name
+    if (updates.email !== undefined) updateData.email = updates.email
+    if (updates.role !== undefined) updateData.role = updates.role
+    if (updates.is_active !== undefined) updateData.is_active = updates.is_active
+    if (updates.can_view_logs !== undefined) updateData.can_view_logs = updates.can_view_logs
+    if (updates.can_view_wholesale !== undefined) updateData.can_view_wholesale = updates.can_view_wholesale
+    if (updates.password) updateData.password_hash = await hash(updates.password, 10)
+
     const { error } = await supabase
       .from("users")
-      .update({
-        name: updates.name,
-        email: updates.email,
-        role: updates.role,
-        is_active: updates.is_active,
-        can_view_logs: updates.can_view_logs,
-        can_view_wholesale: updates.can_view_wholesale,
-        updated_by: getCurrentUser()?.id,
-      })
+      .update(updateData)
       .eq("id", userId)
 
     if (error) throw error

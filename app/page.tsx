@@ -170,6 +170,7 @@ export default function InventoryManagement() {
   const [autoRefreshInterval, setAutoRefreshInterval] = useState<NodeJS.Timeout | null>(null)
   const [announcement, setAnnouncement] = useState("")
   const [showAnnouncementForm, setShowAnnouncementForm] = useState(false)
+  const [showAddInventoryForm, setShowAddInventoryForm] = useState(false)
 
   const [importPreview, setImportPreview] = useState<{
     show: boolean
@@ -213,7 +214,7 @@ export default function InventoryManagement() {
 
     try {
       // Usar Promise.all para cargar datos en paralelo y mejorar rendimiento
-      const [inventoryResult, suppliersResult, brandsResult, configResult, cuotasResult] = await Promise.all([
+      const [inventoryResult, suppliersResult, brandsResult, configResult, cuotasResult, expensesResult] = await Promise.all([
         supabase
           .from("inventory")
           .select("*")
@@ -230,12 +231,31 @@ export default function InventoryManagement() {
           .from("config")
           .select("cuotas_3_percentage, cuotas_6_percentage, cuotas_9_percentage, cuotas_12_percentage")
           .single(),
+
+        supabase.from("expenses").select("*").order("date", { ascending: false }),
       ])
 
       // Procesar resultados
       if (inventoryResult.error) throw inventoryResult.error
       if (suppliersResult.error) throw suppliersResult.error
       if (brandsResult.error) throw brandsResult.error
+
+      // Calcular gastos del mes actual
+      if (expensesResult.data) {
+        const now = new Date()
+        const currentMonth = now.getMonth()
+        const currentYear = now.getFullYear()
+
+        const totalExpenses = expensesResult.data.reduce((sum, expense) => {
+          const expenseDate = new Date(expense.date)
+          if (expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear) {
+            return sum + (Number(expense.amount) || 0)
+          }
+          return sum
+        }, 0)
+
+        setCurrentMonthExpenses(totalExpenses)
+      }
 
       // Combinar datos manualmente para mejor rendimiento
       const enrichedInventory = (inventoryResult.data || []).map((item) => ({
@@ -2378,312 +2398,327 @@ ${csvRows
           <TabsContent value="inventory" className="space-y-6">
             {/* Form */}
             {hasPermission("CREATE_ITEM") && (
-              <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-                <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
-                  <CardTitle className="flex items-center gap-2 text-blue-800">
-                    <Plus className="w-5 h-5" />
-                    Agregar Mercadería
-                  </CardTitle>
-                  <CardDescription>
-                    Complete todos los campos para agregar un nuevo producto al inventario
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6 p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="sku" className="text-slate-700 font-medium">
-                        SKU *
-                      </Label>
-                      <div className="relative">
-                        <Input
-                          id="sku"
-                          value={formData.sku}
-                          onChange={(e) => handleInputChange("sku", e.target.value)}
-                          placeholder="Código SKU"
-                          className={`mt-1 ${
-                            formData.sku &&
-                            inventory.find((item) => item.sku.toLowerCase() === formData.sku.toLowerCase())
-                              ? "border-orange-300 bg-orange-50"
-                              : ""
-                          }`}
-                        />
-                        {formData.sku &&
-                          inventory.find((item) => item.sku.toLowerCase() === formData.sku.toLowerCase()) && (
-                            <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                              <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700">
-                                Existente
-                              </Badge>
-                            </div>
-                          )}
-                      </div>
-                      {formData.sku &&
-                        inventory.find((item) => item.sku.toLowerCase() === formData.sku.toLowerCase()) && (
-                          <p className="text-sm text-orange-600 mt-1">
-                            ⚠️ Este SKU ya existe. Descripción autocompletada.
-                          </p>
-                        )}
-                    </div>
-                    <div>
-                      <Label htmlFor="ean" className="text-slate-700 font-medium">
-                        EAN
-                      </Label>
-                      <Input
-                        id="ean"
-                        value={formData.ean}
-                        onChange={(e) => handleInputChange("ean", e.target.value)}
-                        placeholder="Código EAN"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="description" className="text-slate-700 font-medium">
-                        Descripción *
-                      </Label>
-                      <Input
-                        id="description"
-                        value={formData.description}
-                        onChange={(e) => handleInputChange("description", e.target.value)}
-                        placeholder="Descripción del producto"
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                      <Label htmlFor="cost_without_tax" className="text-slate-700 font-medium">
-                        Costo s/IVA *
-                      </Label>
-                      <Input
-                        id="cost_without_tax"
-                        type="number"
-                        step="0.01"
-                        value={formData.cost_without_tax}
-                        onChange={(e) => handleInputChange("cost_without_tax", e.target.value)}
-                        placeholder="0.00"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cost_with_tax" className="text-slate-700 font-medium">
-                        Costo c/IVA ({ivaPercentage}%)
-                      </Label>
-                      <Input
-                        id="cost_with_tax"
-                        type="number"
-                        step="0.01"
-                        value={
-                          formData.cost_without_tax
-                            ? calculateWithTax(Number.parseFloat(formData.cost_without_tax)).toFixed(2)
-                            : ""
-                        }
-                        disabled
-                        className="bg-gradient-to-r from-slate-50 to-slate-100 mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="pvp_without_tax" className="text-slate-700 font-medium">
-                        PVP s/IVA *
-                      </Label>
-                      <Input
-                        id="pvp_without_tax"
-                        type="number"
-                        step="0.01"
-                        value={formData.pvp_without_tax}
-                        onChange={(e) => handleInputChange("pvp_without_tax", e.target.value)}
-                        placeholder="0.00"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="pvp_with_tax" className="text-slate-700 font-medium">
-                        PVP c/IVA ({ivaPercentage}%)
-                      </Label>
-                      <Input
-                        id="pvp_with_tax"
-                        type="number"
-                        step="0.01"
-                        value={
-                          formData.pvp_without_tax
-                            ? calculateWithTax(Number.parseFloat(formData.pvp_without_tax)).toFixed(2)
-                            : ""
-                        }
-                        disabled
-                        className="bg-gradient-to-r from-slate-50 to-slate-100 mt-1"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                      <Label htmlFor="quantity" className="text-slate-700 font-medium">
-                        Cantidad *
-                      </Label>
-                      <Input
-                        id="quantity"
-                        type="number"
-                        value={formData.quantity}
-                        onChange={(e) => handleInputChange("quantity", e.target.value)}
-                        placeholder="0"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="company" className="text-slate-700 font-medium">
-                        Empresa *
-                      </Label>
-                      <Select
-                        value={formData.company || ""}
-                        onValueChange={(value) => handleInputChange("company", value)}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Seleccionar empresa" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="MAYCAM">MAYCAM</SelectItem>
-                          <SelectItem value="BLUE DOGO">BLUE DOGO</SelectItem>
-                          <SelectItem value="GLOBOBAZAAR">GLOBOBAZAAR</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="channel" className="text-slate-700 font-medium">
-                        Canal *
-                      </Label>
-                      <Select
-                        value={formData.channel || ""}
-                        onValueChange={(value) => handleInputChange("channel", value)}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Seleccionar canal" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="A">Canal A</SelectItem>
-                          <SelectItem value="B">Canal B</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="date_entered" className="text-slate-700 font-medium">
-                        Fecha *
-                      </Label>
-                      <Input
-                        id="date_entered"
-                        type="date"
-                        value={formData.date_entered}
-                        onChange={(e) => handleInputChange("date_entered", e.target.value)}
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                      <Label htmlFor="stock_status" className="text-slate-700 font-medium">
-                        Estado Stock
-                      </Label>
-                      <Select
-                        value={formData.stock_status}
-                        onValueChange={(value) => handleInputChange("stock_status", value)}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder={formData.stock_status} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="normal">Normal</SelectItem>
-                          <SelectItem value="missing">Faltó mercadería</SelectItem>
-                          <SelectItem value="excess">Sobró mercadería</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="supplier_id" className="text-slate-700 font-medium">
-                        Proveedor
-                      </Label>
-                      <Select
-                        value={formData.supplier_id || "none"}
-                        onValueChange={(value) => handleInputChange("supplier_id", value === "none" ? "" : value)}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Seleccionar proveedor" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Sin proveedor</SelectItem>
-                          {suppliers.map((supplier) => (
-                            <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                              {supplier.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="brand_id" className="text-slate-700 font-medium">
-                        Marca
-                      </Label>
-                      <Select
-                        value={formData.brand_id || "none"}
-                        onValueChange={(value) => handleInputChange("brand_id", value === "none" ? "" : value)}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Seleccionar marca" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Sin marca</SelectItem>
-                          {brands.map((brand) => (
-                            <SelectItem key={brand.id} value={brand.id.toString()}>
-                              {brand.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="invoice_number" className="text-slate-700 font-medium">
-                        Nº Factura
-                      </Label>
-                      <Input
-                        id="invoice_number"
-                        value={formData.invoice_number}
-                        onChange={(e) => handleInputChange("invoice_number", e.target.value)}
-                        placeholder="Número de factura"
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="observations" className="text-slate-700 font-medium">
-                      Observaciones (Opcional)
-                    </Label>
-                    <Textarea
-                      id="observations"
-                      value={formData.observations}
-                      onChange={(e) => handleInputChange("observations", e.target.value)}
-                      placeholder="Observaciones adicionales..."
-                      rows={3}
-                      className="mt-1"
-                    />
-                  </div>
-
+              <>
+                <div className="flex justify-end mb-4">
                   <Button
-                    onClick={addInventoryItem}
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg"
-                    disabled={
-                      !formData.sku?.trim() ||
-                      !formData.description?.trim() ||
-                      !formData.cost_without_tax ||
-                      !formData.pvp_without_tax ||
-                      !formData.quantity ||
-                      !formData.company ||
-                      !formData.channel
-                    }
+                    onClick={() => setShowAddInventoryForm(true)}
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md hover:shadow-lg transition-all"
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Agregar Producto
+                    Agregar Mercadería
                   </Button>
-                </CardContent>
-              </Card>
+                </div>
+
+                <Dialog open={showAddInventoryForm} onOpenChange={setShowAddInventoryForm}>
+                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Agregar Mercadería</DialogTitle>
+                      <DialogDescription>
+                        Complete todos los campos para agregar un nuevo producto al inventario
+                      </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-6 py-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <Label htmlFor="sku" className="text-slate-700 font-medium">
+                            SKU *
+                          </Label>
+                          <div className="relative">
+                            <Input
+                              id="sku"
+                              value={formData.sku}
+                              onChange={(e) => handleInputChange("sku", e.target.value)}
+                              placeholder="Código SKU"
+                              className={`mt-1 ${
+                                formData.sku &&
+                                inventory.find((item) => item.sku.toLowerCase() === formData.sku.toLowerCase())
+                                  ? "border-orange-300 bg-orange-50"
+                                  : ""
+                              }`}
+                            />
+                            {formData.sku &&
+                              inventory.find((item) => item.sku.toLowerCase() === formData.sku.toLowerCase()) && (
+                                <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                                  <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700">
+                                    Existente
+                                  </Badge>
+                                </div>
+                              )}
+                          </div>
+                          {formData.sku &&
+                            inventory.find((item) => item.sku.toLowerCase() === formData.sku.toLowerCase()) && (
+                              <p className="text-sm text-orange-600 mt-1">
+                                ⚠️ Este SKU ya existe. Descripción autocompletada.
+                              </p>
+                            )}
+                        </div>
+                        <div>
+                          <Label htmlFor="ean" className="text-slate-700 font-medium">
+                            EAN
+                          </Label>
+                          <Input
+                            id="ean"
+                            value={formData.ean}
+                            onChange={(e) => handleInputChange("ean", e.target.value)}
+                            placeholder="Código EAN"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="description" className="text-slate-700 font-medium">
+                            Descripción *
+                          </Label>
+                          <Input
+                            id="description"
+                            value={formData.description}
+                            onChange={(e) => handleInputChange("description", e.target.value)}
+                            placeholder="Descripción del producto"
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                          <Label htmlFor="cost_without_tax" className="text-slate-700 font-medium">
+                            Costo s/IVA *
+                          </Label>
+                          <Input
+                            id="cost_without_tax"
+                            type="number"
+                            step="0.01"
+                            value={formData.cost_without_tax}
+                            onChange={(e) => handleInputChange("cost_without_tax", e.target.value)}
+                            placeholder="0.00"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="cost_with_tax" className="text-slate-700 font-medium">
+                            Costo c/IVA ({ivaPercentage}%)
+                          </Label>
+                          <Input
+                            id="cost_with_tax"
+                            type="number"
+                            step="0.01"
+                            value={
+                              formData.cost_without_tax
+                                ? calculateWithTax(Number.parseFloat(formData.cost_without_tax)).toFixed(2)
+                                : ""
+                            }
+                            disabled
+                            className="bg-gradient-to-r from-slate-50 to-slate-100 mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="pvp_without_tax" className="text-slate-700 font-medium">
+                            PVP s/IVA *
+                          </Label>
+                          <Input
+                            id="pvp_without_tax"
+                            type="number"
+                            step="0.01"
+                            value={formData.pvp_without_tax}
+                            onChange={(e) => handleInputChange("pvp_without_tax", e.target.value)}
+                            placeholder="0.00"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="pvp_with_tax" className="text-slate-700 font-medium">
+                            PVP c/IVA ({ivaPercentage}%)
+                          </Label>
+                          <Input
+                            id="pvp_with_tax"
+                            type="number"
+                            step="0.01"
+                            value={
+                              formData.pvp_without_tax
+                                ? calculateWithTax(Number.parseFloat(formData.pvp_without_tax)).toFixed(2)
+                                : ""
+                            }
+                            disabled
+                            className="bg-gradient-to-r from-slate-50 to-slate-100 mt-1"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                          <Label htmlFor="quantity" className="text-slate-700 font-medium">
+                            Cantidad *
+                          </Label>
+                          <Input
+                            id="quantity"
+                            type="number"
+                            value={formData.quantity}
+                            onChange={(e) => handleInputChange("quantity", e.target.value)}
+                            placeholder="0"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="company" className="text-slate-700 font-medium">
+                            Empresa *
+                          </Label>
+                          <Select
+                            value={formData.company || ""}
+                            onValueChange={(value) => handleInputChange("company", value)}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Seleccionar empresa" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="MAYCAM">MAYCAM</SelectItem>
+                              <SelectItem value="BLUE DOGO">BLUE DOGO</SelectItem>
+                              <SelectItem value="GLOBOBAZAAR">GLOBOBAZAAR</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="channel" className="text-slate-700 font-medium">
+                            Canal *
+                          </Label>
+                          <Select
+                            value={formData.channel || ""}
+                            onValueChange={(value) => handleInputChange("channel", value)}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Seleccionar canal" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="A">Canal A</SelectItem>
+                              <SelectItem value="B">Canal B</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="date_entered" className="text-slate-700 font-medium">
+                            Fecha *
+                          </Label>
+                          <Input
+                            id="date_entered"
+                            type="date"
+                            value={formData.date_entered}
+                            onChange={(e) => handleInputChange("date_entered", e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                          <Label htmlFor="stock_status" className="text-slate-700 font-medium">
+                            Estado Stock
+                          </Label>
+                          <Select
+                            value={formData.stock_status}
+                            onValueChange={(value) => handleInputChange("stock_status", value)}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder={formData.stock_status} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="normal">Normal</SelectItem>
+                              <SelectItem value="missing">Faltó mercadería</SelectItem>
+                              <SelectItem value="excess">Sobró mercadería</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="supplier_id" className="text-slate-700 font-medium">
+                            Proveedor
+                          </Label>
+                          <Select
+                            value={formData.supplier_id || "none"}
+                            onValueChange={(value) => handleInputChange("supplier_id", value === "none" ? "" : value)}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Seleccionar proveedor" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">Sin proveedor</SelectItem>
+                              {suppliers.map((supplier) => (
+                                <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                                  {supplier.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="brand_id" className="text-slate-700 font-medium">
+                            Marca
+                          </Label>
+                          <Select
+                            value={formData.brand_id || "none"}
+                            onValueChange={(value) => handleInputChange("brand_id", value === "none" ? "" : value)}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Seleccionar marca" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">Sin marca</SelectItem>
+                              {brands.map((brand) => (
+                                <SelectItem key={brand.id} value={brand.id.toString()}>
+                                  {brand.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="invoice_number" className="text-slate-700 font-medium">
+                            Nº Factura
+                          </Label>
+                          <Input
+                            id="invoice_number"
+                            value={formData.invoice_number}
+                            onChange={(e) => handleInputChange("invoice_number", e.target.value)}
+                            placeholder="Número de factura"
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="observations" className="text-slate-700 font-medium">
+                          Observaciones (Opcional)
+                        </Label>
+                        <Textarea
+                          id="observations"
+                          value={formData.observations}
+                          onChange={(e) => handleInputChange("observations", e.target.value)}
+                          placeholder="Observaciones adicionales..."
+                          rows={3}
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <Button
+                        onClick={() => {
+                          addInventoryItem()
+                          setShowAddInventoryForm(false)
+                        }}
+                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg"
+                        disabled={
+                          !formData.sku?.trim() ||
+                          !formData.description?.trim() ||
+                          !formData.cost_without_tax ||
+                          !formData.pvp_without_tax ||
+                          !formData.quantity ||
+                          !formData.company ||
+                          !formData.channel
+                        }
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Agregar Producto
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </>
             )}
 
             {/* Filters */}
@@ -2869,57 +2904,57 @@ ${csvRows
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-gradient-to-r from-blue-500 to-blue-600">
-                        <TableHead className="font-bold text-white text-center border border-slate-300">SKU</TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
+                        <TableHead className="font-bold text-white text-center">SKU</TableHead>
+                        <TableHead className="font-bold text-white text-center">
                           Repeticiones
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">EAN</TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
+                        <TableHead className="font-bold text-white text-center">EAN</TableHead>
+                        <TableHead className="font-bold text-white text-center">
                           Descripción
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
+                        <TableHead className="font-bold text-white text-center">
                           Costo s/IVA
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
+                        <TableHead className="font-bold text-white text-center">
                           Costo c/IVA
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
+                        <TableHead className="font-bold text-white text-center">
                           PVP s/IVA
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
+                        <TableHead className="font-bold text-white text-center">
                           PVP c/IVA
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
+                        <TableHead className="font-bold text-white text-center">
                           Variación Precio
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
+                        <TableHead className="font-bold text-white text-center">
                           Cantidad
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
+                        <TableHead className="font-bold text-white text-center">
                           Empresa
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
+                        <TableHead className="font-bold text-white text-center">
                           Canal
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
+                        <TableHead className="font-bold text-white text-center">
                           Fecha
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
+                        <TableHead className="font-bold text-white text-center">
                           Estado
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
+                        <TableHead className="font-bold text-white text-center">
                           Proveedor
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
+                        <TableHead className="font-bold text-white text-center">
                           Marca
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
+                        <TableHead className="font-bold text-white text-center">
                           Nº Factura
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
+                        <TableHead className="font-bold text-white text-center">
                           Observaciones
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
+                        <TableHead className="font-bold text-white text-center">
                           Acciones
                         </TableHead>
                       </TableRow>
@@ -2927,7 +2962,7 @@ ${csvRows
                     <TableBody>
                       {getFilteredInventory().map((item) => (
                         <TableRow key={item.id} className="hover:bg-slate-50/50">
-                          <TableCell className="font-medium border border-slate-200 min-w-[150px] max-w-[200px]">
+                          <TableCell className="font-medium min-w-[150px] max-w-[200px]">
                             <div
                               className="font-mono text-sm whitespace-nowrap overflow-hidden text-ellipsis"
                               style={{
@@ -2939,7 +2974,7 @@ ${csvRows
                               {String(item.sku)}
                             </div>
                           </TableCell>
-                          <TableCell className="border border-slate-200">
+                          <TableCell className="">
                             <div className="flex items-center gap-2">
                               <span className="font-medium">{skuStats.skuCounts[item.sku]}x</span>
                               {skuStats.skuCounts[item.sku] > 1 && (
@@ -2959,13 +2994,13 @@ ${csvRows
                               )}
                             </div>
                           </TableCell>
-                          <TableCell className="border border-slate-200">{item.ean}</TableCell>
-                          <TableCell className="border border-slate-200">{item.description}</TableCell>
-                          <TableCell className="border border-slate-200">${item.cost_without_tax.toFixed(2)}</TableCell>
-                          <TableCell className="border border-slate-200">${item.cost_with_tax.toFixed(2)}</TableCell>
-                          <TableCell className="border border-slate-200">${item.pvp_without_tax.toFixed(2)}</TableCell>
-                          <TableCell className="border border-slate-200">${item.pvp_with_tax.toFixed(2)}</TableCell>
-                          <TableCell className="border border-slate-200">
+                          <TableCell className="">{item.ean}</TableCell>
+                          <TableCell className="">{item.description}</TableCell>
+                          <TableCell className="">${item.cost_without_tax.toFixed(2)}</TableCell>
+                          <TableCell className="">${item.cost_with_tax.toFixed(2)}</TableCell>
+                          <TableCell className="">${item.pvp_without_tax.toFixed(2)}</TableCell>
+                          <TableCell className="">${item.pvp_with_tax.toFixed(2)}</TableCell>
+                          <TableCell className="">
                             {priceVariations[item.sku]?.hasVariation ? (
                               <div className="flex items-center justify-center gap-1">
                                 {priceVariations[item.sku].isIncrease ? (
@@ -2987,15 +3022,15 @@ ${csvRows
                               </div>
                             )}
                           </TableCell>
-                          <TableCell className="border border-slate-200">{item.quantity}</TableCell>
-                          <TableCell className="border border-slate-200">
+                          <TableCell className="">{item.quantity}</TableCell>
+                          <TableCell className="">
                             <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                               {item.company}
                             </Badge>
                           </TableCell>
-                          <TableCell className="border border-slate-200">{item.channel}</TableCell>
-                          <TableCell className="border border-slate-200">{item.date_entered}</TableCell>
-                          <TableCell className="border border-slate-200">
+                          <TableCell className="">{item.channel}</TableCell>
+                          <TableCell className="">{item.date_entered}</TableCell>
+                          <TableCell className="">
                             <Badge
                               variant={
                                 item.stock_status === "normal"
@@ -3012,13 +3047,13 @@ ${csvRows
                                   : "Sobró"}
                             </Badge>
                           </TableCell>
-                          <TableCell className="border border-slate-200">{item.suppliers?.name}</TableCell>
-                          <TableCell className="border border-slate-200">{item.brands?.name}</TableCell>
-                          <TableCell className="border border-slate-200">{item.invoice_number}</TableCell>
-                          <TableCell className="max-w-xs truncate border border-slate-200">
+                          <TableCell className="">{item.suppliers?.name}</TableCell>
+                          <TableCell className="">{item.brands?.name}</TableCell>
+                          <TableCell className="">{item.invoice_number}</TableCell>
+                          <TableCell className="max-w-xs truncate ">
                             {item.observations}
                           </TableCell>
-                          <TableCell className="border border-slate-200">
+                          <TableCell className="">
                             <div className="flex gap-2">
                               {hasPermission("EDIT_ITEM") && (
                                 <Button
