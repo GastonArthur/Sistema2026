@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
+import { compare } from "bcryptjs"
 
 export type User = {
   id: number
@@ -44,57 +45,6 @@ let OFFLINE_USERS: User[] = [
   {
     ...ADMIN_USER,
     can_view_wholesale: true, // Admin tiene acceso por defecto
-  },
-  // Usuarios del equipo MAYCAM
-  {
-    id: 2,
-    email: "leticia@maycam.com",
-    name: "Leticia",
-    role: "user",
-    is_active: true,
-    can_view_logs: true,
-    can_view_wholesale: false,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 3,
-    email: "camila@maycam.com",
-    name: "Camila",
-    role: "user",
-    is_active: true,
-    can_view_logs: true,
-    can_view_wholesale: false,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 4,
-    email: "hernan@maycam.com",
-    name: "Hernan",
-    role: "user",
-    is_active: true,
-    can_view_logs: true,
-    can_view_wholesale: false,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 5,
-    email: "mauro@maycam.com",
-    name: "Mauro",
-    role: "user",
-    is_active: true,
-    can_view_logs: true,
-    can_view_wholesale: false,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 6,
-    email: "gaston@maycam.com",
-    name: "Gaston",
-    role: "user",
-    is_active: true,
-    can_view_logs: true,
-    can_view_wholesale: false,
-    created_at: new Date().toISOString(),
   },
   {
     id: 7,
@@ -196,14 +146,15 @@ export const login = async (
       .select("id, email, name, role, is_active, can_view_logs, can_view_wholesale, created_at")
       .eq("email", email.toLowerCase().trim())
       .eq("is_active", true)
-      .single()
+      .maybeSingle()
 
     if (error || !user) {
+      if (error) console.error("Error fetching user:", error)
       await logActivity("LOGIN_FAILED", null, null, null, { email }, `Intento de login fallido para ${email}`)
       return { success: false, error: "Credenciales inválidas" }
     }
 
-    // Verificar contraseña específica para cada usuario
+    // Verificar contraseña
     const passwordMap: { [key: string]: string } = {
       "maycam@gmail.com": "MaycaM1123!",
       "maycamadmin@maycam.com": "maycamadmin2025!",
@@ -217,8 +168,26 @@ export const login = async (
       "juan@maycam.com": "Juancito2025*",
     }
 
+    let isValidPassword = false
     const expectedPassword = passwordMap[email.toLowerCase()]
-    if (!expectedPassword || password !== expectedPassword) {
+
+    if (expectedPassword) {
+      isValidPassword = password === expectedPassword
+    } else {
+      // Verificar hash bcrypt de la base de datos
+      // Necesitamos obtener el hash primero
+      const { data: userWithHash } = await supabase
+        .from("users")
+        .select("password_hash")
+        .eq("id", user.id)
+        .single()
+
+      if (userWithHash?.password_hash) {
+        isValidPassword = await compare(password, userWithHash.password_hash)
+      }
+    }
+
+    if (!isValidPassword) {
       await logActivity("LOGIN_FAILED", null, null, null, { email }, `Contraseña incorrecta para ${email}`)
       return { success: false, error: "Credenciales inválidas" }
     }
@@ -307,7 +276,7 @@ export const checkSession = async (): Promise<User | null> => {
       .eq("session_token", sessionToken)
       .eq("users.is_active", true)
       .gt("expires_at", new Date().toISOString())
-      .single()
+      .maybeSingle()
 
     if (error || !session) {
       localStorage.removeItem("session_token")
