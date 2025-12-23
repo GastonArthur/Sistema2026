@@ -2966,71 +2966,72 @@ ${csvRows
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="overflow-x-auto">
+                <div className="overflow-auto max-h-[65vh] relative">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-gradient-to-r from-blue-600 to-indigo-700 border-b border-blue-800">
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30">SKU</TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30">
-                          Repeticiones
+                      <TableRow className="bg-gradient-to-r from-blue-600 to-indigo-700 border-b border-blue-800 sticky top-0 z-20 shadow-md">
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">SKU</TableHead>
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          Rep.
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30">EAN</TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30">
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">EAN</TableHead>
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
                           Descripción
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30">
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
                           Costo s/IVA
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30">
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
                           Costo c/IVA
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30">
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
                           PVP s/IVA
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30">
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
                           PVP c/IVA
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30">
-                          Variación Precio
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          Var.
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30">
-                          Cantidad
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          Cant.
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30">
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
                           Empresa
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30">
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
                           Canal
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30">
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
                           Fecha
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30">
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
                           Estado
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30">
-                          Proveedor
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          Prov.
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30">
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
                           Marca
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30">
-                          Nº Factura
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          Factura
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30">
-                          Observaciones
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          Obs.
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center">
+                        <TableHead className="font-bold text-white text-center text-xs px-2 h-8">
                           Acciones
                         </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {getFilteredInventory().map((item) => (
-                        <TableRow key={item.id} className="hover:bg-blue-50/30 transition-colors border-b border-slate-100 group">
-                          <TableCell className="font-medium min-w-[150px] max-w-[200px] border-r border-slate-100">
+                      {getFilteredInventory().length > 0 ? (
+                        getFilteredInventory().map((item) => (
+                          <TableRow key={item.id} className="hover:bg-blue-100/40 transition-colors border-b border-slate-100 group h-8 even:bg-blue-50/10">
+                          <TableCell className="font-medium min-w-[100px] max-w-[150px] border-r border-slate-100 py-1 px-2 text-xs">
                             <div
-                              className="font-mono text-sm whitespace-nowrap overflow-hidden text-ellipsis text-blue-600 font-semibold"
+                              className="font-mono whitespace-nowrap overflow-hidden text-ellipsis text-blue-600 font-semibold"
                               style={{
                                 fontVariantNumeric: "tabular-nums",
                                 wordBreak: "keep-all",
@@ -3040,13 +3041,13 @@ ${csvRows
                               {String(item.sku)}
                             </div>
                           </TableCell>
-                          <TableCell className="border-r border-slate-100">
-                            <div className="flex items-center gap-2 justify-center">
+                          <TableCell className="border-r border-slate-100 py-1 px-2 text-xs">
+                            <div className="flex items-center gap-1 justify-center">
                               <span className="font-medium text-slate-600">{skuStats.skuCounts[item.sku]}x</span>
                               {skuStats.skuCounts[item.sku] > 1 && (
                                 <Badge
                                   variant="destructive"
-                                  className="cursor-pointer hover:bg-red-600 shadow-sm"
+                                  className="cursor-pointer hover:bg-red-600 shadow-sm h-5 px-1 text-[10px]"
                                   onClick={() =>
                                     setSKUHistoryModal({
                                       show: true,
@@ -3055,27 +3056,27 @@ ${csvRows
                                     })
                                   }
                                 >
-                                  Ver historial
+                                  Ver
                                 </Badge>
                               )}
                             </div>
                           </TableCell>
-                          <TableCell className="border-r border-slate-100 text-center">{item.ean}</TableCell>
-                          <TableCell className="border-r border-slate-100">{item.description}</TableCell>
-                          <TableCell className="border-r border-slate-100 text-right font-mono text-slate-600">${item.cost_without_tax.toFixed(2)}</TableCell>
-                          <TableCell className="border-r border-slate-100 text-right font-mono text-slate-600">${item.cost_with_tax.toFixed(2)}</TableCell>
-                          <TableCell className="border-r border-slate-100 text-right font-mono font-medium text-slate-800">${item.pvp_without_tax.toFixed(2)}</TableCell>
-                          <TableCell className="border-r border-slate-100 text-right font-mono font-bold text-slate-900">${item.pvp_with_tax.toFixed(2)}</TableCell>
-                          <TableCell className="border-r border-slate-100">
+                          <TableCell className="border-r border-slate-100 py-1 px-2 text-center text-xs">{item.ean}</TableCell>
+                          <TableCell className="border-r border-slate-100 py-1 px-2 text-xs max-w-[150px] truncate" title={item.description}>{item.description}</TableCell>
+                          <TableCell className="border-r border-slate-100 text-right font-mono text-slate-600 py-1 px-2 text-xs">${item.cost_without_tax.toFixed(2)}</TableCell>
+                          <TableCell className="border-r border-slate-100 text-right font-mono text-slate-600 py-1 px-2 text-xs">${item.cost_with_tax.toFixed(2)}</TableCell>
+                          <TableCell className="border-r border-slate-100 text-right font-mono font-medium text-slate-800 py-1 px-2 text-xs">${item.pvp_without_tax.toFixed(2)}</TableCell>
+                          <TableCell className="border-r border-slate-100 text-right font-mono font-bold text-slate-900 py-1 px-2 text-xs">${item.pvp_with_tax.toFixed(2)}</TableCell>
+                          <TableCell className="border-r border-slate-100 py-1 px-2 text-xs">
                             {priceVariations[item.sku]?.hasVariation ? (
                               <div className="flex items-center justify-center gap-1">
                                 {priceVariations[item.sku].isIncrease ? (
-                                  <TrendingUp className="w-4 h-4 text-red-500" />
+                                  <TrendingUp className="w-3 h-3 text-red-500" />
                                 ) : (
-                                  <TrendingDown className="w-4 h-4 text-green-500" />
+                                  <TrendingDown className="w-3 h-3 text-green-500" />
                                 )}
                                 <span
-                                  className={`text-sm font-medium ${
+                                  className={`text-[10px] font-medium ${
                                     priceVariations[item.sku].isIncrease ? "text-red-600" : "text-green-600"
                                   }`}
                                 >
@@ -3084,19 +3085,19 @@ ${csvRows
                               </div>
                             ) : (
                               <div className="flex items-center justify-center">
-                                <Minus className="w-4 h-4 text-slate-300" />
+                                <Minus className="w-3 h-3 text-slate-300" />
                               </div>
                             )}
                           </TableCell>
-                          <TableCell className="border-r border-slate-100 text-center font-medium">{item.quantity}</TableCell>
-                          <TableCell className="border-r border-slate-100 text-center">
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                              {item.company}
+                          <TableCell className="border-r border-slate-100 text-center font-medium py-1 px-2 text-xs">{item.quantity}</TableCell>
+                          <TableCell className="border-r border-slate-100 text-center py-1 px-2 text-xs">
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 h-5 px-1 text-[10px]">
+                              {item.company.substring(0, 3)}
                             </Badge>
                           </TableCell>
-                          <TableCell className="border-r border-slate-100 text-center">{item.channel}</TableCell>
-                          <TableCell className="border-r border-slate-100 text-center text-sm text-slate-500">{item.date_entered}</TableCell>
-                          <TableCell className="border-r border-slate-100 text-center">
+                          <TableCell className="border-r border-slate-100 text-center py-1 px-2 text-xs">{item.channel}</TableCell>
+                          <TableCell className="border-r border-slate-100 text-center text-slate-500 py-1 px-2 text-[10px] whitespace-nowrap">{item.date_entered}</TableCell>
+                          <TableCell className="border-r border-slate-100 text-center py-1 px-2">
                             <Badge
                               variant={
                                 item.stock_status === "normal"
@@ -3105,35 +3106,35 @@ ${csvRows
                                     ? "destructive"
                                     : "secondary"
                               }
-                              className={
+                              className={`h-5 px-1 text-[10px] ${
                                 item.stock_status === "normal"
                                   ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-200"
                                   : ""
-                              }
+                              }`}
                             >
                               {item.stock_status === "normal"
-                                ? "Normal"
+                                ? "Ok"
                                 : item.stock_status === "missing"
                                   ? "Faltó"
                                   : "Sobró"}
                             </Badge>
                           </TableCell>
-                          <TableCell className="border-r border-slate-100">{item.suppliers?.name}</TableCell>
-                          <TableCell className="border-r border-slate-100">{item.brands?.name}</TableCell>
-                          <TableCell className="border-r border-slate-100 font-mono text-xs">{item.invoice_number}</TableCell>
-                          <TableCell className="max-w-xs truncate border-r border-slate-100 text-slate-500 italic">
+                          <TableCell className="border-r border-slate-100 py-1 px-2 text-xs truncate max-w-[80px]" title={item.suppliers?.name}>{item.suppliers?.name}</TableCell>
+                          <TableCell className="border-r border-slate-100 py-1 px-2 text-xs truncate max-w-[80px]" title={item.brands?.name}>{item.brands?.name}</TableCell>
+                          <TableCell className="border-r border-slate-100 font-mono text-[10px] py-1 px-2 truncate max-w-[80px]" title={item.invoice_number}>{item.invoice_number}</TableCell>
+                          <TableCell className="max-w-[100px] truncate border-r border-slate-100 text-slate-500 italic py-1 px-2 text-[10px]" title={item.observations}>
                             {item.observations}
                           </TableCell>
-                          <TableCell className="">
-                            <div className="flex gap-2 justify-center">
+                          <TableCell className="py-1 px-2">
+                            <div className="flex gap-1 justify-center">
                               {hasPermission("EDIT_ITEM") && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => editInventoryItem(item)}
-                                  className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
+                                  className="h-6 w-6 p-0 text-blue-600 hover:bg-blue-50"
                                 >
-                                  <Edit className="w-4 h-4" />
+                                  <Edit className="w-3 h-3" />
                                 </Button>
                               )}
                               {hasPermission("DELETE_ITEM") && (
@@ -3148,15 +3149,26 @@ ${csvRows
                                       name: item.sku,
                                     })
                                   }
-                                  className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
+                                  className="h-6 w-6 p-0 text-red-600 hover:bg-red-50"
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  <Trash2 className="w-3 h-3" />
                                 </Button>
                               )}
                             </div>
                           </TableCell>
                         </TableRow>
-                      ))}
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={19} className="h-32 text-center">
+                            <div className="flex flex-col items-center justify-center text-slate-500">
+                              <Package className="w-12 h-12 mb-3 text-slate-300" />
+                              <p className="text-lg font-medium text-slate-600">No se encontraron productos</p>
+                              <p className="text-sm text-slate-400">Intenta ajustar los filtros de búsqueda</p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </div>
