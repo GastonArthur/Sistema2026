@@ -112,7 +112,7 @@ export const login = async (
     // Verificar credenciales en base de datos con mejor rendimiento
     const { data: user, error } = await supabase
       .from("users")
-      .select("id, email, name, role, is_active, can_view_logs, can_view_wholesale, created_at")
+      .select("id, email, name, role, is_active, can_view_logs, can_view_wholesale, created_at, password_hash")
       .eq("email", email.toLowerCase().trim())
       .eq("is_active", true)
       .maybeSingle()
@@ -123,22 +123,22 @@ export const login = async (
       return { success: false, error: "Credenciales inválidas" }
     }
 
-    // Verificar contraseña específica para cada usuario
-    const passwordMap: { [key: string]: string } = {
-      "maycam@gmail.com": "MaycaM1123!",
-      "maycamadmin@maycam.com": "maycamadmin2025!",
-      "leticia@maycam.com": "Leti2025!",
-      "camila@maycam.com": "Cami2025&",
-      "hernan@maycam.com": "Hernan2025%",
-      "mauro@maycam.com": "Mauro2025#",
-      "gaston@maycam.com": "Gaston2025?",
-      "lucas@maycam.com": "Lucas2025¡",
-      "mariano@maycam.com": "Mariano2025!",
-      "juan@maycam.com": "Juancito2025*",
+    // Verificar contraseña con bcrypt
+    // Si el usuario tiene hash en DB, usarlo. Si no (usuarios legacy), intentar passwordMap (opcional, o forzar reset)
+    let isValidPassword = false
+    
+    if (user.password_hash) {
+      isValidPassword = await compare(password, user.password_hash)
+    } else {
+      // Fallback para usuarios antiguos definidos en código (si se desea mantener)
+      const passwordMap: { [key: string]: string } = {
+        "maycam@gmail.com": "MaycaM1123!",
+        "maycamadmin@maycam.com": "maycamadmin2025!",
+      }
+      isValidPassword = passwordMap[email.toLowerCase()] === password
     }
 
-    const expectedPassword = passwordMap[email.toLowerCase()]
-    if (!expectedPassword || password !== expectedPassword) {
+    if (!isValidPassword) {
       await logActivity("LOGIN_FAILED", null, null, null, { email }, `Contraseña incorrecta para ${email}`)
       return { success: false, error: "Credenciales inválidas" }
     }
@@ -364,7 +364,7 @@ export const getUsers = async (): Promise<User[]> => {
   try {
     const { data, error } = await supabase
       .from("users")
-      .select("id, email, name, role, is_active, can_view_logs, created_at")
+      .select("id, email, name, role, is_active, can_view_logs, can_view_wholesale, created_at")
       .order("name")
 
     if (error) throw error

@@ -15,6 +15,25 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
+  ArrowRight,
   Plus,
   Download,
   Upload,
@@ -115,7 +134,7 @@ export default function InventoryManagement() {
     quantity: "",
     company: "",
     channel: "",
-    date_entered: new Date().toISOString().split("T")[0],
+    date_entered: "",
     stock_status: "normal",
     supplier_id: "",
     brand_id: "",
@@ -230,6 +249,14 @@ export default function InventoryManagement() {
           .from("config")
           .select("cuotas_3_percentage, cuotas_6_percentage, cuotas_9_percentage, cuotas_12_percentage")
           .single(),
+<<<<<<< HEAD
+=======
+
+        supabase
+          .from("expenses")
+          .select("*")
+          .order("expense_date", { ascending: false }),
+>>>>>>> cfdb2897791e6610d2eeb399f41ec26d521ad4d0
       ])
 
       // Procesar resultados
@@ -324,6 +351,9 @@ export default function InventoryManagement() {
 
   // Verificar sesión al cargar
   useEffect(() => {
+    // Inicializar fecha para evitar error de hidratación
+    setFormData(prev => ({ ...prev, date_entered: new Date().toISOString().split("T")[0] }))
+
     const initAuth = async () => {
       const user = await checkSession()
       setIsAuthenticated(!!user)
@@ -858,29 +888,46 @@ export default function InventoryManagement() {
   }
 
   const checkPriceChange = async (sku: string, newCost: number) => {
+    console.log("Checking price change for SKU:", sku, "New Cost:", newCost)
     if (!isSupabaseConfigured) return true
 
-    const { data: existingItem } = await supabase
-      .from("inventory")
-      .select("cost_without_tax")
-      .eq("sku", sku)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single()
+    try {
+      const { data: existingItem, error } = await supabase
+        .from("inventory")
+        .select("cost_without_tax")
+        .eq("sku", sku)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
 
-    if (existingItem && existingItem.cost_without_tax !== newCost) {
-      setPriceAlert({
-        show: true,
-        message: `El SKU ${sku} tiene un precio diferente al último registrado`,
-        oldPrice: existingItem.cost_without_tax,
-        newPrice: newCost,
-      })
-      return false
+      if (error) {
+        console.error("Error checking price change:", error)
+        return true // Proceed if check fails
+      }
+
+      if (existingItem) {
+        console.log("Found existing item:", existingItem)
+        if (existingItem.cost_without_tax !== newCost) {
+          console.log("Price mismatch. Old:", existingItem.cost_without_tax, "New:", newCost)
+          setPriceAlert({
+            show: true,
+            message: `El SKU ${sku} tiene un precio diferente al último registrado`,
+            oldPrice: existingItem.cost_without_tax,
+            newPrice: newCost,
+          })
+          return false
+        }
+      } else {
+        console.log("No existing item found for SKU:", sku)
+      }
+    } catch (err) {
+      console.error("Exception in checkPriceChange:", err)
+      return true
     }
     return true
   }
 
-  const addInventoryItem = async () => {
+  const addInventoryItem = async (overridePriceCheck = false) => {
     // Verificar permisos
     if (!hasPermission("CREATE_ITEM")) {
       toast({
@@ -1021,28 +1068,42 @@ export default function InventoryManagement() {
         invoice_number: "",
         observations: "",
       })
+
       setSkipPriceCheck(false)
       return
     }
 
     try {
+      console.log("Adding inventory item...", { sku: formData.sku, overridePriceCheck })
       // Verificar cambio de precio solo si no se ha confirmado previamente
-      if (!skipPriceCheck) {
+      if (!overridePriceCheck && !skipPriceCheck) {
         const canProceed = await checkPriceChange(formData.sku, costWithoutTax)
-        if (!canProceed) return
+        if (!canProceed) {
+            console.log("Price check failed (variation detected), waiting for user confirmation")
+            return
+        }
       }
 
       // Resetear el flag después de usar
       setSkipPriceCheck(false)
 
+      const user = getCurrentUser()
+      const userId = user?.id || null
+      console.log("User for creation:", userId)
+
       const inventoryItemWithUser = {
         ...inventoryItem,
-        created_by: getCurrentUser()?.id,
+        created_by: userId,
       }
 
       const { data, error } = await supabase.from("inventory").insert([inventoryItemWithUser]).select().single()
 
-      if (error) throw error
+      if (error) {
+          console.error("Supabase insert error:", error)
+          throw error
+      }
+      
+      console.log("Item added successfully:", data)
 
       // Registrar log
       await logActivity("CREATE_ITEM", "inventory", data.id, null, data, `Producto ${data.sku} creado`)
@@ -1108,8 +1169,8 @@ export default function InventoryManagement() {
 
   const confirmPriceChange = async () => {
     setPriceAlert({ show: false, message: "", oldPrice: 0, newPrice: 0 })
-    setSkipPriceCheck(true)
-    await addInventoryItem()
+    // Usamos el parámetro directo para evitar condiciones de carrera con el estado
+    await addInventoryItem(true)
   }
 
   const addSupplier = async () => {
@@ -2858,16 +2919,27 @@ ${csvRows
             </Card>
 
             {/* Inventory Table */}
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-t-lg">
-                <CardTitle className="text-green-800">
-                  Lista de Inventario ({getFilteredInventory().length} productos)
+            <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-slate-50 via-blue-50 to-indigo-50 border-b border-blue-100">
+                <CardTitle className="flex items-center gap-3 text-slate-800">
+                  <div className="p-2 bg-white rounded-lg shadow-sm border border-blue-100">
+                    <Package className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <span className="bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent font-bold text-xl">
+                      Lista de Inventario
+                    </span>
+                    <Badge variant="outline" className="ml-3 bg-blue-50 text-blue-700 border-blue-200">
+                      {getFilteredInventory().length} productos
+                    </Badge>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                <div className="overflow-x-auto">
+                <div className="overflow-auto max-h-[65vh] relative">
                   <Table>
                     <TableHeader>
+<<<<<<< HEAD
                       <TableRow className="bg-gradient-to-r from-blue-500 to-blue-600">
                         <TableHead className="font-bold text-white text-center border border-slate-300">SKU</TableHead>
                         <TableHead className="font-bold text-white text-center border border-slate-300">
@@ -2920,16 +2992,77 @@ ${csvRows
                           Observaciones
                         </TableHead>
                         <TableHead className="font-bold text-white text-center border border-slate-300">
+=======
+                      <TableRow className="bg-gradient-to-r from-blue-600 to-indigo-700 border-b border-blue-800 sticky top-0 z-20 shadow-md">
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">SKU</TableHead>
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          Rep.
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">EAN</TableHead>
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          Descripción
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          Costo s/IVA
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          Costo c/IVA
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          PVP s/IVA
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          PVP c/IVA
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          Var.
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          Cant.
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          Empresa
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          Canal
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          Fecha
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          Estado
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          Prov.
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          Marca
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          Factura
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          Obs.
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center text-xs px-2 h-8">
+>>>>>>> cfdb2897791e6610d2eeb399f41ec26d521ad4d0
                           Acciones
                         </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
+<<<<<<< HEAD
                       {getFilteredInventory().map((item) => (
                         <TableRow key={item.id} className="hover:bg-slate-50/50">
                           <TableCell className="font-medium border border-slate-200 min-w-[150px] max-w-[200px]">
+=======
+                      {getFilteredInventory().length > 0 ? (
+                        getFilteredInventory().map((item) => (
+                          <TableRow key={item.id} className="hover:bg-blue-100/40 transition-colors border-b border-slate-100 group h-8 even:bg-blue-50/10">
+                          <TableCell className="font-medium min-w-[100px] max-w-[150px] border-r border-slate-100 py-1 px-2 text-xs">
+>>>>>>> cfdb2897791e6610d2eeb399f41ec26d521ad4d0
                             <div
-                              className="font-mono text-sm whitespace-nowrap overflow-hidden text-ellipsis"
+                              className="font-mono whitespace-nowrap overflow-hidden text-ellipsis text-blue-600 font-semibold"
                               style={{
                                 fontVariantNumeric: "tabular-nums",
                                 wordBreak: "keep-all",
@@ -2939,13 +3072,13 @@ ${csvRows
                               {String(item.sku)}
                             </div>
                           </TableCell>
-                          <TableCell className="">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">{skuStats.skuCounts[item.sku]}x</span>
+                          <TableCell className="border-r border-slate-100 py-1 px-2 text-xs">
+                            <div className="flex items-center gap-1 justify-center">
+                              <span className="font-medium text-slate-600">{skuStats.skuCounts[item.sku]}x</span>
                               {skuStats.skuCounts[item.sku] > 1 && (
                                 <Badge
                                   variant="destructive"
-                                  className="cursor-pointer hover:bg-red-600"
+                                  className="cursor-pointer hover:bg-red-600 shadow-sm h-5 px-1 text-[10px]"
                                   onClick={() =>
                                     setSKUHistoryModal({
                                       show: true,
@@ -2954,27 +3087,27 @@ ${csvRows
                                     })
                                   }
                                 >
-                                  Ver historial
+                                  Ver
                                 </Badge>
                               )}
                             </div>
                           </TableCell>
-                          <TableCell className="">{item.ean}</TableCell>
-                          <TableCell className="">{item.description}</TableCell>
-                          <TableCell className="">${item.cost_without_tax.toFixed(2)}</TableCell>
-                          <TableCell className="">${item.cost_with_tax.toFixed(2)}</TableCell>
-                          <TableCell className="">${item.pvp_without_tax.toFixed(2)}</TableCell>
-                          <TableCell className="">${item.pvp_with_tax.toFixed(2)}</TableCell>
-                          <TableCell className="">
+                          <TableCell className="border-r border-slate-100 py-1 px-2 text-center text-xs">{item.ean}</TableCell>
+                          <TableCell className="border-r border-slate-100 py-1 px-2 text-xs max-w-[150px] truncate" title={item.description}>{item.description}</TableCell>
+                          <TableCell className="border-r border-slate-100 text-right font-mono text-slate-600 py-1 px-2 text-xs">${item.cost_without_tax.toFixed(2)}</TableCell>
+                          <TableCell className="border-r border-slate-100 text-right font-mono text-slate-600 py-1 px-2 text-xs">${item.cost_with_tax.toFixed(2)}</TableCell>
+                          <TableCell className="border-r border-slate-100 text-right font-mono font-medium text-slate-800 py-1 px-2 text-xs">${item.pvp_without_tax.toFixed(2)}</TableCell>
+                          <TableCell className="border-r border-slate-100 text-right font-mono font-bold text-slate-900 py-1 px-2 text-xs">${item.pvp_with_tax.toFixed(2)}</TableCell>
+                          <TableCell className="border-r border-slate-100 py-1 px-2 text-xs">
                             {priceVariations[item.sku]?.hasVariation ? (
                               <div className="flex items-center justify-center gap-1">
                                 {priceVariations[item.sku].isIncrease ? (
-                                  <TrendingUp className="w-4 h-4 text-red-500" />
+                                  <TrendingUp className="w-3 h-3 text-red-500" />
                                 ) : (
-                                  <TrendingDown className="w-4 h-4 text-green-500" />
+                                  <TrendingDown className="w-3 h-3 text-green-500" />
                                 )}
                                 <span
-                                  className={`text-sm font-medium ${
+                                  className={`text-[10px] font-medium ${
                                     priceVariations[item.sku].isIncrease ? "text-red-600" : "text-green-600"
                                   }`}
                                 >
@@ -2983,19 +3116,19 @@ ${csvRows
                               </div>
                             ) : (
                               <div className="flex items-center justify-center">
-                                <Minus className="w-4 h-4 text-gray-400" />
+                                <Minus className="w-3 h-3 text-slate-300" />
                               </div>
                             )}
                           </TableCell>
-                          <TableCell className="">{item.quantity}</TableCell>
-                          <TableCell className="">
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                              {item.company}
+                          <TableCell className="border-r border-slate-100 text-center font-medium py-1 px-2 text-xs">{item.quantity}</TableCell>
+                          <TableCell className="border-r border-slate-100 text-center py-1 px-2 text-xs">
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 h-5 px-1 text-[10px]">
+                              {item.company.substring(0, 3)}
                             </Badge>
                           </TableCell>
-                          <TableCell className="">{item.channel}</TableCell>
-                          <TableCell className="">{item.date_entered}</TableCell>
-                          <TableCell className="">
+                          <TableCell className="border-r border-slate-100 text-center py-1 px-2 text-xs">{item.channel}</TableCell>
+                          <TableCell className="border-r border-slate-100 text-center text-slate-500 py-1 px-2 text-[10px] whitespace-nowrap">{item.date_entered}</TableCell>
+                          <TableCell className="border-r border-slate-100 text-center py-1 px-2">
                             <Badge
                               variant={
                                 item.stock_status === "normal"
@@ -3004,28 +3137,33 @@ ${csvRows
                                     ? "destructive"
                                     : "secondary"
                               }
+                              className={`h-5 px-1 text-[10px] ${
+                                item.stock_status === "normal"
+                                  ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-200"
+                                  : ""
+                              }`}
                             >
                               {item.stock_status === "normal"
-                                ? "Normal"
+                                ? "Ok"
                                 : item.stock_status === "missing"
                                   ? "Faltó"
                                   : "Sobró"}
                             </Badge>
                           </TableCell>
-                          <TableCell className="">{item.suppliers?.name}</TableCell>
-                          <TableCell className="">{item.brands?.name}</TableCell>
-                          <TableCell className="">{item.invoice_number}</TableCell>
-                          <TableCell className="max-w-xs truncate ">
+                          <TableCell className="border-r border-slate-100 py-1 px-2 text-xs truncate max-w-[80px]" title={item.suppliers?.name}>{item.suppliers?.name}</TableCell>
+                          <TableCell className="border-r border-slate-100 py-1 px-2 text-xs truncate max-w-[80px]" title={item.brands?.name}>{item.brands?.name}</TableCell>
+                          <TableCell className="border-r border-slate-100 font-mono text-[10px] py-1 px-2 truncate max-w-[80px]" title={item.invoice_number}>{item.invoice_number}</TableCell>
+                          <TableCell className="max-w-[100px] truncate border-r border-slate-100 text-slate-500 italic py-1 px-2 text-[10px]" title={item.observations}>
                             {item.observations}
                           </TableCell>
-                          <TableCell className="">
-                            <div className="flex gap-2">
+                          <TableCell className="py-1 px-2">
+                            <div className="flex gap-1 justify-center">
                               {hasPermission("EDIT_ITEM") && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => editInventoryItem(item)}
-                                  className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-100"
+                                  className="h-6 w-6 p-0 text-blue-600 hover:bg-blue-50"
                                 >
                                   <Edit className="w-3 h-3" />
                                 </Button>
@@ -3042,7 +3180,7 @@ ${csvRows
                                       name: item.sku,
                                     })
                                   }
-                                  className="h-8 w-8 p-0 text-red-600 hover:bg-red-100"
+                                  className="h-6 w-6 p-0 text-red-600 hover:bg-red-50"
                                 >
                                   <Trash2 className="w-3 h-3" />
                                 </Button>
@@ -3050,7 +3188,18 @@ ${csvRows
                             </div>
                           </TableCell>
                         </TableRow>
-                      ))}
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={19} className="h-32 text-center">
+                            <div className="flex flex-col items-center justify-center text-slate-500">
+                              <Package className="w-12 h-12 mb-3 text-slate-300" />
+                              <p className="text-lg font-medium text-slate-600">No se encontraron productos</p>
+                              <p className="text-sm text-slate-400">Intenta ajustar los filtros de búsqueda</p>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </div>
@@ -3774,6 +3923,56 @@ ${csvRows
             </div>
           </div>
         )}
+
+        {/* Modal de alerta de cambio de precio */}
+        <AlertDialog open={priceAlert.show} onOpenChange={(open) => !open && setPriceAlert(prev => ({ ...prev, show: false }))}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Cambio de Precio Detectado</AlertDialogTitle>
+              <AlertDialogDescription>
+                {priceAlert.message}
+                <div className="mt-4 flex flex-col gap-4 p-4 bg-slate-50 rounded-md">
+                  <div className="flex justify-center items-center gap-8">
+                    <div className="text-center">
+                      <p className="text-sm text-gray-500 mb-1">Precio Anterior</p>
+                      <p className="text-xl font-bold text-gray-600">${priceAlert.oldPrice?.toFixed(2)}</p>
+                    </div>
+                    
+                    <div className="flex flex-col items-center">
+                       {priceAlert.newPrice > priceAlert.oldPrice ? (
+                          <TrendingUp className="w-6 h-6 text-red-500 mb-1" />
+                        ) : (
+                          <TrendingDown className="w-6 h-6 text-green-500 mb-1" />
+                        )}
+                        <ArrowRight className="w-4 h-4 text-gray-400" />
+                    </div>
+
+                    <div className="text-center">
+                      <p className="text-sm text-gray-500 mb-1">Nuevo Precio</p>
+                      <p className="text-xl font-bold text-blue-600">${priceAlert.newPrice?.toFixed(2)}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-2 border-t">
+                    <span className="text-slate-500">Variación:</span>
+                    <Badge variant={priceAlert.newPrice > priceAlert.oldPrice ? "destructive" : "default"} className={priceAlert.newPrice > priceAlert.oldPrice ? "bg-red-500" : "bg-green-500"}>
+                      {priceAlert.oldPrice > 0 ? (
+                        <>
+                          {priceAlert.newPrice > priceAlert.oldPrice ? "+" : "-"}
+                          {Math.abs(((priceAlert.newPrice - priceAlert.oldPrice) / priceAlert.oldPrice) * 100).toFixed(2)}%
+                        </>
+                      ) : "N/A"}
+                    </Badge>
+                  </div>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setPriceAlert({ ...priceAlert, show: false })}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmPriceChange}>Confirmar y Guardar</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Modal de historial de SKU */}
         {skuHistoryModal.show && (

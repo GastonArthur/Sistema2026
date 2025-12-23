@@ -477,8 +477,11 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
     })
   }
 
-  const addClient = async () => {
+  const addClient = async (e?: React.MouseEvent) => {
+    if (e) e.preventDefault()
+    console.log("Adding client...", newClient)
     if (!newClient.name || !newClient.business_name || !newClient.cuit) {
+      console.log("Validation failed", newClient)
       toast({
         title: "Campos requeridos",
         description: "Nombre, razón social y CUIT son obligatorios",
@@ -492,8 +495,12 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
       return
     }
 
-    if (isSupabaseConfigured) {
-      try {
+    try {
+      const user = getCurrentUser()
+      const userId = user?.id || null // Allow null if user not found (or handle database constraint)
+
+      if (isSupabaseConfigured) {
+        console.log("Using Supabase")
         const { data, error } = await supabase
           .from("wholesale_clients")
           .insert([
@@ -506,7 +513,11 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
               contact_person: newClient.contact_person,
               email: newClient.email,
               whatsapp: newClient.whatsapp,
+<<<<<<< HEAD
               created_by: 1, // Default admin user ID if not available from context
+=======
+              created_by: userId,
+>>>>>>> cfdb2897791e6610d2eeb399f41ec26d521ad4d0
             },
           ])
           .select()
@@ -530,64 +541,53 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
           title: "Cliente agregado",
           description: `${client.name} ha sido agregado a la lista de clientes mayoristas`,
         })
+      } else {
+        console.log("Offline mode")
+        const client: WholesaleClient = {
+          id: Date.now(),
+          ...newClient,
+          created_at: new Date().toISOString(),
+        }
 
-        setNewClient({
-          name: "",
-          business_name: "",
-          cuit: "",
-          address: "",
-          province: "",
-          contact_person: "",
-          email: "",
-          whatsapp: "",
-        })
-        closeClientForm()
-        return
-      } catch (error) {
-        console.error("Error adding client:", error)
+        setClients((prev) => [...prev, client])
+
+        await logActivity(
+          "CREATE_WHOLESALE_CLIENT",
+          "wholesale_clients",
+          client.id,
+          null,
+          client,
+          `Cliente mayorista ${client.name} creado`,
+        )
+
         toast({
-          title: "Error",
-          description: "No se pudo agregar el cliente a la base de datos",
-          variant: "destructive",
+          title: "Cliente agregado",
+          description: `${client.name} ha sido agregado a la lista de clientes mayoristas`,
         })
-        return
       }
+
+      setNewClient({
+        name: "",
+        business_name: "",
+        cuit: "",
+        address: "",
+        province: "",
+        contact_person: "",
+        email: "",
+        whatsapp: "",
+      })
+      closeClientForm()
+    } catch (error) {
+      console.error("Error adding client:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo agregar el cliente. Revise la consola para más detalles.",
+        variant: "destructive",
+      })
     }
-
-    const client: WholesaleClient = {
-      id: Date.now(),
-      ...newClient,
-      created_at: new Date().toISOString(),
-    }
-
-    setClients((prev) => [...prev, client])
-    setNewClient({
-      name: "",
-      business_name: "",
-      cuit: "",
-      address: "",
-      province: "",
-      contact_person: "",
-      email: "",
-      whatsapp: "",
-    })
-    closeClientForm()
-
-    await logActivity(
-      "CREATE_WHOLESALE_CLIENT",
-      "wholesale_clients",
-      client.id,
-      null,
-      client,
-      `Cliente mayorista ${client.name} creado`,
-    )
-
-    toast({
-      title: "Cliente agregado",
-      description: `${client.name} ha sido agregado a la lista de clientes mayoristas`,
-    })
   }
 
+<<<<<<< HEAD
   const addItemToOrder = () => {
     if (!currentSku || currentQuantity <= 0) return
 
@@ -596,6 +596,14 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
       toast({
         title: "Producto no encontrado",
         description: "El SKU ingresado no existe en el inventario",
+=======
+  const addItemToOrder = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault()
+    if (!manualItem.sku || !manualItem.description || !manualItem.price || Number(manualItem.quantity) <= 0) {
+       toast({
+        title: "Campos incompletos",
+        description: "Por favor complete SKU, Descripción, Precio y Cantidad",
+>>>>>>> cfdb2897791e6610d2eeb399f41ec26d521ad4d0
         variant: "destructive",
       })
       return
@@ -615,19 +623,106 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
     }
 
     setOrderItems((prev) => [...prev, newItem])
+<<<<<<< HEAD
     setCurrentSku("")
     setCurrentQuantity(1)
+=======
+    
+    // Reset but keep some fields if useful? No, reset all for next item
+    setManualItem({
+      sku: "",
+      description: "",
+      price: "",
+      quantity: "1"
+    })
+  }
+  
+  const handleCreateInlineClient = async () => {
+     if (!inlineNewClient.name || !inlineNewClient.business_name || !inlineNewClient.cuit) {
+      toast({
+        title: "Campos requeridos",
+        description: "Nombre, razón social y CUIT son obligatorios",
+        variant: "destructive",
+      })
+      return
+    }
+    
+    try {
+        let clientId = 0
+        
+        if (isSupabaseConfigured) {
+             const user = getCurrentUser()
+             const userId = user?.id || null
+
+             const { data, error } = await supabase
+              .from("wholesale_clients")
+              .insert([
+                {
+                  ...inlineNewClient,
+                  created_by: userId,
+                },
+              ])
+              .select()
+              .single()
+
+            if (error) throw error
+            
+            clientId = data.id
+            setClients(prev => [...prev, data])
+            toast({ title: "Cliente creado", description: "Cliente creado exitosamente" })
+        } else {
+             // Offline
+             clientId = Date.now()
+             const newClient = { id: clientId, ...inlineNewClient, created_at: new Date().toISOString() }
+             setClients(prev => [...prev, newClient])
+             toast({ title: "Cliente creado (Offline)", description: "Cliente creado localmente" })
+        }
+        
+        setSelectedClient(clientId.toString())
+        setIsCreatingClient(false)
+        setInlineNewClient({
+            name: "",
+            business_name: "",
+            cuit: "",
+            address: "",
+            province: "",
+            contact_person: "",
+            email: "",
+            whatsapp: "",
+        })
+        
+    } catch (error) {
+        console.error("Error creating inline client:", error)
+        toast({
+          title: "Error",
+          description: "No se pudo crear el cliente",
+          variant: "destructive",
+        })
+    }
+>>>>>>> cfdb2897791e6610d2eeb399f41ec26d521ad4d0
   }
 
   const removeItemFromOrder = (id: number) => {
     setOrderItems((prev) => prev.filter((item) => item.id !== id))
   }
 
-  const createOrder = async () => {
-    if (!selectedClient || orderItems.length === 0) {
+  const createOrder = async (e?: React.MouseEvent) => {
+    if (e) e.preventDefault()
+    console.log("Creating order...", { selectedClient, itemsCount: orderItems.length })
+    
+    if (!selectedClient) {
       toast({
         title: "Error",
-        description: "Debe seleccionar un cliente y agregar al menos un producto",
+        description: "Debe seleccionar un cliente",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (orderItems.length === 0) {
+      toast({
+        title: "Error",
+        description: "Debe agregar al menos un producto",
         variant: "destructive",
       })
       return
@@ -636,8 +731,12 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
     const totalAmount = orderItems.reduce((sum, item) => sum + item.total_price, 0)
     const clientId = parseInt(selectedClient)
 
-    if (isSupabaseConfigured) {
-      try {
+    try {
+      if (isSupabaseConfigured) {
+        console.log("Using Supabase for order")
+        const user = getCurrentUser()
+        const userId = user?.id || null
+
         // Create order
         const { data: orderData, error: orderError } = await supabase
           .from("wholesale_orders")
@@ -648,7 +747,11 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
               status: "pending",
               total_amount: totalAmount,
               notes: orderNotes,
+<<<<<<< HEAD
               created_by: 1, // Default admin
+=======
+              created_by: userId,
+>>>>>>> cfdb2897791e6610d2eeb399f41ec26d521ad4d0
             },
           ])
           .select()
@@ -677,39 +780,39 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
 
         // Refresh orders
         loadWholesaleData()
-      } catch (error) {
-        console.error("Error creating order:", error)
+      } else {
+        console.log("Offline mode for order")
+        // Offline mode
+        const newOrder: WholesaleOrder = {
+          id: Date.now(),
+          client_id: clientId,
+          order_date: new Date().toISOString(),
+          status: "pending",
+          total_amount: totalAmount,
+          items: orderItems,
+          notes: orderNotes,
+          created_at: new Date().toISOString(),
+        }
+        setOrders((prev) => [newOrder, ...prev])
         toast({
-          title: "Error",
-          description: "No se pudo crear el pedido",
-          variant: "destructive",
+          title: "Pedido creado (Offline)",
+          description: "El pedido se ha guardado localmente",
         })
-        return
       }
-    } else {
-      // Offline mode
-      const newOrder: WholesaleOrder = {
-        id: Date.now(),
-        client_id: clientId,
-        order_date: new Date().toISOString(),
-        status: "pending",
-        total_amount: totalAmount,
-        items: orderItems,
-        notes: orderNotes,
-        created_at: new Date().toISOString(),
-      }
-      setOrders((prev) => [newOrder, ...prev])
+
+      // Reset form
+      setShowOrderForm(false)
+      setOrderItems([])
+      setSelectedClient("")
+      setOrderNotes("")
+    } catch (error) {
+      console.error("Error creating order:", error)
       toast({
-        title: "Pedido creado (Offline)",
-        description: "El pedido se ha guardado localmente",
+        title: "Error",
+        description: "No se pudo crear el pedido. Revise la consola.",
+        variant: "destructive",
       })
     }
-
-    // Reset form
-    setShowOrderForm(false)
-    setOrderItems([])
-    setSelectedClient("")
-    setOrderNotes("")
   }
 
   const exportWholesalePrices = () => {
@@ -1423,6 +1526,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                   </div>
                 </div>
                 <Button
+                  type="button"
                   onClick={() => updateWholesaleConfig(wholesaleConfig)}
                   className="mt-4 bg-purple-600 hover:bg-purple-700"
                 >
@@ -1727,7 +1831,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                     <Button variant="secondary" onClick={closeClientForm}>
                       Cancelar
                     </Button>
-                    <Button onClick={addClient} className="bg-purple-600 hover:bg-purple-700">
+                    <Button type="button" onClick={addClient} className="bg-purple-600 hover:bg-purple-700">
                       {editingClient ? "Actualizar Cliente" : "Agregar Cliente"}
                     </Button>
                   </div>
@@ -1853,7 +1957,11 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                               onChange={(e) => setCurrentQuantity(parseInt(e.target.value) || 1)}
                             />
                           </div>
+<<<<<<< HEAD
                           <Button onClick={addItemToOrder} className="w-full">
+=======
+                          <Button type="button" onClick={addItemToOrder} className="w-full bg-purple-600 hover:bg-purple-700">
+>>>>>>> cfdb2897791e6610d2eeb399f41ec26d521ad4d0
                             <Plus className="w-4 h-4 mr-2" /> Agregar al Pedido
                           </Button>
                         </div>
@@ -1911,10 +2019,10 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                       </div>
 
                       <div className="flex gap-2 justify-end">
-                        <Button variant="outline" onClick={() => setShowOrderForm(false)}>
+                        <Button type="button" variant="outline" onClick={() => setShowOrderForm(false)}>
                           Cancelar
                         </Button>
-                        <Button onClick={createOrder} className="bg-purple-600 hover:bg-purple-700">
+                        <Button type="button" onClick={createOrder} className="bg-purple-600 hover:bg-purple-700">
                           Confirmar Pedido
                         </Button>
                       </div>
