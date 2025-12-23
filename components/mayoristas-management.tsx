@@ -138,6 +138,12 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
   const [currentSku, setCurrentSku] = useState("")
   const [currentQuantity, setCurrentQuantity] = useState(1)
   const [orderNotes, setOrderNotes] = useState("")
+  const [manualItem, setManualItem] = useState({
+    sku: "",
+    description: "",
+    price: "",
+    quantity: "1"
+  })
 
   // Filtros para precios
   const [priceFilters, setPriceFilters] = useState({
@@ -513,11 +519,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
               contact_person: newClient.contact_person,
               email: newClient.email,
               whatsapp: newClient.whatsapp,
-<<<<<<< HEAD
-              created_by: 1, // Default admin user ID if not available from context
-=======
               created_by: userId,
->>>>>>> cfdb2897791e6610d2eeb399f41ec26d521ad4d0
             },
           ])
           .select()
@@ -587,7 +589,6 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
     }
   }
 
-<<<<<<< HEAD
   const addItemToOrder = () => {
     if (!currentSku || currentQuantity <= 0) return
 
@@ -596,14 +597,6 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
       toast({
         title: "Producto no encontrado",
         description: "El SKU ingresado no existe en el inventario",
-=======
-  const addItemToOrder = (e?: React.MouseEvent) => {
-    if (e) e.preventDefault()
-    if (!manualItem.sku || !manualItem.description || !manualItem.price || Number(manualItem.quantity) <= 0) {
-       toast({
-        title: "Campos incompletos",
-        description: "Por favor complete SKU, Descripción, Precio y Cantidad",
->>>>>>> cfdb2897791e6610d2eeb399f41ec26d521ad4d0
         variant: "destructive",
       })
       return
@@ -623,12 +616,10 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
     }
 
     setOrderItems((prev) => [...prev, newItem])
-<<<<<<< HEAD
     setCurrentSku("")
     setCurrentQuantity(1)
-=======
     
-    // Reset but keep some fields if useful? No, reset all for next item
+    // Reset manual item too just in case
     setManualItem({
       sku: "",
       description: "",
@@ -699,7 +690,6 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
           variant: "destructive",
         })
     }
->>>>>>> cfdb2897791e6610d2eeb399f41ec26d521ad4d0
   }
 
   const removeItemFromOrder = (id: number) => {
@@ -747,11 +737,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
               status: "pending",
               total_amount: totalAmount,
               notes: orderNotes,
-<<<<<<< HEAD
-              created_by: 1, // Default admin
-=======
               created_by: userId,
->>>>>>> cfdb2897791e6610d2eeb399f41ec26d521ad4d0
             },
           ])
           .select()
@@ -1957,11 +1943,8 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                               onChange={(e) => setCurrentQuantity(parseInt(e.target.value) || 1)}
                             />
                           </div>
-<<<<<<< HEAD
-                          <Button onClick={addItemToOrder} className="w-full">
-=======
                           <Button type="button" onClick={addItemToOrder} className="w-full bg-purple-600 hover:bg-purple-700">
->>>>>>> cfdb2897791e6610d2eeb399f41ec26d521ad4d0
+
                             <Plus className="w-4 h-4 mr-2" /> Agregar al Pedido
                           </Button>
                         </div>
