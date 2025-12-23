@@ -3015,6 +3015,7 @@ ${csvRows
                               {String(item.sku)}
                             </div>
                           </TableCell>
+                          <TableCell className="border-r border-slate-100 py-1 px-2 text-xs max-w-[100px] truncate" title={item.ean || ""}>{item.ean || "-"}</TableCell>
                           <TableCell className="border-r border-slate-100 py-1 px-2 text-xs max-w-[150px] truncate" title={item.description}>{item.description}</TableCell>
                           <TableCell className="border-r border-slate-100 text-center font-medium py-1 px-2 text-xs">{item.quantity}</TableCell>
                           <TableCell className="border-r border-slate-100 text-right font-mono text-slate-600 py-1 px-2 text-xs">${item.cost_without_tax.toFixed(2)}</TableCell>

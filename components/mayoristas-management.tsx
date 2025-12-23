@@ -71,7 +71,6 @@ type WholesaleClient = {
   business_name: string
   cuit: string
   address: string
-  city?: string
   province: string
   contact_person: string
   email: string
