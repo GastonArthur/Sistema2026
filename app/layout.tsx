@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { OfflineBanner } from '@/components/offline-banner'
+import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
   title: 'Maycam Inventory',
@@ -18,6 +19,7 @@ export default function RootLayout({
       <body>
         <OfflineBanner />
         {children}
+        <Toaster />
       </body>
     </html>
   )

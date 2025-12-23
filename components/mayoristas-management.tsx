@@ -436,7 +436,9 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
   }
 
   const addClient = async () => {
+    console.log("Adding client...", newClient)
     if (!newClient.name || !newClient.business_name || !newClient.cuit) {
+      console.log("Validation failed")
       toast({
         title: "Campos requeridos",
         description: "Nombre, razón social y CUIT son obligatorios",
@@ -450,8 +452,12 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
       return
     }
 
-    if (isSupabaseConfigured) {
-      try {
+    try {
+      const user = getCurrentUser()
+      const userId = user?.id || null // Allow null if user not found (or handle database constraint)
+
+      if (isSupabaseConfigured) {
+        console.log("Using Supabase")
         const { data, error } = await supabase
           .from("wholesale_clients")
           .insert([
@@ -464,7 +470,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
               contact_person: newClient.contact_person,
               email: newClient.email,
               whatsapp: newClient.whatsapp,
-              created_by: getCurrentUser()?.id,
+              created_by: userId,
             },
           ])
           .select()
@@ -488,62 +494,50 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
           title: "Cliente agregado",
           description: `${client.name} ha sido agregado a la lista de clientes mayoristas`,
         })
+      } else {
+        console.log("Offline mode")
+        const client: WholesaleClient = {
+          id: Date.now(),
+          ...newClient,
+          created_at: new Date().toISOString(),
+        }
 
-        setNewClient({
-          name: "",
-          business_name: "",
-          cuit: "",
-          address: "",
-          province: "",
-          contact_person: "",
-          email: "",
-          whatsapp: "",
-        })
-        closeClientForm()
-        return
-      } catch (error) {
-        console.error("Error adding client:", error)
+        setClients((prev) => [...prev, client])
+
+        await logActivity(
+          "CREATE_WHOLESALE_CLIENT",
+          "wholesale_clients",
+          client.id,
+          null,
+          client,
+          `Cliente mayorista ${client.name} creado`,
+        )
+
         toast({
-          title: "Error",
-          description: "No se pudo agregar el cliente a la base de datos",
-          variant: "destructive",
+          title: "Cliente agregado",
+          description: `${client.name} ha sido agregado a la lista de clientes mayoristas`,
         })
-        return
       }
+
+      setNewClient({
+        name: "",
+        business_name: "",
+        cuit: "",
+        address: "",
+        province: "",
+        contact_person: "",
+        email: "",
+        whatsapp: "",
+      })
+      closeClientForm()
+    } catch (error) {
+      console.error("Error adding client:", error)
+      toast({
+        title: "Error",
+        description: "No se pudo agregar el cliente. Revise la consola para más detalles.",
+        variant: "destructive",
+      })
     }
-
-    const client: WholesaleClient = {
-      id: Date.now(),
-      ...newClient,
-      created_at: new Date().toISOString(),
-    }
-
-    setClients((prev) => [...prev, client])
-    setNewClient({
-      name: "",
-      business_name: "",
-      cuit: "",
-      address: "",
-      province: "",
-      contact_person: "",
-      email: "",
-      whatsapp: "",
-    })
-    closeClientForm()
-
-    await logActivity(
-      "CREATE_WHOLESALE_CLIENT",
-      "wholesale_clients",
-      client.id,
-      null,
-      client,
-      `Cliente mayorista ${client.name} creado`,
-    )
-
-    toast({
-      title: "Cliente agregado",
-      description: `${client.name} ha sido agregado a la lista de clientes mayoristas`,
-    })
   }
 
   const addItemToOrder = () => {
@@ -594,12 +588,15 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
         let clientId = 0
         
         if (isSupabaseConfigured) {
+             const user = getCurrentUser()
+             const userId = user?.id || null
+
              const { data, error } = await supabase
               .from("wholesale_clients")
               .insert([
                 {
                   ...inlineNewClient,
-                  created_by: getCurrentUser()?.id,
+                  created_by: userId,
                 },
               ])
               .select()
@@ -646,10 +643,21 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
   }
 
   const createOrder = async () => {
-    if (!selectedClient || orderItems.length === 0) {
+    console.log("Creating order...", { selectedClient, itemsCount: orderItems.length })
+    
+    if (!selectedClient) {
       toast({
         title: "Error",
-        description: "Debe seleccionar un cliente y agregar al menos un producto",
+        description: "Debe seleccionar un cliente",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (orderItems.length === 0) {
+      toast({
+        title: "Error",
+        description: "Debe agregar al menos un producto",
         variant: "destructive",
       })
       return
@@ -658,8 +666,12 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
     const totalAmount = orderItems.reduce((sum, item) => sum + item.total_price, 0)
     const clientId = parseInt(selectedClient)
 
-    if (isSupabaseConfigured) {
-      try {
+    try {
+      if (isSupabaseConfigured) {
+        console.log("Using Supabase for order")
+        const user = getCurrentUser()
+        const userId = user?.id || null
+
         // Create order
         const { data: orderData, error: orderError } = await supabase
           .from("wholesale_orders")
@@ -670,7 +682,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
               status: "pending",
               total_amount: totalAmount,
               notes: orderNotes,
-              created_by: getCurrentUser()?.id,
+              created_by: userId,
             },
           ])
           .select()
@@ -699,39 +711,39 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
 
         // Refresh orders
         loadWholesaleData()
-      } catch (error) {
-        console.error("Error creating order:", error)
+      } else {
+        console.log("Offline mode for order")
+        // Offline mode
+        const newOrder: WholesaleOrder = {
+          id: Date.now(),
+          client_id: clientId,
+          order_date: new Date().toISOString(),
+          status: "pending",
+          total_amount: totalAmount,
+          items: orderItems,
+          notes: orderNotes,
+          created_at: new Date().toISOString(),
+        }
+        setOrders((prev) => [newOrder, ...prev])
         toast({
-          title: "Error",
-          description: "No se pudo crear el pedido",
-          variant: "destructive",
+          title: "Pedido creado (Offline)",
+          description: "El pedido se ha guardado localmente",
         })
-        return
       }
-    } else {
-      // Offline mode
-      const newOrder: WholesaleOrder = {
-        id: Date.now(),
-        client_id: clientId,
-        order_date: new Date().toISOString(),
-        status: "pending",
-        total_amount: totalAmount,
-        items: orderItems,
-        notes: orderNotes,
-        created_at: new Date().toISOString(),
-      }
-      setOrders((prev) => [newOrder, ...prev])
+
+      // Reset form
+      setShowOrderForm(false)
+      setOrderItems([])
+      setSelectedClient("")
+      setOrderNotes("")
+    } catch (error) {
+      console.error("Error creating order:", error)
       toast({
-        title: "Pedido creado (Offline)",
-        description: "El pedido se ha guardado localmente",
+        title: "Error",
+        description: "No se pudo crear el pedido. Revise la consola.",
+        variant: "destructive",
       })
     }
-
-    // Reset form
-    setShowOrderForm(false)
-    setOrderItems([])
-    setSelectedClient("")
-    setOrderNotes("")
   }
 
   const exportWholesalePrices = () => {

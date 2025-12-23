@@ -115,7 +115,7 @@ export default function InventoryManagement() {
     quantity: "",
     company: "",
     channel: "",
-    date_entered: new Date().toISOString().split("T")[0],
+    date_entered: "",
     stock_status: "normal",
     supplier_id: "",
     brand_id: "",
@@ -344,6 +344,9 @@ export default function InventoryManagement() {
 
   // Verificar sesión al cargar
   useEffect(() => {
+    // Inicializar fecha para evitar error de hidratación
+    setFormData(prev => ({ ...prev, date_entered: new Date().toISOString().split("T")[0] }))
+
     const initAuth = async () => {
       const user = await checkSession()
       setIsAuthenticated(!!user)
@@ -878,24 +881,41 @@ export default function InventoryManagement() {
   }
 
   const checkPriceChange = async (sku: string, newCost: number) => {
+    console.log("Checking price change for SKU:", sku, "New Cost:", newCost)
     if (!isSupabaseConfigured) return true
 
-    const { data: existingItem } = await supabase
-      .from("inventory")
-      .select("cost_without_tax")
-      .eq("sku", sku)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single()
+    try {
+      const { data: existingItem, error } = await supabase
+        .from("inventory")
+        .select("cost_without_tax")
+        .eq("sku", sku)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle()
 
-    if (existingItem && existingItem.cost_without_tax !== newCost) {
-      setPriceAlert({
-        show: true,
-        message: `El SKU ${sku} tiene un precio diferente al último registrado`,
-        oldPrice: existingItem.cost_without_tax,
-        newPrice: newCost,
-      })
-      return false
+      if (error) {
+        console.error("Error checking price change:", error)
+        return true // Proceed if check fails
+      }
+
+      if (existingItem) {
+        console.log("Found existing item:", existingItem)
+        if (existingItem.cost_without_tax !== newCost) {
+          console.log("Price mismatch. Old:", existingItem.cost_without_tax, "New:", newCost)
+          setPriceAlert({
+            show: true,
+            message: `El SKU ${sku} tiene un precio diferente al último registrado`,
+            oldPrice: existingItem.cost_without_tax,
+            newPrice: newCost,
+          })
+          return false
+        }
+      } else {
+        console.log("No existing item found for SKU:", sku)
+      }
+    } catch (err) {
+      console.error("Exception in checkPriceChange:", err)
+      return true
     }
     return true
   }
@@ -1041,28 +1061,42 @@ export default function InventoryManagement() {
         invoice_number: "",
         observations: "",
       })
+
       setSkipPriceCheck(false)
       return
     }
 
     try {
+      console.log("Adding inventory item...", { sku: formData.sku, overridePriceCheck })
       // Verificar cambio de precio solo si no se ha confirmado previamente
-      if (!skipPriceCheck) {
+      if (!overridePriceCheck && !skipPriceCheck) {
         const canProceed = await checkPriceChange(formData.sku, costWithoutTax)
-        if (!canProceed) return
+        if (!canProceed) {
+            console.log("Price check failed (variation detected), waiting for user confirmation")
+            return
+        }
       }
 
       // Resetear el flag después de usar
       setSkipPriceCheck(false)
 
+      const user = getCurrentUser()
+      const userId = user?.id || null
+      console.log("User for creation:", userId)
+
       const inventoryItemWithUser = {
         ...inventoryItem,
-        created_by: getCurrentUser()?.id,
+        created_by: userId,
       }
 
       const { data, error } = await supabase.from("inventory").insert([inventoryItemWithUser]).select().single()
 
-      if (error) throw error
+      if (error) {
+          console.error("Supabase insert error:", error)
+          throw error
+      }
+      
+      console.log("Item added successfully:", data)
 
       // Registrar log
       await logActivity("CREATE_ITEM", "inventory", data.id, null, data, `Producto ${data.sku} creado`)
@@ -1128,8 +1162,8 @@ export default function InventoryManagement() {
 
   const confirmPriceChange = async () => {
     setPriceAlert({ show: false, message: "", oldPrice: 0, newPrice: 0 })
-    setSkipPriceCheck(true)
-    await addInventoryItem()
+    // Usamos el parámetro directo para evitar condiciones de carrera con el estado
+    await addInventoryItem(true)
   }
 
   const addSupplier = async () => {
@@ -3809,6 +3843,43 @@ ${csvRows
             </div>
           </div>
         )}
+
+        {/* Modal de alerta de cambio de precio */}
+        <AlertDialog open={priceAlert.show} onOpenChange={(open) => !open && setPriceAlert(prev => ({ ...prev, show: false }))}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Cambio de Precio Detectado</AlertDialogTitle>
+              <AlertDialogDescription>
+                {priceAlert.message}
+                <div className="mt-4 flex flex-col gap-2 p-4 bg-slate-50 rounded-md">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500">Precio Anterior:</span>
+                    <span className="font-medium line-through">${priceAlert.oldPrice?.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-900 font-medium">Nuevo Precio:</span>
+                    <span className="font-bold text-blue-600">${priceAlert.newPrice?.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center mt-2 pt-2 border-t">
+                    <span className="text-slate-500">Variación:</span>
+                    <Badge variant={priceAlert.newPrice > priceAlert.oldPrice ? "destructive" : "default"} className={priceAlert.newPrice > priceAlert.oldPrice ? "bg-red-500" : "bg-green-500"}>
+                      {priceAlert.oldPrice > 0 ? (
+                        <>
+                          {priceAlert.newPrice > priceAlert.oldPrice ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
+                          {Math.abs(((priceAlert.newPrice - priceAlert.oldPrice) / priceAlert.oldPrice) * 100).toFixed(2)}%
+                        </>
+                      ) : "N/A"}
+                    </Badge>
+                  </div>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setPriceAlert({ ...priceAlert, show: false })}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmPriceChange}>Confirmar y Guardar</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Modal de historial de SKU */}
         {skuHistoryModal.show && (
