@@ -15,6 +15,16 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import {
   Plus,
   Download,
   Upload,
@@ -920,7 +930,7 @@ export default function InventoryManagement() {
     return true
   }
 
-  const addInventoryItem = async () => {
+  const addInventoryItem = async (overridePriceCheck = false) => {
     // Verificar permisos
     if (!hasPermission("CREATE_ITEM")) {
       toast({
@@ -3851,21 +3861,34 @@ ${csvRows
               <AlertDialogTitle>Cambio de Precio Detectado</AlertDialogTitle>
               <AlertDialogDescription>
                 {priceAlert.message}
-                <div className="mt-4 flex flex-col gap-2 p-4 bg-slate-50 rounded-md">
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-500">Precio Anterior:</span>
-                    <span className="font-medium line-through">${priceAlert.oldPrice?.toFixed(2)}</span>
+                <div className="mt-4 flex flex-col gap-4 p-4 bg-slate-50 rounded-md">
+                  <div className="flex justify-center items-center gap-8">
+                    <div className="text-center">
+                      <p className="text-sm text-gray-500 mb-1">Precio Anterior</p>
+                      <p className="text-xl font-bold text-gray-600">${priceAlert.oldPrice?.toFixed(2)}</p>
+                    </div>
+                    
+                    <div className="flex flex-col items-center">
+                       {priceAlert.newPrice > priceAlert.oldPrice ? (
+                          <TrendingUp className="w-6 h-6 text-red-500 mb-1" />
+                        ) : (
+                          <TrendingDown className="w-6 h-6 text-green-500 mb-1" />
+                        )}
+                        <ArrowRight className="w-4 h-4 text-gray-400" />
+                    </div>
+
+                    <div className="text-center">
+                      <p className="text-sm text-gray-500 mb-1">Nuevo Precio</p>
+                      <p className="text-xl font-bold text-blue-600">${priceAlert.newPrice?.toFixed(2)}</p>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-900 font-medium">Nuevo Precio:</span>
-                    <span className="font-bold text-blue-600">${priceAlert.newPrice?.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between items-center mt-2 pt-2 border-t">
+
+                  <div className="flex justify-between items-center pt-2 border-t">
                     <span className="text-slate-500">Variación:</span>
                     <Badge variant={priceAlert.newPrice > priceAlert.oldPrice ? "destructive" : "default"} className={priceAlert.newPrice > priceAlert.oldPrice ? "bg-red-500" : "bg-green-500"}>
                       {priceAlert.oldPrice > 0 ? (
                         <>
-                          {priceAlert.newPrice > priceAlert.oldPrice ? <TrendingUp className="w-3 h-3 mr-1" /> : <TrendingDown className="w-3 h-3 mr-1" />}
+                          {priceAlert.newPrice > priceAlert.oldPrice ? "+" : "-"}
                           {Math.abs(((priceAlert.newPrice - priceAlert.oldPrice) / priceAlert.oldPrice) * 100).toFixed(2)}%
                         </>
                       ) : "N/A"}

@@ -269,7 +269,10 @@ ALTER TABLE inventory_public ENABLE ROW LEVEL SECURITY;
 ALTER TABLE inventory_wholesale ENABLE ROW LEVEL SECURITY;
 
 -- Policies
+DROP POLICY IF EXISTS "Enable all for authenticated users" ON inventory_public;
 CREATE POLICY "Enable all for authenticated users" ON inventory_public FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Enable all for authenticated users" ON inventory_wholesale;
 CREATE POLICY "Enable all for authenticated users" ON inventory_wholesale FOR ALL USING (true);
 -- Note: 'true' allows everyone if RLS is enabled, better for avoiding permission issues in development.
 -- In production, replace 'true' with "auth.role() = 'authenticated'".

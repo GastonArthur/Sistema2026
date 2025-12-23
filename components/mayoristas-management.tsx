@@ -435,10 +435,11 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
     })
   }
 
-  const addClient = async () => {
+  const addClient = async (e?: React.MouseEvent) => {
+    if (e) e.preventDefault()
     console.log("Adding client...", newClient)
     if (!newClient.name || !newClient.business_name || !newClient.cuit) {
-      console.log("Validation failed")
+      console.log("Validation failed", newClient)
       toast({
         title: "Campos requeridos",
         description: "Nombre, razón social y CUIT son obligatorios",
@@ -540,7 +541,8 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
     }
   }
 
-  const addItemToOrder = () => {
+  const addItemToOrder = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault()
     if (!manualItem.sku || !manualItem.description || !manualItem.price || Number(manualItem.quantity) <= 0) {
        toast({
         title: "Campos incompletos",
@@ -642,7 +644,8 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
     setOrderItems((prev) => prev.filter((item) => item.id !== id))
   }
 
-  const createOrder = async () => {
+  const createOrder = async (e?: React.MouseEvent) => {
+    if (e) e.preventDefault()
     console.log("Creating order...", { selectedClient, itemsCount: orderItems.length })
     
     if (!selectedClient) {
@@ -1457,6 +1460,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                   </div>
                 </div>
                 <Button
+                  type="button"
                   onClick={() => updateWholesaleConfig(wholesaleConfig)}
                   className="mt-4 bg-purple-600 hover:bg-purple-700"
                 >
@@ -1761,7 +1765,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                     <Button variant="secondary" onClick={closeClientForm}>
                       Cancelar
                     </Button>
-                    <Button onClick={addClient} className="bg-purple-600 hover:bg-purple-700">
+                    <Button type="button" onClick={addClient} className="bg-purple-600 hover:bg-purple-700">
                       {editingClient ? "Actualizar Cliente" : "Agregar Cliente"}
                     </Button>
                   </div>
@@ -1954,7 +1958,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                               />
                             </div>
                           </div>
-                          <Button onClick={addItemToOrder} className="w-full bg-purple-600 hover:bg-purple-700">
+                          <Button type="button" onClick={addItemToOrder} className="w-full bg-purple-600 hover:bg-purple-700">
                             <Plus className="w-4 h-4 mr-2" /> Agregar al Pedido
                           </Button>
                         </div>
@@ -2012,10 +2016,10 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                       </div>
 
                       <div className="flex gap-2 justify-end">
-                        <Button variant="outline" onClick={() => setShowOrderForm(false)}>
+                        <Button type="button" variant="outline" onClick={() => setShowOrderForm(false)}>
                           Cancelar
                         </Button>
-                        <Button onClick={createOrder} className="bg-purple-600 hover:bg-purple-700">
+                        <Button type="button" onClick={createOrder} className="bg-purple-600 hover:bg-purple-700">
                           Confirmar Pedido
                         </Button>
                       </div>
