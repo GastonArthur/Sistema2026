@@ -15,6 +15,14 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -242,7 +250,13 @@ export default function InventoryManagement() {
           .select("cuotas_3_percentage, cuotas_6_percentage, cuotas_9_percentage, cuotas_12_percentage")
           .single(),
 
-        supabase.from("expenses").select("*").order("date", { ascending: false }),
+        supabase
+          .from("expenses")
+          .select("*")
+          .order("expense_date", { ascending: false })
+          .headers({
+            apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
+          }),
       ])
 
       // Procesar resultados
