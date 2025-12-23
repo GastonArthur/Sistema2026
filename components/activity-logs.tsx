@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Activity, Search, Eye, RefreshCw } from "lucide-react"
 import { getActivityLogs, type ActivityLog } from "@/lib/auth"
+import { logError } from "@/lib/logger"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import type { JSX } from "react"
@@ -43,7 +44,7 @@ export function ActivityLogs({ isOpen, onClose }: ActivityLogsProps) {
       const data = await getActivityLogs(500)
       setLogs(data)
     } catch (error) {
-      console.error("Error cargando logs:", error)
+      logError("Error cargando logs:", error)
     } finally {
       setLoading(false)
     }

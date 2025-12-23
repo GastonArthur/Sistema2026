@@ -16,6 +16,7 @@ import { toast } from "@/hooks/use-toast"
 import { formatCurrency } from "@/lib/utils"
 import { logActivity, hasPermission, getCurrentUser } from "@/lib/auth"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
+import { logError } from "@/lib/logger"
 
 type ExpenseCategory = {
   id: number
@@ -276,7 +277,7 @@ export function GastosManagement({ isOpen, onClose, onUpdateExpenses }: GastosMa
       setCategories(categoriesData || [])
       setUsersList(usersData || [])
     } catch (error) {
-      console.error("Error loading expenses data:", error)
+      logError("Error loading expenses data:", error)
       toast({
         title: "Error",
         description: "Error al cargar los datos de gastos",
@@ -541,7 +542,7 @@ export function GastosManagement({ isOpen, onClose, onUpdateExpenses }: GastosMa
       resetForm()
       loadData()
     } catch (error) {
-      console.error("Error saving expense:", error)
+      logError("Error saving expense:", error)
       toast({
         title: "Error",
         description: "Error al guardar el gasto",
@@ -639,7 +640,7 @@ export function GastosManagement({ isOpen, onClose, onUpdateExpenses }: GastosMa
       setDeleteConfirm({ show: false, expense: null })
       loadData()
     } catch (error) {
-      console.error("Error deleting expense:", error)
+      logError("Error deleting expense:", error)
       toast({
         title: "Error",
         description: "Error al eliminar el gasto",

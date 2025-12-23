@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Eye, EyeOff, LogIn, Package, AlertCircle } from "lucide-react"
 import { login } from "@/lib/auth"
 import { toast } from "@/hooks/use-toast"
+import { logError } from "@/lib/logger"
 
 interface LoginFormProps {
   onLoginSuccess: () => void
@@ -46,7 +47,7 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
         setError(result.error || "Credenciales inválidas")
       }
     } catch (error) {
-      console.error("Error en login:", error)
+      logError("Error en login:", error)
       setError("Error interno del servidor")
     } finally {
       setIsLoading(false)

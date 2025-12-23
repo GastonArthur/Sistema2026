@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch"
 import { UserPlus, Edit, Trash2, Shield, RefreshCw, Eye, EyeOff } from "lucide-react"
 import { getUsers, createUser, updateUser, deleteUser, getCurrentUser, type User } from "@/lib/auth"
 import { toast } from "@/hooks/use-toast"
+import { logError } from "@/lib/logger"
 
 interface UserManagementProps {
   isOpen: boolean
@@ -51,7 +52,7 @@ export function UserManagement({ isOpen, onClose }: UserManagementProps) {
       setUsers(data)
       console.log("👥 Usuarios cargados:", data)
     } catch (error) {
-      console.error("Error cargando usuarios:", error)
+      logError("Error cargando usuarios:", error)
       toast({
         title: "Error",
         description: "Error al cargar los usuarios",
@@ -100,7 +101,7 @@ export function UserManagement({ isOpen, onClose }: UserManagementProps) {
         })
       }
     } catch (error) {
-      console.error("Error creando usuario:", error)
+      logError("Error creando usuario:", error)
       toast({
         title: "Error",
         description: "Error interno al crear usuario",
@@ -127,7 +128,7 @@ export function UserManagement({ isOpen, onClose }: UserManagementProps) {
         })
       }
     } catch (error) {
-      console.error("Error actualizando usuario:", error)
+      logError("Error actualizando usuario:", error)
       toast({
         title: "Error",
         description: "Error interno al actualizar usuario",
@@ -154,7 +155,7 @@ export function UserManagement({ isOpen, onClose }: UserManagementProps) {
         })
       }
     } catch (error) {
-      console.error("Error eliminando usuario:", error)
+      logError("Error eliminando usuario:", error)
       toast({
         title: "Error",
         description: "Error interno al eliminar usuario",

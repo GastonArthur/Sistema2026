@@ -5,6 +5,7 @@ import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { formatCurrency } from "@/lib/utils"
+import { logError } from "@/lib/logger"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -65,6 +66,7 @@ import { UserHeader } from "@/components/user-header"
 import { ActivityLogs } from "@/components/activity-logs"
 import { UserManagement } from "@/components/user-management"
 import { getCurrentUser, checkSession, logActivity, hasPermission } from "@/lib/auth"
+import { logError } from "@/lib/logger"
 import { PreciosPublicar } from "@/components/precios-publicar"
 import { ZentorList } from "@/components/zentor-list"
 import { GastosManagement } from "@/components/gastos-management"
@@ -316,7 +318,7 @@ export default function InventoryManagement() {
         })
       }
     } catch (error) {
-      console.error("Error loading data:", error)
+      logError("Error loading data:", error)
       setIsOnline(false)
       toast({
         title: "Error de conexión",
@@ -338,7 +340,7 @@ export default function InventoryManagement() {
           setLastSync(new Date())
           setIsOnline(true)
         } catch (error) {
-          console.error("Error en sincronización automática:", error)
+          logError("Error en sincronización automática:", error)
           setIsOnline(false)
         }
       }
@@ -631,7 +633,7 @@ export default function InventoryManagement() {
         description: `${jsonData.length} filas encontradas. ${validCount} válidas, ${errors.length} con errores.`,
       })
     } catch (error) {
-      console.error("💥 Error analizando archivo:", error)
+      logError("💥 Error analizando archivo:", error)
       toast({
         title: "Error",
         description: `Error al procesar el archivo: ${error instanceof Error ? error.message : "Error desconocido"}`,
@@ -851,7 +853,7 @@ export default function InventoryManagement() {
         const { error } = await supabase.from("inventory").insert([inventoryItem])
 
         if (error) {
-          console.error(`❌ Error insertando producto ${sku}:`, error)
+          logError(`❌ Error insertando producto ${sku}:`, error)
           errors.push(`Fila ${i + 1}: Error insertando ${sku}`)
           errorCount++
         } else {
@@ -859,7 +861,7 @@ export default function InventoryManagement() {
           successCount++
         }
       } catch (error) {
-        console.error(`❌ Error procesando fila ${i + 1}:`, error)
+        logError(`❌ Error procesando fila ${i + 1}:`, error)
         errors.push(`Fila ${i + 1}: Error inesperado`)
         errorCount++
       }
@@ -906,7 +908,7 @@ export default function InventoryManagement() {
         .maybeSingle()
 
       if (error) {
-        console.error("Error checking price change:", error)
+        logError("Error checking price change:", error)
         return true // Proceed if check fails
       }
 
@@ -926,7 +928,7 @@ export default function InventoryManagement() {
         console.log("No existing item found for SKU:", sku)
       }
     } catch (err) {
-      console.error("Exception in checkPriceChange:", err)
+      logError("Exception in checkPriceChange:", err)
       return true
     }
     return true
@@ -1104,7 +1106,7 @@ export default function InventoryManagement() {
       const { data, error } = await supabase.from("inventory").insert([inventoryItemWithUser]).select().single()
 
       if (error) {
-          console.error("Supabase insert error:", error)
+          logError("Supabase insert error:", error)
           throw error
       }
       
@@ -1163,7 +1165,7 @@ export default function InventoryManagement() {
       loadData()
       setLastSync(new Date())
     } catch (error) {
-      console.error("❌ Error adding inventory item:", error)
+      logError("❌ Error adding inventory item:", error)
       toast({
         title: "Error",
         description: "Error al agregar el producto",
@@ -1233,7 +1235,7 @@ export default function InventoryManagement() {
         description: "Proveedor agregado correctamente",
       })
     } catch (error) {
-      console.error("Error adding supplier:", error)
+      logError("Error adding supplier:", error)
       toast({
         title: "Error",
         description: "Error al agregar el proveedor",
@@ -1290,7 +1292,7 @@ export default function InventoryManagement() {
         description: "Marca agregada correctamente",
       })
     } catch (error) {
-      console.error("Error adding brand:", error)
+      logError("Error adding brand:", error)
       toast({
         title: "Error",
         description: "Error al agregar la marca",
@@ -1349,7 +1351,7 @@ export default function InventoryManagement() {
         description: "Porcentaje de IVA actualizado",
       })
     } catch (error) {
-      console.error("Error updating IVA:", error)
+      logError("Error updating IVA:", error)
       toast({
         title: "Error",
         description: "Error al actualizar el IVA",
@@ -1403,7 +1405,7 @@ export default function InventoryManagement() {
         description: "Configuración de cuotas actualizada",
       })
     } catch (error) {
-      console.error("Error updating cuotas config:", error)
+      logError("Error updating cuotas config:", error)
       // Revertir el cambio local si hay error
       setCuotasConfig(cuotasConfig)
       toast({
@@ -1863,7 +1865,7 @@ ${csvRows
       loadData()
       setLastSync(new Date())
     } catch (error) {
-      console.error("Error updating inventory item:", error)
+      logError("Error updating inventory item:", error)
       toast({
         title: "Error",
         description: "Error al actualizar el producto",
@@ -1915,7 +1917,7 @@ ${csvRows
       loadData()
       setLastSync(new Date())
     } catch (error) {
-      console.error("Error deleting inventory item:", error)
+      logError("Error deleting inventory item:", error)
       toast({
         title: "Error",
         description: "Error al eliminar el producto",
@@ -1992,7 +1994,7 @@ ${csvRows
       loadData()
       setLastSync(new Date())
     } catch (error) {
-      console.error("Error updating supplier:", error)
+      logError("Error updating supplier:", error)
       toast({
         title: "Error",
         description: "Error al actualizar el proveedor",
@@ -2057,7 +2059,7 @@ ${csvRows
       loadData()
       setLastSync(new Date())
     } catch (error) {
-      console.error("Error deleting supplier:", error)
+      logError("Error deleting supplier:", error)
       toast({
         title: "Error",
         description: "Error al eliminar el proveedor",
@@ -2134,7 +2136,7 @@ ${csvRows
       loadData()
       setLastSync(new Date())
     } catch (error) {
-      console.error("Error updating brand:", error)
+      logError("Error updating brand:", error)
       toast({
         title: "Error",
         description: "Error al actualizar la marca",
@@ -2185,7 +2187,7 @@ ${csvRows
       loadData()
       setLastSync(new Date())
     } catch (error) {
-      console.error("Error deleting brand:", error)
+      logError("Error deleting brand:", error)
       toast({
         title: "Error",
         description: "Error al eliminar la marca",
@@ -2310,7 +2312,10 @@ ${csvRows
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg">
+          <Card 
+            className="bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg cursor-pointer hover:from-purple-600 hover:to-purple-700 transition-all transform hover:scale-105"
+            onClick={() => setActiveTab("brands")}
+          >
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div>
@@ -2322,7 +2327,10 @@ ${csvRows
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg">
+          <Card 
+            className="bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg cursor-pointer hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105"
+            onClick={() => setActiveTab("suppliers")}
+          >
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div>
@@ -2951,6 +2959,7 @@ ${csvRows
                           Fecha
                         </TableHead>
                         <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">SKU</TableHead>
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">EAN</TableHead>
                         <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
                           Nombre
                         </TableHead>

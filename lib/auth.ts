@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { compare } from "bcryptjs"
+import { logError } from "@/lib/logger"
 
 export type User = {
   id: number
@@ -119,7 +120,7 @@ export const login = async (
       .maybeSingle()
 
     if (error || !user) {
-      if (error) console.error("Error fetching user:", error)
+      if (error) logError("Error fetching user:", error)
       await logActivity("LOGIN_FAILED", null, null, null, { email }, `Intento de login fallido para ${email}`)
       return { success: false, error: "Credenciales inválidas" }
     }
@@ -171,7 +172,7 @@ export const login = async (
 
     return { success: true, user }
   } catch (error) {
-    console.error("Error en login:", error)
+    logError("Error en login:", error)
     return { success: false, error: "Error interno del servidor" }
   }
 }
@@ -200,7 +201,7 @@ export const logout = async (): Promise<void> => {
 
     currentUser = null
   } catch (error) {
-    console.error("Error en logout:", error)
+    logError("Error en logout:", error)
     // Limpiar localmente aunque haya error
     localStorage.removeItem("session_token")
     currentUser = null
@@ -255,7 +256,7 @@ export const checkSession = async (): Promise<User | null> => {
     currentUser = session.users
     return session.users
   } catch (error) {
-    console.error("Error verificando sesión:", error)
+    logError("Error verificando sesión:", error)
     localStorage.removeItem("session_token")
     currentUser = null
     return null
@@ -311,13 +312,13 @@ export const logActivity = async (
       .insert([logEntry])
       .then(({ error }) => {
         if (error) {
-          console.error("Error registrando log:", error)
+          logError("Error registrando log:", error)
         } else {
           console.log("📝 Log registrado:", logEntry)
         }
       })
   } catch (error) {
-    console.error("Error registrando log:", error)
+    logError("Error registrando log:", error)
   }
 }
 
@@ -352,7 +353,7 @@ export const getActivityLogs = async (limit = 100): Promise<ActivityLog[]> => {
     if (error) throw error
     return data || []
   } catch (error) {
-    console.error("Error obteniendo logs:", error)
+    logError("Error obteniendo logs:", error)
     return []
   }
 }
@@ -371,7 +372,7 @@ export const getUsers = async (): Promise<User[]> => {
     if (error) throw error
     return data || []
   } catch (error) {
-    console.error("Error obteniendo usuarios:", error)
+    logError("Error obteniendo usuarios:", error)
     return []
   }
 }
@@ -435,7 +436,7 @@ export const createUser = async (userData: {
     await logActivity("CREATE_USER", "users", data.id, null, data, `Usuario ${data.name} creado`)
     return { success: true }
   } catch (error) {
-    console.error("Error creando usuario:", error)
+    logError("Error creando usuario:", error)
     return { success: false, error: "Error interno del servidor" }
   }
 }
@@ -495,7 +496,7 @@ export const updateUser = async (
 
     return { success: true }
   } catch (error) {
-    console.error("Error actualizando usuario:", error)
+    logError("Error actualizando usuario:", error)
     return { success: false, error: "Error interno del servidor" }
   }
 }
@@ -542,7 +543,7 @@ export const deleteUser = async (userId: number): Promise<{ success: boolean; er
 
     return { success: true }
   } catch (error) {
-    console.error("Error eliminando usuario:", error)
+    logError("Error eliminando usuario:", error)
     return { success: false, error: "Error interno del servidor" }
   }
 }
@@ -616,7 +617,7 @@ export const isSystemInitialized = async (): Promise<boolean> => {
     if (error) throw error
     return data && data.length > 0
   } catch (error) {
-    console.error("Error verificando inicialización:", error)
+    logError("Error verificando inicialización:", error)
     return false
   }
 }
@@ -673,7 +674,7 @@ export const initializeSystem = async (adminData: {
 
     return { success: true }
   } catch (error) {
-    console.error("Error inicializando sistema:", error)
+    logError("Error inicializando sistema:", error)
     return { success: false, error: "Error interno del servidor" }
   }
 }

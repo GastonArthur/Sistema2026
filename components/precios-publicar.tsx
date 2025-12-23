@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Download, DollarSign, Filter, X, Settings } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { logActivity, hasPermission, getCurrentUser } from "@/lib/auth"
+import { logError } from "@/lib/logger"
 import { formatCurrency } from "@/lib/utils"
 
 type InventoryItem = {
@@ -70,7 +71,7 @@ export function PreciosPublicar({
         const parsedPromociones = JSON.parse(savedPromociones)
         setPromociones(parsedPromociones)
       } catch (error) {
-        console.error("Error al cargar promociones guardadas:", error)
+        logError("Error al cargar promociones guardadas:", error)
       }
     }
   }, [])

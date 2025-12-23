@@ -29,6 +29,7 @@ import {
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { logActivity, hasPermission, getCurrentUser } from "@/lib/auth"
+import { logError } from "@/lib/logger"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { formatCurrency } from "@/lib/utils"
 
@@ -140,6 +141,8 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
   const [selectedClient, setSelectedClient] = useState<string>("")
   const [orderItems, setOrderItems] = useState<WholesaleOrderItem[]>([])
   const [currentSku, setCurrentSku] = useState("")
+  const [currentDescription, setCurrentDescription] = useState("")
+  const [currentUnitPrice, setCurrentUnitPrice] = useState(0)
   const [currentQuantity, setCurrentQuantity] = useState(1)
   const [orderNotes, setOrderNotes] = useState("")
 
@@ -244,7 +247,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
         description: "Información de mayoristas cargada desde la base de datos",
       })
     } catch (error) {
-      console.error("Error loading wholesale data:", error)
+      logError("Error loading wholesale data:", error)
       toast({
         title: "Error",
         description: "No se pudieron cargar los datos de mayoristas",
@@ -333,7 +336,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
 
         if (error) throw error
       } catch (error) {
-        console.error("Error updating config:", error)
+        logError("Error updating config:", error)
         toast({
           title: "Error",
           description: "No se pudo guardar la configuración en la base de datos",
@@ -396,17 +399,16 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
             business_name: updatedClient.business_name,
             cuit: updatedClient.cuit,
             address: updatedClient.address,
-            city: updatedClient.city,
             province: updatedClient.province,
             contact_person: updatedClient.contact_person,
             email: updatedClient.email,
             whatsapp: updatedClient.whatsapp,
           })
           .eq("id", updatedClient.id)
-
+          
         if (error) throw error
       } catch (error) {
-        console.error("Error updating client:", error)
+        logError("Error updating client:", error)
         toast({
           title: "Error",
           description: "No se pudo actualizar el cliente en la base de datos",
@@ -420,11 +422,10 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
     setNewClient({
       name: "",
       business_name: "",
-      cuit: "",
-      address: "",
-      city: "",
-      province: "",
-      contact_person: "",
+        cuit: "",
+        address: "",
+        province: "",
+        contact_person: "",
       email: "",
       whatsapp: "",
     })
@@ -456,7 +457,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
         const { error } = await supabase.from("wholesale_clients").delete().eq("id", client.id)
         if (error) throw error
       } catch (error) {
-        console.error("Error deleting client:", error)
+        logError("Error deleting client:", error)
         toast({
           title: "Error",
           description: "No se pudo eliminar el cliente de la base de datos",
@@ -547,7 +548,6 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
               business_name: newClient.business_name,
               cuit: newClient.cuit,
               address: newClient.address,
-              city: newClient.city,
               province: newClient.province,
               contact_person: newClient.contact_person,
               email: newClient.email,
@@ -613,7 +613,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
       })
       closeClientForm()
     } catch (error) {
-      console.error("Error adding client:", error)
+      logError("Error adding client:", error)
       toast({
         title: "Error",
         description: "No se pudo agregar el cliente. Revise la consola para más detalles.",
@@ -770,7 +770,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
       setSelectedClient("")
       setOrderNotes("")
     } catch (error) {
-      console.error("Error creating order:", error)
+      logError("Error creating order:", error)
       toast({
         title: "Error",
         description: "No se pudo crear el pedido. Revise la consola.",
