@@ -28,7 +28,7 @@ import {
   Mail,
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
-import { logActivity, hasPermission, getCurrentUser } from "@/lib/auth"
+import { logActivity, hasPermission } from "@/lib/auth"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 
 type InventoryItem = {
@@ -130,50 +130,20 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
     whatsapp: "",
   })
 
-  // Estados para inventario mayorista
-  const [wholesaleInventory, setWholesaleInventory] = useState<any[]>([])
-  const [showAddProductForm, setShowAddProductForm] = useState(false)
-  const [newProduct, setNewProduct] = useState({
-    sku: "",
-    description: "",
-    wholesale_price: "",
-    quantity: "0",
-    category: "",
-  })
-
   // Estados para pedidos
   const [orders, setOrders] = useState<WholesaleOrder[]>([])
   const [showOrderForm, setShowOrderForm] = useState(false)
   const [selectedClient, setSelectedClient] = useState<string>("")
   const [orderItems, setOrderItems] = useState<WholesaleOrderItem[]>([])
-  
-  // Manual item entry state for orders
-  const [manualItem, setManualItem] = useState({
-    sku: "",
-    description: "",
-    price: "",
-    quantity: "1"
-  })
-  
+  const [currentSku, setCurrentSku] = useState("")
+  const [currentQuantity, setCurrentQuantity] = useState(1)
   const [orderNotes, setOrderNotes] = useState("")
-  
-  // New client inline creation
-  const [isCreatingClient, setIsCreatingClient] = useState(false)
-  const [inlineNewClient, setInlineNewClient] = useState({
-    name: "",
-    business_name: "",
-    cuit: "",
-    address: "",
-    province: "",
-    contact_person: "",
-    email: "",
-    whatsapp: "",
-  })
 
   // Filtros para precios
   const [priceFilters, setPriceFilters] = useState({
-    category: "all",
+    brand: "all",
     search: "",
+    showNewOnly: false,
   })
 
   useEffect(() => {
@@ -198,11 +168,33 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
           whatsapp: "+54911234567",
           created_at: new Date().toISOString(),
         },
+        {
+          id: 2,
+          name: "Deportes Sur",
+          business_name: "Deportes Sur S.R.L.",
+          cuit: "30-87654321-0",
+          address: "Calle Falsa 456",
+          province: "Córdoba",
+          contact_person: "María González",
+          email: "maria@deportessur.com",
+          whatsapp: "+54351987654",
+          created_at: new Date().toISOString(),
+        },
       ])
 
-      setOrders([])
-      setWholesaleInventory([]) // Empty in offline for now or mock
-      
+      setOrders([
+        {
+          id: 1,
+          client_id: 1,
+          order_date: new Date().toISOString().split("T")[0],
+          status: "confirmed",
+          total_amount: 15000,
+          items: [],
+          notes: "Pedido urgente para fin de mes",
+          created_at: new Date().toISOString(),
+        },
+      ])
+
       toast({
         title: "Datos cargados (Offline)",
         description: "Información de mayoristas cargada en modo offline",
@@ -229,20 +221,24 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
       if (ordersError) throw ordersError
       setOrders(ordersData || [])
 
-      // Fetch wholesale inventory
-      const { data: inventoryData, error: inventoryError } = await supabase
-        .from("inventory_wholesale")
-        .select("*")
-        .order("created_at", { ascending: false })
+      // Fetch config
+      const { data: configData, error: configError } = await supabase
+        .from("config")
+        .select("wholesale_percentage_1, wholesale_percentage_2, wholesale_percentage_3")
+        .single()
 
-      if (inventoryError) {
-         console.error("Error fetching wholesale inventory, falling back to empty:", inventoryError)
-         // Assuming table might not exist yet or empty
-         setWholesaleInventory([])
-      } else {
-         setWholesaleInventory(inventoryData || [])
+      if (configData) {
+        setWholesaleConfig({
+          percentage_1: Number(configData.wholesale_percentage_1),
+          percentage_2: Number(configData.wholesale_percentage_2),
+          percentage_3: Number(configData.wholesale_percentage_3),
+        })
       }
 
+      toast({
+        title: "Datos actualizados",
+        description: "Información de mayoristas cargada desde la base de datos",
+      })
     } catch (error) {
       console.error("Error loading wholesale data:", error)
       toast({
@@ -254,11 +250,39 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
   }
 
   const getWholesalePrices = () => {
-    return wholesaleInventory
+    const uniqueSkus = new Map<string, InventoryItem>()
+
+    // Obtener el último registro de cada SKU
+    inventory.forEach((item) => {
+      if (!uniqueSkus.has(item.sku) || new Date(item.created_at) > new Date(uniqueSkus.get(item.sku)!.created_at)) {
+        uniqueSkus.set(item.sku, item)
+      }
+    })
+
+    const wholesalePrices = Array.from(uniqueSkus.values()).map((item) => {
+      const baseCost = item.cost_without_tax
+      const price1 = baseCost * (1 + wholesaleConfig.percentage_1 / 100)
+      const price2 = baseCost * (1 + wholesaleConfig.percentage_2 / 100)
+      const price3 = baseCost * (1 + wholesaleConfig.percentage_3 / 100)
+
+      // Verificar si es un SKU nuevo (solo aparece una vez en el inventario)
+      const skuCount = inventory.filter((inv) => inv.sku === item.sku).length
+      const isNew = skuCount === 1
+
+      return {
+        ...item,
+        wholesale_price_1: price1,
+        wholesale_price_2: price2,
+        wholesale_price_3: price3,
+        is_new: isNew,
+      }
+    })
+
+    return wholesalePrices
   }
 
   const getFilteredWholesalePrices = () => {
-    let filtered = wholesaleInventory
+    let filtered = getWholesalePrices()
 
     if (priceFilters.search) {
       filtered = filtered.filter(
@@ -267,11 +291,29 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
           item.description.toLowerCase().includes(priceFilters.search.toLowerCase()),
       )
     }
-    
-    // Simple category filter if we have categories
-    // if (priceFilters.category !== "all") ...
 
-    return filtered
+    if (priceFilters.brand !== "all") {
+      filtered = filtered.filter((item) => item.brand_id?.toString() === priceFilters.brand)
+    }
+
+    if (priceFilters.showNewOnly) {
+      filtered = filtered.filter((item) => item.is_new)
+    }
+
+    // Agrupar por marca
+    const groupedByBrand = filtered.reduce(
+      (acc, item) => {
+        const brandName = item.brands?.name || "Sin marca"
+        if (!acc[brandName]) {
+          acc[brandName] = []
+        }
+        acc[brandName].push(item)
+        return acc
+      },
+      {} as Record<string, typeof filtered>,
+    )
+
+    return groupedByBrand
   }
 
   const updateWholesaleConfig = async (newConfig: typeof wholesaleConfig) => {
@@ -464,7 +506,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
               contact_person: newClient.contact_person,
               email: newClient.email,
               whatsapp: newClient.whatsapp,
-              created_by: getCurrentUser()?.id,
+              created_by: 1, // Default admin user ID if not available from context
             },
           ])
           .select()
@@ -547,98 +589,34 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
   }
 
   const addItemToOrder = () => {
-    if (!manualItem.sku || !manualItem.description || !manualItem.price || Number(manualItem.quantity) <= 0) {
-       toast({
-        title: "Campos incompletos",
-        description: "Por favor complete SKU, Descripción, Precio y Cantidad",
+    if (!currentSku || currentQuantity <= 0) return
+
+    const item = inventory.find((i) => i.sku === currentSku)
+    if (!item) {
+      toast({
+        title: "Producto no encontrado",
+        description: "El SKU ingresado no existe en el inventario",
         variant: "destructive",
       })
       return
     }
 
-    const price = parseFloat(manualItem.price)
-    const quantity = parseInt(manualItem.quantity)
-    
+    // Calculate price (using percentage 1 as default base)
+    const unitPrice = item.cost_without_tax * (1 + wholesaleConfig.percentage_1 / 100)
+
     const newItem: WholesaleOrderItem = {
       id: Date.now(),
       order_id: 0,
-      sku: manualItem.sku,
-      description: manualItem.description,
-      quantity: quantity,
-      unit_price: price,
-      total_price: price * quantity,
+      sku: item.sku,
+      description: item.description,
+      quantity: currentQuantity,
+      unit_price: unitPrice,
+      total_price: unitPrice * currentQuantity,
     }
 
     setOrderItems((prev) => [...prev, newItem])
-    
-    // Reset but keep some fields if useful? No, reset all for next item
-    setManualItem({
-      sku: "",
-      description: "",
-      price: "",
-      quantity: "1"
-    })
-  }
-  
-  const handleCreateInlineClient = async () => {
-     if (!inlineNewClient.name || !inlineNewClient.business_name || !inlineNewClient.cuit) {
-      toast({
-        title: "Campos requeridos",
-        description: "Nombre, razón social y CUIT son obligatorios",
-        variant: "destructive",
-      })
-      return
-    }
-    
-    try {
-        let clientId = 0
-        
-        if (isSupabaseConfigured) {
-             const { data, error } = await supabase
-              .from("wholesale_clients")
-              .insert([
-                {
-                  ...inlineNewClient,
-                  created_by: getCurrentUser()?.id,
-                },
-              ])
-              .select()
-              .single()
-
-            if (error) throw error
-            
-            clientId = data.id
-            setClients(prev => [...prev, data])
-            toast({ title: "Cliente creado", description: "Cliente creado exitosamente" })
-        } else {
-             // Offline
-             clientId = Date.now()
-             const newClient = { id: clientId, ...inlineNewClient, created_at: new Date().toISOString() }
-             setClients(prev => [...prev, newClient])
-             toast({ title: "Cliente creado (Offline)", description: "Cliente creado localmente" })
-        }
-        
-        setSelectedClient(clientId.toString())
-        setIsCreatingClient(false)
-        setInlineNewClient({
-            name: "",
-            business_name: "",
-            cuit: "",
-            address: "",
-            province: "",
-            contact_person: "",
-            email: "",
-            whatsapp: "",
-        })
-        
-    } catch (error) {
-        console.error("Error creating inline client:", error)
-        toast({
-          title: "Error",
-          description: "No se pudo crear el cliente",
-          variant: "destructive",
-        })
-    }
+    setCurrentSku("")
+    setCurrentQuantity(1)
   }
 
   const removeItemFromOrder = (id: number) => {
@@ -670,7 +648,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
               status: "pending",
               total_amount: totalAmount,
               notes: orderNotes,
-              created_by: getCurrentUser()?.id,
+              created_by: 1, // Default admin
             },
           ])
           .select()
@@ -1835,114 +1813,47 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <div>
-                        <div className="flex justify-between items-center mb-2">
-                          <Label>Cliente</Label>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => setIsCreatingClient(!isCreatingClient)}
-                            className="h-6 text-xs text-purple-600"
-                          >
-                            {isCreatingClient ? "Seleccionar existente" : "+ Nuevo cliente"}
-                          </Button>
-                        </div>
-                        
-                        {isCreatingClient ? (
-                          <div className="space-y-3 p-3 border rounded-md bg-purple-50">
-                            <div>
-                              <Label className="text-xs">Nombre *</Label>
-                              <Input 
-                                value={inlineNewClient.name}
-                                onChange={(e) => setInlineNewClient(prev => ({ ...prev, name: e.target.value }))}
-                                className="h-8"
-                              />
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <Label className="text-xs">Razón Social *</Label>
-                                <Input 
-                                  value={inlineNewClient.business_name}
-                                  onChange={(e) => setInlineNewClient(prev => ({ ...prev, business_name: e.target.value }))}
-                                  className="h-8"
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-xs">CUIT *</Label>
-                                <Input 
-                                  value={inlineNewClient.cuit}
-                                  onChange={(e) => setInlineNewClient(prev => ({ ...prev, cuit: e.target.value }))}
-                                  className="h-8"
-                                />
-                              </div>
-                            </div>
-                            <Button 
-                              onClick={handleCreateInlineClient} 
-                              size="sm" 
-                              className="w-full bg-purple-600 hover:bg-purple-700"
-                            >
-                              Crear y Seleccionar
-                            </Button>
-                          </div>
-                        ) : (
-                          <Select value={selectedClient} onValueChange={setSelectedClient}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Seleccionar cliente" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {clients.map((client) => (
-                                <SelectItem key={client.id} value={client.id.toString()}>
-                                  {client.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
+                        <Label>Cliente</Label>
+                        <Select value={selectedClient} onValueChange={setSelectedClient}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar cliente" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {clients.map((client) => (
+                              <SelectItem key={client.id} value={client.id.toString()}>
+                                {client.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div className="border p-4 rounded-md bg-gray-50">
-                        <h4 className="font-medium mb-2">Agregar Producto Manualmente</h4>
+                        <h4 className="font-medium mb-2">Agregar Producto</h4>
                         <div className="space-y-3">
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <Label>SKU *</Label>
+                          <div>
+                            <Label>SKU</Label>
+                            <div className="flex gap-2">
                               <Input
-                                value={manualItem.sku}
-                                onChange={(e) => setManualItem(prev => ({ ...prev, sku: e.target.value }))}
-                                placeholder="Código SKU"
-                              />
-                            </div>
-                            <div>
-                              <Label>Descripción *</Label>
-                              <Input
-                                value={manualItem.description}
-                                onChange={(e) => setManualItem(prev => ({ ...prev, description: e.target.value }))}
-                                placeholder="Nombre del producto"
+                                value={currentSku}
+                                onChange={(e) => setCurrentSku(e.target.value)}
+                                placeholder="Escanear o escribir SKU"
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") addItemToOrder()
+                                }}
                               />
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <Label>Precio Unitario *</Label>
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={manualItem.price}
-                                onChange={(e) => setManualItem(prev => ({ ...prev, price: e.target.value }))}
-                                placeholder="0.00"
-                              />
-                            </div>
-                            <div>
-                              <Label>Cantidad *</Label>
-                              <Input
-                                type="number"
-                                min="1"
-                                value={manualItem.quantity}
-                                onChange={(e) => setManualItem(prev => ({ ...prev, quantity: e.target.value }))}
-                              />
-                            </div>
+                          <div>
+                            <Label>Cantidad</Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={currentQuantity}
+                              onChange={(e) => setCurrentQuantity(parseInt(e.target.value) || 1)}
+                            />
                           </div>
-                          <Button onClick={addItemToOrder} className="w-full bg-purple-600 hover:bg-purple-700">
+                          <Button onClick={addItemToOrder} className="w-full">
                             <Plus className="w-4 h-4 mr-2" /> Agregar al Pedido
                           </Button>
                         </div>

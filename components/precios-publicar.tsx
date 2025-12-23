@@ -10,12 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Download, DollarSign, Filter, X, Settings } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
-import { supabase, isSupabaseConfigured } from "@/lib/supabase"
-import { Plus, Trash2 } from "lucide-react"
+import { logActivity, hasPermission } from "@/lib/auth"
 
-type PublicInventoryItem = {
+type InventoryItem = {
   id: number
   sku: string
+  ean: string | null
   description: string
   price: number
   stock: number
@@ -25,6 +25,9 @@ type PublicInventoryItem = {
 }
 
 interface PreciosPublicarProps {
+  inventory: InventoryItem[]
+  suppliers: Supplier[]
+  brands: Brand[]
   cuotasConfig: {
     cuotas_3_percentage: number
     cuotas_6_percentage: number
@@ -40,29 +43,22 @@ interface PreciosPublicarProps {
 }
 
 export function PreciosPublicar({
+  inventory,
+  suppliers,
+  brands,
   cuotasConfig,
   onUpdateCuotasConfig,
 }: PreciosPublicarProps) {
-  const [publicItems, setPublicItems] = useState<PublicInventoryItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [promociones, setPromociones] = useState<{ [key: string]: number }>({})
-
-  // Form states
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [newItem, setNewItem] = useState({
-    sku: "",
-    description: "",
-    price: "",
-    stock: ""
-  })
 
   const [filters, setFilters] = useState({
     searchSku: "",
+    supplier: "all",
+    brand: "all",
+    company: "all",
   })
 
   useEffect(() => {
-    loadPublicData()
-    
     // Cargar promociones guardadas desde localStorage
     const savedPromociones = localStorage.getItem("maycam-promociones")
     if (savedPromociones) {
@@ -75,102 +71,23 @@ export function PreciosPublicar({
     }
   }, [])
 
-  const loadPublicData = async () => {
-    setIsLoading(true)
-    if (isSupabaseConfigured) {
-      try {
-        const { data, error } = await supabase
-          .from("inventory_public")
-          .select("*")
-          .order("created_at", { ascending: false })
-        
-        if (error) throw error
-        setPublicItems(data || [])
-      } catch (error) {
-        console.error("Error loading public inventory:", error)
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar los precios a publicar",
-          variant: "destructive",
-        })
-      }
-    } else {
-      // Offline mock
-      setPublicItems([])
-    }
-    setIsLoading(false)
-  }
-
-  const handleAddItem = async () => {
-    if (!newItem.sku || !newItem.description || !newItem.price) {
-      toast({
-        title: "Campos incompletos",
-        description: "Complete SKU, Descripción y Precio",
-        variant: "destructive"
-      })
-      return
-    }
-
-    const itemToAd = {
-      sku: newItem.sku,
-      description: newItem.description,
-      price: parseFloat(newItem.price),
-      stock: parseInt(newItem.stock || "0"),
-      status: 'active',
-      created_by: 1 // Default admin
-    }
-
-    if (isSupabaseConfigured) {
-      try {
-        const { data, error } = await supabase
-          .from("inventory_public")
-          .insert([itemToAd])
-          .select()
-          .single()
-
-        if (error) throw error
-        
-        setPublicItems(prev => [data, ...prev])
-        toast({ title: "Producto agregado", description: "Producto agregado a la lista pública" })
-        setShowAddForm(false)
-        setNewItem({ sku: "", description: "", price: "", stock: "" })
-      } catch (error) {
-        console.error("Error adding item:", error)
-        toast({ title: "Error", description: "No se pudo agregar el producto", variant: "destructive" })
-      }
-    } else {
-      const mockItem = { ...itemToAd, id: Date.now(), created_at: new Date().toISOString() }
-      setPublicItems(prev => [mockItem, ...prev])
-      setShowAddForm(false)
-      setNewItem({ sku: "", description: "", price: "", stock: "" })
-    }
-  }
-
-  const handleDeleteItem = async (id: number) => {
-    if (!confirm("¿Eliminar este producto de la lista pública?")) return
-
-    if (isSupabaseConfigured) {
-      try {
-        const { error } = await supabase.from("inventory_public").delete().eq("id", id)
-        if (error) throw error
-      } catch (error) {
-         console.error("Error deleting item:", error)
-         toast({ title: "Error", description: "No se pudo eliminar el producto", variant: "destructive" })
-         return
-      }
-    }
-    setPublicItems(prev => prev.filter(i => i.id !== id))
-    toast({ title: "Eliminado", description: "Producto eliminado de la lista" })
-  }
-
   const getFilteredInventory = () => {
-    let filtered = [...publicItems]
+    let filtered = [...inventory]
 
     if (filters.searchSku && filters.searchSku.trim()) {
-      filtered = filtered.filter((item) => 
-        item.sku.toLowerCase().includes(filters.searchSku.toLowerCase().trim()) ||
-        item.description.toLowerCase().includes(filters.searchSku.toLowerCase().trim())
-      )
+      filtered = filtered.filter((item) => item.sku.toLowerCase().includes(filters.searchSku.toLowerCase().trim()))
+    }
+
+    if (filters.supplier && filters.supplier !== "all") {
+      filtered = filtered.filter((item) => item.supplier_id?.toString() === filters.supplier)
+    }
+
+    if (filters.brand && filters.brand !== "all") {
+      filtered = filtered.filter((item) => item.brand_id?.toString() === filters.brand)
+    }
+
+    if (filters.company && filters.company !== "all") {
+      filtered = filtered.filter((item) => item.company === filters.company)
     }
 
     return filtered
@@ -220,6 +137,19 @@ export function PreciosPublicar({
     }
   }
 
+  const getCompanyBadgeColor = (company: string) => {
+    switch (company) {
+      case "MAYCAM":
+        return "bg-blue-100 text-blue-800 border-blue-200"
+      case "BLUE DOGO":
+        return "bg-indigo-100 text-indigo-800 border-indigo-200"
+      case "GLOBOBAZAAR":
+        return "bg-purple-100 text-purple-800 border-purple-200"
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200"
+    }
+  }
+
   const exportPreciosToExcel = () => {
     if (!hasPermission("EXPORT")) {
       toast({
@@ -234,9 +164,12 @@ export function PreciosPublicar({
 
     const headers = [
       "SKU",
+      "EAN",
       "Descripción",
-      "Precio",
-      "Stock",
+      "Costo c/IVA",
+      "PVP c/IVA",
+      "Cantidad",
+      "Empresa",
       "3 Cuotas",
       "6 Cuotas",
       "9 Cuotas",
@@ -246,14 +179,17 @@ export function PreciosPublicar({
 
     const csvRows = filtered.map((item) => {
       const promocion = promociones[item.sku] || 0
-      const basePrice = item.price
+      const basePrice = item.pvp_with_tax
       const priceWithPromo = calculatePriceWithPromotion(basePrice, promocion)
 
       return [
         item.sku,
+        item.ean || "",
         item.description,
+        `$${item.cost_with_tax.toFixed(2)}`,
         `$${basePrice.toFixed(2)}`,
-        item.stock,
+        item.quantity,
+        item.company,
         `$${calculateInstallmentPrice(priceWithPromo, cuotasConfig.cuotas_3_percentage).toFixed(2)}`,
         `$${calculateInstallmentPrice(priceWithPromo, cuotasConfig.cuotas_6_percentage).toFixed(2)}`,
         `$${calculateInstallmentPrice(priceWithPromo, cuotasConfig.cuotas_9_percentage).toFixed(2)}`,
@@ -297,6 +233,9 @@ table {
   font-family: Arial, sans-serif;
   font-size: 12px;
 }
+.empresa-maycam { background-color: #DBEAFE; }
+.empresa-bluedogo { background-color: #E0E7FF; }
+.empresa-globobazaar { background-color: #EDE9FE; }
 .promocion { background-color: #FEF3C7; font-weight: bold; }
 </style>
 </head>
@@ -308,16 +247,25 @@ ${headers.map((h) => `<th class="header">${h}</th>`).join("")}
 ${csvRows
   .map((row, index) => {
     const item = filtered[index]
+    const empresaClass =
+      item.company === "MAYCAM"
+        ? "empresa-maycam"
+        : item.company === "BLUE DOGO"
+          ? "empresa-bluedogo"
+          : "empresa-globobazaar"
     return `<tr>
     <td class="data">${row[0]}</td>
     <td class="data">${row[1]}</td>
-    <td class="data-number">${row[2]}</td>
-    <td class="data-center">${row[3]}</td>
+    <td class="data">${row[2]}</td>
+    <td class="data-number">${row[3]}</td>
     <td class="data-number">${row[4]}</td>
-    <td class="data-number">${row[5]}</td>
-    <td class="data-number">${row[6]}</td>
+    <td class="data-center">${row[5]}</td>
+    <td class="data-center ${empresaClass}">${row[6]}</td>
     <td class="data-number">${row[7]}</td>
-    <td class="data-center ${promociones[item.sku] > 0 ? "promocion" : ""}">${row[8]}</td>
+    <td class="data-number">${row[8]}</td>
+    <td class="data-number">${row[9]}</td>
+    <td class="data-number">${row[10]}</td>
+    <td class="data-center ${promociones[item.sku] > 0 ? "promocion" : ""}">${row[11]}</td>
   </tr>`
   })
   .join("")}
@@ -376,7 +324,7 @@ ${csvRows
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <Label htmlFor="searchSku" className="text-slate-700 font-medium">
                 Buscar SKU
@@ -390,6 +338,67 @@ ${csvRows
                 className="mt-1"
               />
             </div>
+            <div>
+              <Label htmlFor="filterSupplier" className="text-slate-700 font-medium">
+                Proveedor
+              </Label>
+              <Select
+                value={filters.supplier}
+                onValueChange={(value) => setFilters((prev) => ({ ...prev, supplier: value }))}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {suppliers.map((supplier) => (
+                    <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                      {supplier.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="filterBrand" className="text-slate-700 font-medium">
+                Marca
+              </Label>
+              <Select
+                value={filters.brand}
+                onValueChange={(value) => setFilters((prev) => ({ ...prev, brand: value }))}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Todas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  {brands.map((brand) => (
+                    <SelectItem key={brand.id} value={brand.id.toString()}>
+                      {brand.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="filterCompany" className="text-slate-700 font-medium">
+                Empresa
+              </Label>
+              <Select
+                value={filters.company}
+                onValueChange={(value) => setFilters((prev) => ({ ...prev, company: value }))}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Todas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="MAYCAM">MAYCAM</SelectItem>
+                  <SelectItem value="BLUE DOGO">BLUE DOGO</SelectItem>
+                  <SelectItem value="GLOBOBAZAAR">GLOBOBAZAAR</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="flex gap-2 mt-4">
             <Button
@@ -397,6 +406,9 @@ ${csvRows
               onClick={() =>
                 setFilters({
                   searchSku: "",
+                  supplier: "all",
+                  brand: "all",
+                  company: "all",
                 })
               }
               className="shadow-sm"
@@ -519,11 +531,16 @@ ${csvRows
               <TableHeader>
                 <TableRow className="bg-gradient-to-r from-yellow-500 to-amber-600">
                   <TableHead className="font-bold text-white text-center border border-slate-300">SKU</TableHead>
+                  <TableHead className="font-bold text-white text-center border border-slate-300">EAN</TableHead>
                   <TableHead className="font-bold text-white text-center border border-slate-300">
                     Descripción
                   </TableHead>
-                  <TableHead className="font-bold text-white text-center border border-slate-300">Precio</TableHead>
-                  <TableHead className="font-bold text-white text-center border border-slate-300">Stock</TableHead>
+                  <TableHead className="font-bold text-white text-center border border-slate-300">
+                    Costo c/IVA
+                  </TableHead>
+                  <TableHead className="font-bold text-white text-center border border-slate-300">PVP c/IVA</TableHead>
+                  <TableHead className="font-bold text-white text-center border border-slate-300">Cantidad</TableHead>
+                  <TableHead className="font-bold text-white text-center border border-slate-300">Empresa</TableHead>
                   <TableHead className="font-bold text-white text-center border border-slate-300">
                     3 Cuotas (+{cuotasConfig.cuotas_3_percentage}%)
                   </TableHead>
@@ -539,19 +556,22 @@ ${csvRows
                   <TableHead className="font-bold text-white text-center border border-slate-300">
                     Promoción (%)
                   </TableHead>
-                  <TableHead className="font-bold text-white text-center border border-slate-300">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {getFilteredInventory().map((item) => {
                   const promocion = promociones[item.sku] || 0
-                  const basePrice = item.price
+                  const basePrice = item.pvp_with_tax
                   const priceWithPromo = calculatePriceWithPromotion(basePrice, promocion)
 
                   return (
                     <TableRow key={item.id} className="hover:bg-slate-50/50">
                       <TableCell className="font-medium border border-slate-200">{item.sku}</TableCell>
+                      <TableCell className="border border-slate-200">{item.ean || "-"}</TableCell>
                       <TableCell className="border border-slate-200 max-w-xs">{item.description}</TableCell>
+                      <TableCell className="border border-slate-200 text-center">
+                        ${item.cost_with_tax.toFixed(2)}
+                      </TableCell>
                       <TableCell className="border border-slate-200 text-center">
                         {promocion > 0 ? (
                           <div className="space-y-1">
@@ -562,41 +582,35 @@ ${csvRows
                           <div>${basePrice.toFixed(2)}</div>
                         )}
                       </TableCell>
-                      <TableCell className="border border-slate-200 text-center">{item.stock}</TableCell>
+                      <TableCell className="border border-slate-200 text-center">{item.quantity}</TableCell>
                       <TableCell className="border border-slate-200 text-center">
+                        <Badge variant="outline" className={getCompanyBadgeColor(item.company)}>
+                          {item.company}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="border border-slate-200 text-center font-medium text-blue-600">
                         ${calculateInstallmentPrice(priceWithPromo, cuotasConfig.cuotas_3_percentage).toFixed(2)}
                       </TableCell>
-                      <TableCell className="border border-slate-200 text-center">
+                      <TableCell className="border border-slate-200 text-center font-medium text-blue-600">
                         ${calculateInstallmentPrice(priceWithPromo, cuotasConfig.cuotas_6_percentage).toFixed(2)}
                       </TableCell>
-                      <TableCell className="border border-slate-200 text-center">
+                      <TableCell className="border border-slate-200 text-center font-medium text-blue-600">
                         ${calculateInstallmentPrice(priceWithPromo, cuotasConfig.cuotas_9_percentage).toFixed(2)}
                       </TableCell>
-                      <TableCell className="border border-slate-200 text-center">
+                      <TableCell className="border border-slate-200 text-center font-medium text-blue-600">
                         ${calculateInstallmentPrice(priceWithPromo, cuotasConfig.cuotas_12_percentage).toFixed(2)}
                       </TableCell>
-                      <TableCell className="border border-slate-200 text-center bg-yellow-50">
-                        <div className="flex items-center justify-center gap-1">
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            className="w-16 text-center h-8"
-                            value={promocion}
-                            onChange={(e) => handlePromocionChange(item.sku, e.target.value)}
-                          />
-                          <span className="text-sm text-slate-500">%</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="border border-slate-200 text-center">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteItem(item.id)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                      <TableCell className="border border-slate-200">
+                        <Input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          placeholder="0"
+                          value={promociones[item.sku] || ""}
+                          onChange={(e) => handlePromocionChange(item.sku, e.target.value)}
+                          className="w-20 text-center"
+                        />
                       </TableCell>
                     </TableRow>
                   )

@@ -1,10 +1,9 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import { OfflineBanner } from '@/components/offline-banner'
 
 export const metadata: Metadata = {
-  title: 'Maycam Inventory',
-  description: 'Sistema de Gestión de Inventario',
+  title: 'v0 App',
+  description: 'Created with v0',
   generator: 'v0.dev',
 }
 
@@ -14,11 +13,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es">
-      <body>
-        <OfflineBanner />
-        {children}
-      </body>
+    <html lang="en">
+      <body>{children}</body>
     </html>
   )
 }

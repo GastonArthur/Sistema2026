@@ -1,5 +1,4 @@
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
-import { compare, hash } from "bcryptjs"
 
 export type User = {
   id: number
@@ -37,7 +36,7 @@ const ADMIN_USER: User = {
   is_active: true,
   can_view_logs: true,
   can_view_wholesale: true,
-  created_at: "2024-01-01T00:00:00.000Z",
+  created_at: new Date().toISOString(),
 }
 
 // Datos persistentes para modo offline
@@ -82,15 +81,25 @@ export const login = async (
     }
 
     // Verificar otros usuarios creados offline
+    const passwordMap: { [key: string]: string } = {
+      "maycam@gmail.com": "MaycaM1123!",
+      "leticia@maycam.com": "Leti2025!",
+      "camila@maycam.com": "Cami2025&",
+      "hernan@maycam.com": "Hernan2025%",
+      "mauro@maycam.com": "Mauro2025#",
+      "gaston@maycam.com": "Gaston2025?",
+      "lucas@maycam.com": "Lucas2025¡",
+      "mariano@maycam.com": "Mariano2025!",
+      "juan@maycam.com": "Juancito2025*",
+    }
+
     const user = OFFLINE_USERS.find((u) => u.email === email && u.is_active)
-    
-    // Para usuarios offline creados dinámicamente, no verificamos contraseña real en este mapa
-    // En una implementación real offline, deberíamos guardar el hash en OFFLINE_USERS
-    if (user) {
-       // Simplificación para modo offline: permitir login si el usuario existe en memoria
-       currentUser = user
-       await logActivity("LOGIN", null, null, null, null, `Usuario ${user.name} inició sesión`)
-       return { success: true, user }
+    const expectedPassword = passwordMap[email]
+
+    if (user && expectedPassword && password === expectedPassword) {
+      currentUser = user
+      await logActivity("LOGIN", null, null, null, null, `Usuario ${user.name} inició sesión`)
+      return { success: true, user }
     }
 
     return { success: false, error: "Credenciales inválidas" }
@@ -396,8 +405,8 @@ export const createUser = async (userData: {
   }
 
   try {
-    // Hash de la contraseña
-    const passwordHash = await hash(userData.password || "MaycaM1123!", 10)
+    // Hash de la contraseña (en producción usar bcrypt real)
+    const passwordHash = "$2b$12$LQv3c1yAvFnpsIjcLMTuNOHHDJkqP.TaP0gs2GuqbG5vMw/aO.Uy6" // maycamadmin2025!
 
     const { data, error } = await supabase
       .from("users")
@@ -457,20 +466,17 @@ export const updateUser = async (
   try {
     const oldUser = await supabase.from("users").select("*").eq("id", userId).single()
 
-    const updateData: any = {
-      updated_by: getCurrentUser()?.id,
-    }
-    if (updates.name !== undefined) updateData.name = updates.name
-    if (updates.email !== undefined) updateData.email = updates.email
-    if (updates.role !== undefined) updateData.role = updates.role
-    if (updates.is_active !== undefined) updateData.is_active = updates.is_active
-    if (updates.can_view_logs !== undefined) updateData.can_view_logs = updates.can_view_logs
-    if (updates.can_view_wholesale !== undefined) updateData.can_view_wholesale = updates.can_view_wholesale
-    if (updates.password) updateData.password_hash = await hash(updates.password, 10)
-
     const { error } = await supabase
       .from("users")
-      .update(updateData)
+      .update({
+        name: updates.name,
+        email: updates.email,
+        role: updates.role,
+        is_active: updates.is_active,
+        can_view_logs: updates.can_view_logs,
+        can_view_wholesale: updates.can_view_wholesale,
+        updated_by: getCurrentUser()?.id,
+      })
       .eq("id", userId)
 
     if (error) throw error
