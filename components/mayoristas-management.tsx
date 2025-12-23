@@ -138,15 +138,11 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
   const [selectedClient, setSelectedClient] = useState<string>("")
   const [orderItems, setOrderItems] = useState<WholesaleOrderItem[]>([])
   const [currentSku, setCurrentSku] = useState("")
+  const [currentDescription, setCurrentDescription] = useState("")
+  const [currentPrice, setCurrentPrice] = useState("")
   const [currentQuantity, setCurrentQuantity] = useState(1)
   const [orderNotes, setOrderNotes] = useState("")
   const [editingOrder, setEditingOrder] = useState<WholesaleOrder | null>(null)
-  const [manualItem, setManualItem] = useState({
-    sku: "",
-    description: "",
-    price: "",
-    quantity: "1"
-  })
 
   // Estados para nuevo cliente en línea (dentro del pedido)
   const [isCreatingClient, setIsCreatingClient] = useState(false)
@@ -613,27 +609,33 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
     }
   }
 
-  const addItemToOrder = () => {
-    if (!currentSku || currentQuantity <= 0) return
+  const handleSkuChange = (sku: string) => {
+    setCurrentSku(sku)
+    const item = inventory.find((i) => i.sku === sku)
+    if (item) {
+      setCurrentDescription(item.description)
+      const price = item.cost_without_tax * (1 + wholesaleConfig.percentage_1 / 100)
+      setCurrentPrice(price.toFixed(2))
+    }
+  }
 
-    const item = inventory.find((i) => i.sku === currentSku)
-    if (!item) {
+  const addItemToOrder = () => {
+    if (!currentSku || !currentDescription || !currentPrice || currentQuantity <= 0) {
       toast({
-        title: "Producto no encontrado",
-        description: "El SKU ingresado no existe en el inventario",
+        title: "Campos incompletos",
+        description: "Por favor complete SKU, descripción, precio y cantidad",
         variant: "destructive",
       })
       return
     }
 
-    // Calculate price (using percentage 1 as default base)
-    const unitPrice = item.cost_without_tax * (1 + wholesaleConfig.percentage_1 / 100)
+    const unitPrice = parseFloat(currentPrice.toString())
 
     const newItem: WholesaleOrderItem = {
       id: Date.now(),
       order_id: 0,
-      sku: item.sku,
-      description: item.description,
+      sku: currentSku,
+      description: currentDescription,
       quantity: currentQuantity,
       unit_price: unitPrice,
       total_price: unitPrice * currentQuantity,
@@ -641,15 +643,9 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
 
     setOrderItems((prev) => [...prev, newItem])
     setCurrentSku("")
+    setCurrentDescription("")
+    setCurrentPrice("")
     setCurrentQuantity(1)
-    
-    // Reset manual item too just in case
-    setManualItem({
-      sku: "",
-      description: "",
-      price: "",
-      quantity: "1"
-    })
   }
   
   const handleCreateInlineClient = async () => {
@@ -2194,18 +2190,35 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                       <div className="border p-4 rounded-md bg-gray-50">
                         <h4 className="font-medium mb-2">Agregar Producto</h4>
                         <div className="space-y-3">
-                          <div>
-                            <Label>SKU</Label>
-                            <div className="flex gap-2">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <Label>SKU</Label>
                               <Input
                                 value={currentSku}
-                                onChange={(e) => setCurrentSku(e.target.value)}
-                                placeholder="Escanear o escribir SKU"
+                                onChange={(e) => handleSkuChange(e.target.value)}
+                                placeholder="SKU"
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter") addItemToOrder()
                                 }}
                               />
                             </div>
+                            <div>
+                              <Label>Precio</Label>
+                              <Input
+                                type="number"
+                                value={currentPrice}
+                                onChange={(e) => setCurrentPrice(e.target.value)}
+                                placeholder="Precio unitario"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <Label>Descripción</Label>
+                            <Input
+                              value={currentDescription}
+                              onChange={(e) => setCurrentDescription(e.target.value)}
+                              placeholder="Descripción del producto"
+                            />
                           </div>
                           <div>
                             <Label>Cantidad</Label>
@@ -2217,7 +2230,6 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                             />
                           </div>
                           <Button type="button" onClick={addItemToOrder} className="w-full bg-purple-600 hover:bg-purple-700">
-
                             <Plus className="w-4 h-4 mr-2" /> Agregar al Pedido
                           </Button>
                         </div>
