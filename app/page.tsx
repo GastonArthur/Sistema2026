@@ -33,6 +33,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import {
+  ArrowRight,
   Plus,
   Download,
   Upload,
@@ -253,10 +254,7 @@ export default function InventoryManagement() {
         supabase
           .from("expenses")
           .select("*")
-          .order("expense_date", { ascending: false })
-          .headers({
-            apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
-          }),
+          .order("expense_date", { ascending: false }),
       ])
 
       // Procesar resultados
