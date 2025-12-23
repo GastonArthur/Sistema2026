@@ -699,11 +699,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
               status: "pending",
               total_amount: totalAmount,
               notes: orderNotes,
-<<<<<<< HEAD
-              created_by: 1, // Default admin
-=======
               created_by: userId,
->>>>>>> cfdb2897791e6610d2eeb399f41ec26d521ad4d0
             },
           ])
           .select()

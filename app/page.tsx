@@ -5,6 +5,7 @@ import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { formatCurrency } from "@/lib/utils"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -101,8 +102,6 @@ type Brand = {
   id: number
   name: string
 }
-
-import { formatCurrency } from "@/lib/utils"
 
 export default function InventoryManagement() {
   // Estados de autenticación
@@ -2947,60 +2946,6 @@ ${csvRows
                 <div className="overflow-auto max-h-[65vh] relative">
                   <Table>
                     <TableHeader>
-<<<<<<< HEAD
-                      <TableRow className="bg-gradient-to-r from-blue-500 to-blue-600">
-                        <TableHead className="font-bold text-white text-center border border-slate-300">SKU</TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
-                          Repeticiones
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">EAN</TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
-                          Descripción
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
-                          Costo s/IVA
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
-                          Costo c/IVA
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
-                          PVP s/IVA
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
-                          PVP c/IVA
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
-                          Variación Precio
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
-                          Cantidad
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
-                          Empresa
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
-                          Canal
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
-                          Fecha
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
-                          Estado
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
-                          Proveedor
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
-                          Marca
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
-                          Nº Factura
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
-                          Observaciones
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border border-slate-300">
-=======
                       <TableRow className="bg-gradient-to-r from-blue-600 to-indigo-700 border-b border-blue-800 sticky top-0 z-20 shadow-md">
                         <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">SKU</TableHead>
                         <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
@@ -3053,22 +2998,15 @@ ${csvRows
                           Obs.
                         </TableHead>
                         <TableHead className="font-bold text-white text-center text-xs px-2 h-8">
->>>>>>> cfdb2897791e6610d2eeb399f41ec26d521ad4d0
                           Acciones
                         </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-<<<<<<< HEAD
-                      {getFilteredInventory().map((item) => (
-                        <TableRow key={item.id} className="hover:bg-slate-50/50">
-                          <TableCell className="font-medium border border-slate-200 min-w-[150px] max-w-[200px]">
-=======
                       {getFilteredInventory().length > 0 ? (
                         getFilteredInventory().map((item) => (
                           <TableRow key={item.id} className="hover:bg-blue-100/40 transition-colors border-b border-slate-100 group h-8 even:bg-blue-50/10">
                           <TableCell className="font-medium min-w-[100px] max-w-[150px] border-r border-slate-100 py-1 px-2 text-xs">
->>>>>>> cfdb2897791e6610d2eeb399f41ec26d521ad4d0
                             <div
                               className="font-mono whitespace-nowrap overflow-hidden text-ellipsis text-blue-600 font-semibold"
                               style={{
