@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Download, Package, Filter, X, TrendingUp, TrendingDown } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { logActivity, hasPermission } from "@/lib/auth"
+import { formatCurrency } from "@/lib/utils"
 
 type InventoryItem = {
   id: number
@@ -575,10 +576,10 @@ ${csvRows
                     <TableCell className="font-medium border border-slate-200">{item.sku}</TableCell>
                     <TableCell className="border border-slate-200 max-w-xs">{item.description}</TableCell>
                     <TableCell className="border border-slate-200 text-center font-medium">
-                      ${item.cost_without_tax.toFixed(2)}
+                      {formatCurrency(item.cost_without_tax)}
                     </TableCell>
                     <TableCell className="border border-slate-200 text-center font-medium">
-                      ${item.pvp_with_tax.toFixed(2)}
+                      {formatCurrency(item.pvp_with_tax)}
                     </TableCell>
                     <TableCell className="border border-slate-200 text-center">
                       <Badge variant="outline" className={getCompanyBadgeColor(item.company)}>

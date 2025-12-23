@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
+import { formatCurrency } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -100,6 +101,8 @@ type Brand = {
   id: number
   name: string
 }
+
+import { formatCurrency } from "@/lib/utils"
 
 export default function InventoryManagement() {
   // Estados de autenticación
@@ -232,7 +235,7 @@ export default function InventoryManagement() {
 
     try {
       // Usar Promise.all para cargar datos en paralelo y mejorar rendimiento
-      const [inventoryResult, suppliersResult, brandsResult, configResult, cuotasResult] = await Promise.all([
+      const [inventoryResult, suppliersResult, brandsResult, configResult, cuotasResult, expensesResult] = await Promise.all([
         supabase
           .from("inventory")
           .select("*")
@@ -249,14 +252,11 @@ export default function InventoryManagement() {
           .from("config")
           .select("cuotas_3_percentage, cuotas_6_percentage, cuotas_9_percentage, cuotas_12_percentage")
           .single(),
-<<<<<<< HEAD
-=======
 
         supabase
           .from("expenses")
           .select("*")
           .order("expense_date", { ascending: false }),
->>>>>>> cfdb2897791e6610d2eeb399f41ec26d521ad4d0
       ])
 
       // Procesar resultados
@@ -292,6 +292,12 @@ export default function InventoryManagement() {
           cuotas_9_percentage: cuotasResult.data.cuotas_9_percentage || 60,
           cuotas_12_percentage: cuotasResult.data.cuotas_12_percentage || 80,
         })
+      }
+
+      // Configurar gastos del mes
+      if (!expensesResult.error && expensesResult.data) {
+        const total = expensesResult.data.reduce((sum, item) => sum + item.amount, 0)
+        setCurrentMonthExpenses(total)
       }
 
       // Mostrar información sobre datos
@@ -1499,10 +1505,10 @@ export default function InventoryManagement() {
       skuStats.skuCounts[item.sku],
       item.ean || "",
       item.description,
-      item.cost_without_tax.toFixed(2),
-      item.cost_with_tax.toFixed(2),
-      item.pvp_without_tax.toFixed(2),
-      item.pvp_with_tax.toFixed(2),
+      formatCurrency(item.cost_without_tax),
+      formatCurrency(item.cost_with_tax),
+      formatCurrency(item.pvp_without_tax),
+      formatCurrency(item.pvp_with_tax),
       priceVariations[item.sku]?.hasVariation
         ? `${priceVariations[item.sku].isIncrease ? "+" : "-"}${priceVariations[item.sku].percentage.toFixed(1)}%`
         : "Sin variación",
@@ -1573,10 +1579,10 @@ ${csvRows
     <td class="data-center">${row[1]}</td>
     <td class="data">${row[2]}</td>
     <td class="data">${row[3]}</td>
-    <td class="data-number">$${row[4]}</td>
-    <td class="data-number">$${row[5]}</td>
-    <td class="data-number">$${row[6]}</td>
-    <td class="data-number">$${row[7]}</td>
+    <td class="data-number">${row[4]}</td>
+    <td class="data-number">${row[5]}</td>
+    <td class="data-number">${row[6]}</td>
+    <td class="data-number">${row[7]}</td>
     <td class="data-center ${
       priceVariations[item.sku]?.hasVariation
         ? priceVariations[item.sku].isIncrease
@@ -2274,7 +2280,7 @@ ${csvRows
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-blue-100 text-xs">Compras Mes</p>
-                  <p className="text-lg font-bold">${stats.currentMonthValue.toFixed(0)}</p>
+                  <p className="text-lg font-bold">{formatCurrency(stats.currentMonthValue)}</p>
                 </div>
                 <TrendingUp className="w-5 h-5 text-blue-200" />
               </div>
@@ -2286,7 +2292,7 @@ ${csvRows
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-green-100 text-xs">Total Histórico</p>
-                  <p className="text-lg font-bold">${stats.totalHistoricalValue.toFixed(0)}</p>
+                  <p className="text-lg font-bold">{formatCurrency(stats.totalHistoricalValue)}</p>
                 </div>
                 <TrendingUp className="w-5 h-5 text-green-200" />
               </div>
@@ -2338,7 +2344,7 @@ ${csvRows
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-teal-100 text-xs">Gastos</p>
-                  <p className="text-lg font-bold">${stats.currentMonthExpenses.toFixed(0)}</p>
+                  <p className="text-lg font-bold">{formatCurrency(stats.currentMonthExpenses)}</p>
                 </div>
                 <Receipt className="w-5 h-5 text-teal-200" />
               </div>
@@ -3957,7 +3963,7 @@ ${csvRows
 
                     <div className="text-center">
                       <p className="text-sm text-gray-500 mb-1">Nuevo Precio</p>
-                      <p className="text-xl font-bold text-blue-600">${priceAlert.newPrice?.toFixed(2)}</p>
+                      <p className="text-xl font-bold text-blue-600">{priceAlert.newPrice ? formatCurrency(priceAlert.newPrice) : "-"}</p>
                     </div>
                   </div>
 
@@ -4003,8 +4009,8 @@ ${csvRows
                     {skuHistoryModal.history.map((item, index) => (
                       <TableRow key={index} className="hover:bg-slate-50/50">
                         <TableCell>{item.date_entered}</TableCell>
-                        <TableCell>${item.cost_without_tax.toFixed(2)}</TableCell>
-                        <TableCell>${item.pvp_without_tax.toFixed(2)}</TableCell>
+                        <TableCell>{formatCurrency(item.cost_without_tax)}</TableCell>
+                        <TableCell>{formatCurrency(item.pvp_without_tax)}</TableCell>
                         <TableCell>{item.quantity}</TableCell>
                         <TableCell>{item.suppliers?.name || "-"}</TableCell>
                         <TableCell>{item.invoice_number || "-"}</TableCell>

@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Download, Receipt, Filter, X, Plus, Edit, Trash2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
+import { formatCurrency } from "@/lib/utils"
 import { logActivity, hasPermission, getCurrentUser } from "@/lib/auth"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 
@@ -851,7 +852,7 @@ ${csvRows
                   <div>
                     <p className="text-teal-100 text-sm">Total Gastos Mes Actual</p>
                     <p className="text-2xl font-bold">
-                      ${currentMonthTotal.toLocaleString("es-CO", { minimumFractionDigits: 2 })}
+                      {formatCurrency(currentMonthTotal)}
                     </p>
                   </div>
                   <Receipt className="w-8 h-8 text-teal-200" />
@@ -916,10 +917,7 @@ ${csvRows
               Exportar Excel
             </Button>
             <div className="text-sm text-gray-500">
-              Total filtrado: $
-              {filteredExpenses
-                .reduce((sum, exp) => sum + exp.amount, 0)
-                .toLocaleString("es-CO", { minimumFractionDigits: 2 })}
+              Total filtrado: {formatCurrency(filteredExpenses.reduce((sum, exp) => sum + exp.amount, 0))}
             </div>
           </div>
 
@@ -1083,7 +1081,7 @@ ${csvRows
                             </Badge>
                           </TableCell>
                           <TableCell className="border border-slate-200 text-right font-medium">
-                            ${expense.amount.toLocaleString("es-CO", { minimumFractionDigits: 2 })}
+                            {formatCurrency(expense.amount)}
                           </TableCell>
                           <TableCell className="border border-slate-200 text-center">
                             <Badge variant="outline" className={getPaymentMethodColor(expense.payment_method)}>

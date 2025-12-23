@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Download, DollarSign, Filter, X, Settings } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { logActivity, hasPermission, getCurrentUser } from "@/lib/auth"
+import { formatCurrency } from "@/lib/utils"
 
 type InventoryItem = {
   id: number
@@ -579,16 +580,16 @@ ${csvRows
                       <TableCell className="border border-slate-200">{item.ean || "-"}</TableCell>
                       <TableCell className="border border-slate-200 max-w-xs">{item.description}</TableCell>
                       <TableCell className="border border-slate-200 text-center">
-                        ${item.cost_with_tax.toFixed(2)}
+                        {formatCurrency(item.cost_with_tax)}
                       </TableCell>
                       <TableCell className="border border-slate-200 text-center">
                         {promocion > 0 ? (
                           <div className="space-y-1">
-                            <div className="line-through text-gray-500 text-sm">${basePrice.toFixed(2)}</div>
-                            <div className="text-green-600 font-bold">${priceWithPromo.toFixed(2)}</div>
+                            <div className="line-through text-gray-500 text-sm">{formatCurrency(basePrice)}</div>
+                            <div className="text-green-600 font-bold">{formatCurrency(priceWithPromo)}</div>
                           </div>
                         ) : (
-                          <div>${basePrice.toFixed(2)}</div>
+                          <div>{formatCurrency(basePrice)}</div>
                         )}
                       </TableCell>
                       <TableCell className="border border-slate-200 text-center">{item.quantity}</TableCell>
@@ -598,16 +599,16 @@ ${csvRows
                         </Badge>
                       </TableCell>
                       <TableCell className="border border-slate-200 text-center font-medium text-blue-600">
-                        ${calculateInstallmentPrice(priceWithPromo, cuotasConfig.cuotas_3_percentage).toFixed(2)}
+                        {formatCurrency(calculateInstallmentPrice(priceWithPromo, cuotasConfig.cuotas_3_percentage))}
                       </TableCell>
                       <TableCell className="border border-slate-200 text-center font-medium text-blue-600">
-                        ${calculateInstallmentPrice(priceWithPromo, cuotasConfig.cuotas_6_percentage).toFixed(2)}
+                        {formatCurrency(calculateInstallmentPrice(priceWithPromo, cuotasConfig.cuotas_6_percentage))}
                       </TableCell>
                       <TableCell className="border border-slate-200 text-center font-medium text-blue-600">
-                        ${calculateInstallmentPrice(priceWithPromo, cuotasConfig.cuotas_9_percentage).toFixed(2)}
+                        {formatCurrency(calculateInstallmentPrice(priceWithPromo, cuotasConfig.cuotas_9_percentage))}
                       </TableCell>
                       <TableCell className="border border-slate-200 text-center font-medium text-blue-600">
-                        ${calculateInstallmentPrice(priceWithPromo, cuotasConfig.cuotas_12_percentage).toFixed(2)}
+                        {formatCurrency(calculateInstallmentPrice(priceWithPromo, cuotasConfig.cuotas_12_percentage))}
                       </TableCell>
                       <TableCell className="border border-slate-200">
                         <Input

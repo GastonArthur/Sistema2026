@@ -30,6 +30,7 @@ import {
 import { toast } from "@/hooks/use-toast"
 import { logActivity, hasPermission, getCurrentUser } from "@/lib/auth"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
+import { formatCurrency } from "@/lib/utils"
 
 type InventoryItem = {
   id: number
@@ -70,6 +71,7 @@ type WholesaleClient = {
   business_name: string
   cuit: string
   address: string
+  city?: string
   province: string
   contact_person: string
   email: string
@@ -395,6 +397,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
             business_name: updatedClient.business_name,
             cuit: updatedClient.cuit,
             address: updatedClient.address,
+            city: updatedClient.city,
             province: updatedClient.province,
             contact_person: updatedClient.contact_person,
             email: updatedClient.email,
@@ -420,6 +423,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
       business_name: "",
       cuit: "",
       address: "",
+      city: "",
       province: "",
       contact_person: "",
       email: "",
@@ -493,6 +497,38 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
       return
     }
 
+    // Validaciones adicionales
+    const cleanCuit = newClient.cuit.replace(/[^0-9]/g, "")
+    if (!cleanCuit || cleanCuit.length < 7) {
+      toast({
+        title: "CUIT/DNI inválido",
+        description: "El CUIT/DNI debe contener solo números y ser válido",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (newClient.email && !newClient.email.includes("@")) {
+      toast({
+        title: "Email inválido",
+        description: "El email debe contener @",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (newClient.whatsapp) {
+      const cleanWhatsapp = newClient.whatsapp.replace(/[^0-9]/g, "")
+      if (!cleanWhatsapp) {
+        toast({
+          title: "WhatsApp inválido",
+          description: "El WhatsApp debe contener solo números",
+          variant: "destructive",
+        })
+        return
+      }
+    }
+
     if (editingClient) {
       await updateClient()
       return
@@ -500,7 +536,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
 
     try {
       const user = getCurrentUser()
-      const userId = user?.id || null // Allow null if user not found (or handle database constraint)
+      const userId = user?.id || null
 
       if (isSupabaseConfigured) {
         console.log("Using Supabase")
@@ -512,6 +548,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
               business_name: newClient.business_name,
               cuit: newClient.cuit,
               address: newClient.address,
+              city: newClient.city,
               province: newClient.province,
               contact_person: newClient.contact_person,
               email: newClient.email,
@@ -1028,7 +1065,7 @@ ${productSales
 <td class="data">${product.sku}</td>
 <td class="data">${product.description}</td>
 <td class="data-number">${product.quantity} unidades</td>
-<td class="data-number">$${product.revenue.toFixed(0)}</td>
+<td class="data-number">${formatCurrency(product.revenue)}</td>
 </tr>
 `,
   )
@@ -1590,15 +1627,15 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                             <TableRow key={item.id}>
                               <TableCell className="font-medium">{item.sku}</TableCell>
                               <TableCell>{item.description}</TableCell>
-                              <TableCell>${item.cost_without_tax.toFixed(2)}</TableCell>
+                              <TableCell>{formatCurrency(item.cost_without_tax)}</TableCell>
                               <TableCell className="font-medium text-green-600">
-                                ${item.wholesale_price_1.toFixed(2)}
+                                {formatCurrency(item.wholesale_price_1)}
                               </TableCell>
                               <TableCell className="font-medium text-blue-600">
-                                ${item.wholesale_price_2.toFixed(2)}
+                                {formatCurrency(item.wholesale_price_2)}
                               </TableCell>
                               <TableCell className="font-medium text-purple-600">
-                                ${item.wholesale_price_3.toFixed(2)}
+                                {formatCurrency(item.wholesale_price_3)}
                               </TableCell>
                               <TableCell>
                                 {item.is_new && <Badge className="bg-yellow-500 text-white">NEW!</Badge>}
@@ -1726,6 +1763,13 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                       <Input
                         value={newClient.address}
                         onChange={(e) => setNewClient((prev) => ({ ...prev, address: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label>Ciudad</Label>
+                      <Input
+                        value={newClient.city || ""}
+                        onChange={(e) => setNewClient((prev) => ({ ...prev, city: e.target.value }))}
                       />
                     </div>
                     <div>
@@ -1884,11 +1928,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                               onChange={(e) => setCurrentQuantity(parseInt(e.target.value) || 1)}
                             />
                           </div>
-<<<<<<< HEAD
-                          <Button onClick={addItemToOrder} className="w-full">
-=======
                           <Button type="button" onClick={addItemToOrder} className="w-full bg-purple-600 hover:bg-purple-700">
->>>>>>> cfdb2897791e6610d2eeb399f41ec26d521ad4d0
                             <Plus className="w-4 h-4 mr-2" /> Agregar al Pedido
                           </Button>
                         </div>
@@ -1921,7 +1961,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                               <TableRow key={item.id}>
                                 <TableCell className="font-medium">{item.sku}</TableCell>
                                 <TableCell>{item.quantity}</TableCell>
-                                <TableCell>${item.total_price.toFixed(2)}</TableCell>
+                                <TableCell>{formatCurrency(item.total_price)}</TableCell>
                                 <TableCell>
                                   <Button variant="ghost" size="sm" onClick={() => removeItemFromOrder(item.id)}>
                                     <Trash2 className="w-3 h-3 text-red-500" />
@@ -2015,7 +2055,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                 <CardContent className="p-4">
                   <div className="text-center">
                     <p className="text-purple-100 text-sm">Ventas Totales</p>
-                    <p className="text-2xl font-bold">$125,450</p>
+                    <p className="text-2xl font-bold">{formatCurrency(125450)}</p>
                     <p className="text-xs text-purple-200">+15% vs mes anterior</p>
                   </div>
                 </CardContent>

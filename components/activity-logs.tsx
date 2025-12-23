@@ -204,7 +204,7 @@ export function ActivityLogs({ isOpen, onClose }: ActivityLogsProps) {
 
     // Formatear números monetarios
     if (["cost_without_tax", "cost_with_tax", "pvp_without_tax", "pvp_with_tax"].includes(field)) {
-      return `$${Number(value).toLocaleString("es-CO", { minimumFractionDigits: 2 })}`
+      return formatCurrency(Number(value))
     }
 
     // Formatear estado de stock
