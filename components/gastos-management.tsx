@@ -254,9 +254,6 @@ export function GastosManagement({ isOpen, onClose, onUpdateExpenses }: GastosMa
           paid_user:paid_by (name)
         `)
         .order("expense_date", { ascending: false })
-        .headers({
-          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
-        })
 
       if (expensesError) throw expensesError
 
