@@ -2220,7 +2220,7 @@ ${csvRows
       {/* Zócalo de Anuncios - Solo visible si hay anuncios */}
       {announcement && (
         <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg">
-          <div className="container mx-auto px-6 py-3">
+          <div className="w-full max-w-[98%] mx-auto px-6 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <AlertTriangle className="w-5 h-5 text-amber-200" />
@@ -2240,7 +2240,7 @@ ${csvRows
           </div>
         </div>
       )}
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="w-full px-4 py-6 space-y-6">
         {/* Header con información del usuario */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
@@ -2947,13 +2947,15 @@ ${csvRows
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-gradient-to-r from-blue-600 to-indigo-700 border-b border-blue-800 sticky top-0 z-20 shadow-md">
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          Fecha
+                        </TableHead>
                         <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">SKU</TableHead>
                         <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
-                          Rep.
+                          Nombre
                         </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">EAN</TableHead>
                         <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
-                          Descripción
+                          Cant.
                         </TableHead>
                         <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
                           Costo s/IVA
@@ -2968,10 +2970,7 @@ ${csvRows
                           PVP c/IVA
                         </TableHead>
                         <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
-                          Var.
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
-                          Cant.
+                          Var. Precio
                         </TableHead>
                         <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
                           Empresa
@@ -2980,22 +2979,19 @@ ${csvRows
                           Canal
                         </TableHead>
                         <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
-                          Fecha
+                          Marca
                         </TableHead>
                         <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
                           Estado
                         </TableHead>
                         <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
-                          Prov.
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
-                          Marca
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
                           Factura
                         </TableHead>
                         <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
-                          Obs.
+                          Observaciones
+                        </TableHead>
+                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                          Rep.
                         </TableHead>
                         <TableHead className="font-bold text-white text-center text-xs px-2 h-8">
                           Acciones
@@ -3006,6 +3002,7 @@ ${csvRows
                       {getFilteredInventory().length > 0 ? (
                         getFilteredInventory().map((item) => (
                           <TableRow key={item.id} className="hover:bg-blue-100/40 transition-colors border-b border-slate-100 group h-8 even:bg-blue-50/10">
+                          <TableCell className="border-r border-slate-100 text-center text-slate-500 py-1 px-2 text-[10px] whitespace-nowrap">{item.date_entered}</TableCell>
                           <TableCell className="font-medium min-w-[100px] max-w-[150px] border-r border-slate-100 py-1 px-2 text-xs">
                             <div
                               className="font-mono whitespace-nowrap overflow-hidden text-ellipsis text-blue-600 font-semibold"
@@ -3018,28 +3015,8 @@ ${csvRows
                               {String(item.sku)}
                             </div>
                           </TableCell>
-                          <TableCell className="border-r border-slate-100 py-1 px-2 text-xs">
-                            <div className="flex items-center gap-1 justify-center">
-                              <span className="font-medium text-slate-600">{skuStats.skuCounts[item.sku]}x</span>
-                              {skuStats.skuCounts[item.sku] > 1 && (
-                                <Badge
-                                  variant="destructive"
-                                  className="cursor-pointer hover:bg-red-600 shadow-sm h-5 px-1 text-[10px]"
-                                  onClick={() =>
-                                    setSKUHistoryModal({
-                                      show: true,
-                                      sku: item.sku,
-                                      history: skuStats.skuHistory[item.sku],
-                                    })
-                                  }
-                                >
-                                  Ver
-                                </Badge>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="border-r border-slate-100 py-1 px-2 text-center text-xs">{item.ean}</TableCell>
                           <TableCell className="border-r border-slate-100 py-1 px-2 text-xs max-w-[150px] truncate" title={item.description}>{item.description}</TableCell>
+                          <TableCell className="border-r border-slate-100 text-center font-medium py-1 px-2 text-xs">{item.quantity}</TableCell>
                           <TableCell className="border-r border-slate-100 text-right font-mono text-slate-600 py-1 px-2 text-xs">${item.cost_without_tax.toFixed(2)}</TableCell>
                           <TableCell className="border-r border-slate-100 text-right font-mono text-slate-600 py-1 px-2 text-xs">${item.cost_with_tax.toFixed(2)}</TableCell>
                           <TableCell className="border-r border-slate-100 text-right font-mono font-medium text-slate-800 py-1 px-2 text-xs">${item.pvp_without_tax.toFixed(2)}</TableCell>
@@ -3066,14 +3043,13 @@ ${csvRows
                               </div>
                             )}
                           </TableCell>
-                          <TableCell className="border-r border-slate-100 text-center font-medium py-1 px-2 text-xs">{item.quantity}</TableCell>
                           <TableCell className="border-r border-slate-100 text-center py-1 px-2 text-xs">
                             <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 h-5 px-1 text-[10px]">
                               {item.company.substring(0, 3)}
                             </Badge>
                           </TableCell>
                           <TableCell className="border-r border-slate-100 text-center py-1 px-2 text-xs">{item.channel}</TableCell>
-                          <TableCell className="border-r border-slate-100 text-center text-slate-500 py-1 px-2 text-[10px] whitespace-nowrap">{item.date_entered}</TableCell>
+                          <TableCell className="border-r border-slate-100 py-1 px-2 text-xs truncate max-w-[80px]" title={item.brands?.name}>{item.brands?.name}</TableCell>
                           <TableCell className="border-r border-slate-100 text-center py-1 px-2">
                             <Badge
                               variant={
@@ -3096,11 +3072,29 @@ ${csvRows
                                   : "Sobró"}
                             </Badge>
                           </TableCell>
-                          <TableCell className="border-r border-slate-100 py-1 px-2 text-xs truncate max-w-[80px]" title={item.suppliers?.name}>{item.suppliers?.name}</TableCell>
-                          <TableCell className="border-r border-slate-100 py-1 px-2 text-xs truncate max-w-[80px]" title={item.brands?.name}>{item.brands?.name}</TableCell>
                           <TableCell className="border-r border-slate-100 font-mono text-[10px] py-1 px-2 truncate max-w-[80px]" title={item.invoice_number}>{item.invoice_number}</TableCell>
                           <TableCell className="max-w-[100px] truncate border-r border-slate-100 text-slate-500 italic py-1 px-2 text-[10px]" title={item.observations}>
                             {item.observations}
+                          </TableCell>
+                          <TableCell className="border-r border-slate-100 py-1 px-2 text-xs">
+                            <div className="flex items-center gap-1 justify-center">
+                              <span className="font-medium text-slate-600">{skuStats.skuCounts[item.sku]}x</span>
+                              {skuStats.skuCounts[item.sku] > 1 && (
+                                <Badge
+                                  variant="destructive"
+                                  className="cursor-pointer hover:bg-red-600 shadow-sm h-5 px-1 text-[10px]"
+                                  onClick={() =>
+                                    setSKUHistoryModal({
+                                      show: true,
+                                      sku: item.sku,
+                                      history: skuStats.skuHistory[item.sku],
+                                    })
+                                  }
+                                >
+                                  Ver
+                                </Badge>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell className="py-1 px-2">
                             <div className="flex gap-1 justify-center">
@@ -3137,7 +3131,7 @@ ${csvRows
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={19} className="h-32 text-center">
+                          <TableCell colSpan={17} className="h-32 text-center">
                             <div className="flex flex-col items-center justify-center text-slate-500">
                               <Package className="w-12 h-12 mb-3 text-slate-300" />
                               <p className="text-lg font-medium text-slate-600">No se encontraron productos</p>
@@ -3497,79 +3491,7 @@ ${csvRows
                     <p className="text-slate-500 mt-2">IVA actual: {ivaPercentage}%</p>
                   </div>
                 )}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-slate-800">Configuración de Cuotas</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <Label htmlFor="cuotas3" className="text-slate-700 font-medium">
-                        3 Cuotas (%)
-                      </Label>
-                      <Input
-                        id="cuotas3"
-                        type="number"
-                        value={cuotasConfig.cuotas_3_percentage}
-                        onChange={(e) =>
-                          setCuotasConfig((prev) => ({ ...prev, cuotas_3_percentage: Number(e.target.value) }))
-                        }
-                        className="mt-1"
-                        disabled={!hasPermission("EDIT_CONFIG")}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cuotas6" className="text-slate-700 font-medium">
-                        6 Cuotas (%)
-                      </Label>
-                      <Input
-                        id="cuotas6"
-                        type="number"
-                        value={cuotasConfig.cuotas_6_percentage}
-                        onChange={(e) =>
-                          setCuotasConfig((prev) => ({ ...prev, cuotas_6_percentage: Number(e.target.value) }))
-                        }
-                        className="mt-1"
-                        disabled={!hasPermission("EDIT_CONFIG")}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cuotas9" className="text-slate-700 font-medium">
-                        9 Cuotas (%)
-                      </Label>
-                      <Input
-                        id="cuotas9"
-                        type="number"
-                        value={cuotasConfig.cuotas_9_percentage}
-                        onChange={(e) =>
-                          setCuotasConfig((prev) => ({ ...prev, cuotas_9_percentage: Number(e.target.value) }))
-                        }
-                        className="mt-1"
-                        disabled={!hasPermission("EDIT_CONFIG")}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cuotas12" className="text-slate-700 font-medium">
-                        12 Cuotas (%)
-                      </Label>
-                      <Input
-                        id="cuotas12"
-                        type="number"
-                        value={cuotasConfig.cuotas_12_percentage}
-                        onChange={(e) =>
-                          setCuotasConfig((prev) => ({ ...prev, cuotas_12_percentage: Number(e.target.value) }))
-                        }
-                        className="mt-1"
-                        disabled={!hasPermission("EDIT_CONFIG")}
-                      />
-                    </div>
-                  </div>
-                  {hasPermission("EDIT_CONFIG") && (
-                    <Button
-                      onClick={() => updateCuotasPercentages(cuotasConfig)}
-                      className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700"
-                    >
-                      Guardar Configuración de Cuotas
-                    </Button>
-                  )}
-                </div>
+
               </CardContent>
             </Card>
           </TabsContent>

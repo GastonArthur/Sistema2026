@@ -624,35 +624,52 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
   }
 
   const addItemToOrder = () => {
-    if (!currentSku || currentQuantity <= 0) return
-
-    const item = inventory.find((i) => i.sku === currentSku)
-    if (!item) {
+    if (!currentSku || currentQuantity <= 0) {
       toast({
-        title: "Producto no encontrado",
-        description: "El SKU ingresado no existe en el inventario",
+        title: "Datos incompletos",
+        description: "Debe ingresar SKU y cantidad mayor a 0",
         variant: "destructive",
       })
       return
     }
 
-    // Calculate price (using percentage 1 as default base)
-    const unitPrice = item.cost_without_tax * (1 + wholesaleConfig.percentage_1 / 100)
+    if (!currentDescription || currentUnitPrice <= 0) {
+      toast({
+        title: "Datos incompletos",
+        description: "Debe ingresar descripción y precio unitario",
+        variant: "destructive",
+      })
+      return
+    }
 
     const newItem: WholesaleOrderItem = {
       id: Date.now(),
       order_id: 0,
-      sku: item.sku,
-      description: item.description,
+      sku: currentSku,
+      description: currentDescription,
       quantity: currentQuantity,
-      unit_price: unitPrice,
-      total_price: unitPrice * currentQuantity,
+      unit_price: currentUnitPrice,
+      total_price: currentUnitPrice * currentQuantity,
     }
 
     setOrderItems((prev) => [...prev, newItem])
     setCurrentSku("")
+    setCurrentDescription("")
+    setCurrentUnitPrice(0)
     setCurrentQuantity(1)
   }
+
+  // Auto-fill details when SKU exists in inventory
+  useEffect(() => {
+    if (!currentSku) return
+    
+    const item = inventory.find((i) => i.sku === currentSku)
+    if (item) {
+      setCurrentDescription(item.description)
+      // Default to price list 1
+      setCurrentUnitPrice(item.cost_without_tax * (1 + wholesaleConfig.percentage_1 / 100))
+    }
+  }, [currentSku, inventory, wholesaleConfig])
 
   const removeItemFromOrder = (id: number) => {
     setOrderItems((prev) => prev.filter((item) => item.id !== id))
@@ -1885,45 +1902,88 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                     <div className="space-y-4">
                       <div>
                         <Label>Cliente</Label>
-                        <Select value={selectedClient} onValueChange={setSelectedClient}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar cliente" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {clients.map((client) => (
-                              <SelectItem key={client.id} value={client.id.toString()}>
-                                {client.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="flex gap-2">
+                          <Select value={selectedClient} onValueChange={setSelectedClient}>
+                            <SelectTrigger className="flex-1">
+                              <SelectValue placeholder="Seleccionar cliente" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {clients.map((client) => (
+                                <SelectItem key={client.id} value={client.id.toString()}>
+                                  {client.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button 
+                            variant="outline" 
+                            size="icon" 
+                            onClick={() => setShowClientForm(true)}
+                            title="Nuevo Cliente"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
 
                       <div className="border p-4 rounded-md bg-gray-50">
                         <h4 className="font-medium mb-2">Agregar Producto</h4>
                         <div className="space-y-3">
-                          <div>
-                            <Label>SKU</Label>
-                            <div className="flex gap-2">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <Label>SKU</Label>
                               <Input
                                 value={currentSku}
-                                onChange={(e) => setCurrentSku(e.target.value)}
-                                placeholder="Escanear o escribir SKU"
+                                onChange={(e) => {
+                                  const val = e.target.value
+                                  setCurrentSku(val)
+                                  const item = inventory.find((i) => i.sku.toLowerCase() === val.toLowerCase())
+                                  if (item) {
+                                    setCurrentDescription(item.description)
+                                    setCurrentUnitPrice(item.cost_without_tax * (1 + wholesaleConfig.percentage_1 / 100))
+                                  }
+                                }}
+                                placeholder="SKU"
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter") addItemToOrder()
                                 }}
                               />
                             </div>
+                            <div>
+                              <Label>Cantidad</Label>
+                              <Input
+                                type="number"
+                                min="1"
+                                value={currentQuantity}
+                                onChange={(e) => setCurrentQuantity(parseInt(e.target.value) || 1)}
+                              />
+                            </div>
                           </div>
+                          
                           <div>
-                            <Label>Cantidad</Label>
+                            <Label>Descripción</Label>
                             <Input
-                              type="number"
-                              min="1"
-                              value={currentQuantity}
-                              onChange={(e) => setCurrentQuantity(parseInt(e.target.value) || 1)}
+                              value={currentDescription}
+                              onChange={(e) => setCurrentDescription(e.target.value)}
+                              placeholder="Descripción del producto"
                             />
                           </div>
+                          
+                          <div>
+                            <Label>Precio Unitario</Label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={currentUnitPrice}
+                                onChange={(e) => setCurrentUnitPrice(parseFloat(e.target.value) || 0)}
+                                className="pl-7"
+                              />
+                            </div>
+                          </div>
+
                           <Button type="button" onClick={addItemToOrder} className="w-full bg-purple-600 hover:bg-purple-700">
                             <Plus className="w-4 h-4 mr-2" /> Agregar al Pedido
                           </Button>

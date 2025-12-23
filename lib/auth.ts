@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
+import { compare } from "bcryptjs"
 
 export type User = {
   id: number

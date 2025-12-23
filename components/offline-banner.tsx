@@ -1,33 +1,28 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { WifiOff } from "lucide-react"
+import { AlertTriangle } from "lucide-react"
+import { isSupabaseConfigured } from "@/lib/supabase"
 
 export function OfflineBanner() {
-  const [isOnline, setIsOnline] = useState(true)
+  const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
-    // Initial check
-    setIsOnline(navigator.onLine)
-
-    const handleOnline = () => setIsOnline(true)
-    const handleOffline = () => setIsOnline(false)
-
-    window.addEventListener("online", handleOnline)
-    window.addEventListener("offline", handleOffline)
-
-    return () => {
-      window.removeEventListener("online", handleOnline)
-      window.removeEventListener("offline", handleOffline)
+    // Show banner if Supabase is not configured
+    if (!isSupabaseConfigured) {
+      setIsVisible(true)
     }
   }, [])
 
-  if (isOnline) return null
+  if (!isVisible) return null
 
   return (
-    <div className="bg-red-500 text-white px-4 py-2 text-center text-sm font-medium flex items-center justify-center gap-2">
-      <WifiOff className="w-4 h-4" />
-      Sin conexión a Internet. Trabajando en modo offline.
+    <div className="bg-amber-100 border-b border-amber-200 text-amber-800 px-4 py-2 text-sm flex items-center justify-center gap-2">
+      <AlertTriangle className="w-4 h-4" />
+      <span className="font-medium">Modo Offline:</span>
+      <span>
+        La aplicación está funcionando con datos locales. Configure las variables de entorno para conectar con Supabase.
+      </span>
     </div>
   )
 }
