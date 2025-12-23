@@ -28,7 +28,7 @@ import {
   Mail,
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
-import { logActivity, hasPermission } from "@/lib/auth"
+import { logActivity, hasPermission, getCurrentUser } from "@/lib/auth"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 
 type InventoryItem = {
@@ -71,6 +71,7 @@ type WholesaleClient = {
   cuit: string
   address: string
   province: string
+  city: string
   contact_person: string
   email: string
   whatsapp: string
@@ -125,6 +126,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
     cuit: "",
     address: "",
     province: "",
+    city: "",
     contact_person: "",
     email: "",
     whatsapp: "",
@@ -138,11 +140,26 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
   const [currentSku, setCurrentSku] = useState("")
   const [currentQuantity, setCurrentQuantity] = useState(1)
   const [orderNotes, setOrderNotes] = useState("")
+  const [editingOrder, setEditingOrder] = useState<WholesaleOrder | null>(null)
   const [manualItem, setManualItem] = useState({
     sku: "",
     description: "",
     price: "",
     quantity: "1"
+  })
+
+  // Estados para nuevo cliente en línea (dentro del pedido)
+  const [isCreatingClient, setIsCreatingClient] = useState(false)
+  const [inlineNewClient, setInlineNewClient] = useState({
+    name: "",
+    business_name: "",
+    cuit: "",
+    address: "",
+    province: "",
+    city: "",
+    contact_person: "",
+    email: "",
+    whatsapp: "",
   })
 
   // Filtros para precios
@@ -151,6 +168,8 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
     search: "",
     showNewOnly: false,
   })
+  
+  const [orderStatusFilter, setOrderStatusFilter] = useState<string>("all")
 
   useEffect(() => {
     if (isOpen) {
@@ -367,6 +386,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
       cuit: client.cuit,
       address: client.address,
       province: client.province,
+      city: client.city || "",
       contact_person: client.contact_person,
       email: client.email,
       whatsapp: client.whatsapp,
@@ -399,6 +419,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
             cuit: updatedClient.cuit,
             address: updatedClient.address,
             province: updatedClient.province,
+            city: updatedClient.city,
             contact_person: updatedClient.contact_person,
             email: updatedClient.email,
             whatsapp: updatedClient.whatsapp,
@@ -424,6 +445,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
       cuit: "",
       address: "",
       province: "",
+      city: "",
       contact_person: "",
       email: "",
       whatsapp: "",
@@ -516,6 +538,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
               cuit: newClient.cuit,
               address: newClient.address,
               province: newClient.province,
+              city: newClient.city,
               contact_person: newClient.contact_person,
               email: newClient.email,
               whatsapp: newClient.whatsapp,
@@ -574,6 +597,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
         cuit: "",
         address: "",
         province: "",
+        city: "",
         contact_person: "",
         email: "",
         whatsapp: "",
@@ -677,6 +701,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
             cuit: "",
             address: "",
             province: "",
+            city: "",
             contact_person: "",
             email: "",
             whatsapp: "",
@@ -727,67 +752,130 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
         const user = getCurrentUser()
         const userId = user?.id || null
 
-        // Create order
-        const { data: orderData, error: orderError } = await supabase
-          .from("wholesale_orders")
-          .insert([
-            {
+        if (editingOrder) {
+          // Update order
+          const { error: orderError } = await supabase
+            .from("wholesale_orders")
+            .update({
               client_id: clientId,
-              order_date: new Date().toISOString(),
-              status: "pending",
               total_amount: totalAmount,
               notes: orderNotes,
-              created_by: userId,
-            },
-          ])
-          .select()
-          .single()
+              updated_by: userId,
+            })
+            .eq("id", editingOrder.id)
 
-        if (orderError) throw orderError
+          if (orderError) throw orderError
 
-        // Create order items
-        const itemsToInsert = orderItems.map((item) => ({
-          order_id: orderData.id,
-          sku: item.sku,
-          description: item.description,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          total_price: item.total_price,
-        }))
+          // Delete existing items
+          const { error: deleteError } = await supabase
+            .from("wholesale_order_items")
+            .delete()
+            .eq("order_id", editingOrder.id)
 
-        const { error: itemsError } = await supabase.from("wholesale_order_items").insert(itemsToInsert)
+          if (deleteError) throw deleteError
 
-        if (itemsError) throw itemsError
+          // Create new items
+          const itemsToInsert = orderItems.map((item) => ({
+            order_id: editingOrder.id,
+            sku: item.sku,
+            description: item.description,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            total_price: item.total_price,
+          }))
 
-        toast({
-          title: "Pedido creado",
-          description: "El pedido se ha guardado correctamente",
-        })
+          const { error: itemsError } = await supabase.from("wholesale_order_items").insert(itemsToInsert)
+
+          if (itemsError) throw itemsError
+
+          toast({
+            title: "Pedido actualizado",
+            description: "El pedido se ha actualizado correctamente",
+          })
+        } else {
+          // Create order
+          const { data: orderData, error: orderError } = await supabase
+            .from("wholesale_orders")
+            .insert([
+              {
+                client_id: clientId,
+                order_date: new Date().toISOString(),
+                status: "pending",
+                total_amount: totalAmount,
+                notes: orderNotes,
+                created_by: userId,
+              },
+            ])
+            .select()
+            .single()
+
+          if (orderError) throw orderError
+
+          // Create order items
+          const itemsToInsert = orderItems.map((item) => ({
+            order_id: orderData.id,
+            sku: item.sku,
+            description: item.description,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            total_price: item.total_price,
+          }))
+
+          const { error: itemsError } = await supabase.from("wholesale_order_items").insert(itemsToInsert)
+
+          if (itemsError) throw itemsError
+
+          toast({
+            title: "Pedido creado",
+            description: "El pedido se ha guardado correctamente",
+          })
+        }
 
         // Refresh orders
         loadWholesaleData()
       } else {
         console.log("Offline mode for order")
-        // Offline mode
-        const newOrder: WholesaleOrder = {
-          id: Date.now(),
-          client_id: clientId,
-          order_date: new Date().toISOString(),
-          status: "pending",
-          total_amount: totalAmount,
-          items: orderItems,
-          notes: orderNotes,
-          created_at: new Date().toISOString(),
+        if (editingOrder) {
+          setOrders((prev) =>
+            prev.map((o) =>
+              o.id === editingOrder.id
+                ? {
+                    ...o,
+                    client_id: clientId,
+                    total_amount: totalAmount,
+                    items: orderItems,
+                    notes: orderNotes,
+                  }
+                : o,
+            ),
+          )
+          toast({
+            title: "Pedido actualizado (Offline)",
+            description: "El pedido se ha actualizado localmente",
+          })
+        } else {
+          // Offline mode
+          const newOrder: WholesaleOrder = {
+            id: Date.now(),
+            client_id: clientId,
+            order_date: new Date().toISOString(),
+            status: "pending",
+            total_amount: totalAmount,
+            items: orderItems,
+            notes: orderNotes,
+            created_at: new Date().toISOString(),
+          }
+          setOrders((prev) => [newOrder, ...prev])
+          toast({
+            title: "Pedido creado (Offline)",
+            description: "El pedido se ha guardado localmente",
+          })
         }
-        setOrders((prev) => [newOrder, ...prev])
-        toast({
-          title: "Pedido creado (Offline)",
-          description: "El pedido se ha guardado localmente",
-        })
       }
 
       // Reset form
       setShowOrderForm(false)
+      setEditingOrder(null)
       setOrderItems([])
       setSelectedClient("")
       setOrderNotes("")
@@ -801,6 +889,66 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
     }
   }
 
+  const updateOrderStatus = async (orderId: number, newStatus: WholesaleOrder["status"]) => {
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase
+          .from("wholesale_orders")
+          .update({ status: newStatus })
+          .eq("id", orderId)
+
+        if (error) throw error
+      } catch (error) {
+        console.error("Error updating order status:", error)
+        toast({
+          title: "Error",
+          description: "No se pudo actualizar el estado del pedido",
+          variant: "destructive",
+        })
+        return
+      }
+    }
+
+    setOrders((prev) =>
+      prev.map((order) => (order.id === orderId ? { ...order, status: newStatus } : order))
+    )
+
+    toast({
+      title: "Estado actualizado",
+      description: `El pedido #${orderId} ha cambiado a ${newStatus}`,
+    })
+  }
+
+  const deleteOrder = async (orderId: number) => {
+    if (!confirm("¿Está seguro de eliminar este pedido?")) return
+
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase.from("wholesale_orders").delete().eq("id", orderId)
+        if (error) throw error
+      } catch (error) {
+        console.error("Error deleting order:", error)
+        toast({
+          title: "Error",
+          description: "No se pudo eliminar el pedido",
+          variant: "destructive",
+        })
+        return
+      }
+    }
+
+    setOrders((prev) => prev.filter((o) => o.id !== orderId))
+    toast({ title: "Pedido eliminado", description: "El pedido ha sido eliminado correctamente" })
+  }
+
+  const editOrder = (order: WholesaleOrder) => {
+    setEditingOrder(order)
+    setSelectedClient(order.client_id.toString())
+    setOrderItems(order.items)
+    setOrderNotes(order.notes)
+    setShowOrderForm(true)
+  }
+
   const exportWholesalePrices = () => {
     if (!hasPermission("EXPORT")) {
       toast({
@@ -811,7 +959,9 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
       return
     }
 
-    const groupedPrices = getFilteredWholesalePrices()
+
+
+  const groupedPrices = getFilteredWholesalePrices()
     const allPrices = Object.values(groupedPrices).flat()
 
     const headers = [
@@ -1423,6 +1573,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
       cuit: "",
       address: "",
       province: "",
+      city: "",
       contact_person: "",
       email: "",
       whatsapp: "",
@@ -1784,6 +1935,13 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                       />
                     </div>
                     <div>
+                      <Label>Localidad</Label>
+                      <Input
+                        value={newClient.city}
+                        onChange={(e) => setNewClient((prev) => ({ ...prev, city: e.target.value }))}
+                      />
+                    </div>
+                    <div>
                       <Label>Dirección</Label>
                       <Input
                         value={newClient.address}
@@ -1829,10 +1987,25 @@ Este reporte contiene información confidencial y está destinado únicamente pa
           <TabsContent value="pedidos" className="space-y-4 h-[calc(95vh-200px)] overflow-y-auto">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold">Pedidos Mayoristas</h3>
-              <Button onClick={() => setShowOrderForm(true)} className="bg-purple-600 hover:bg-purple-700">
-                <Plus className="w-4 h-4 mr-2" />
-                Nuevo Pedido
-              </Button>
+              <div className="flex gap-2">
+                <Select value={orderStatusFilter} onValueChange={setOrderStatusFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filtrar por estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los estados</SelectItem>
+                    <SelectItem value="pending">Pendiente</SelectItem>
+                    <SelectItem value="confirmed">Confirmado</SelectItem>
+                    <SelectItem value="shipped">Enviado</SelectItem>
+                    <SelectItem value="delivered">Entregado</SelectItem>
+                    <SelectItem value="cancelled">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button onClick={() => setShowOrderForm(true)} className="bg-purple-600 hover:bg-purple-700">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nuevo Pedido
+                </Button>
+              </div>
             </div>
 
             <Card>
@@ -1847,10 +2020,13 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                       <TableHead className="text-right">Total</TableHead>
                       <TableHead>Notas</TableHead>
                       <TableHead>Items</TableHead>
+                      <TableHead>Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {orders.map((order) => {
+                    {orders
+                      .filter((order) => orderStatusFilter === "all" || order.status === orderStatusFilter)
+                      .map((order) => {
                       const clientName = clients.find((c) => c.id === order.client_id)?.name || "Cliente desconocido"
                       return (
                         <TableRow key={order.id}>
@@ -1877,12 +2053,33 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                           <TableCell className="text-right">${order.total_amount.toFixed(2)}</TableCell>
                           <TableCell className="max-w-[200px] truncate">{order.notes}</TableCell>
                           <TableCell>{order.items?.length || 0} items</TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => editOrder(order)}
+                                title="Editar pedido"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteOrder(order.id)}
+                                className="text-red-600 hover:text-red-700"
+                                title="Eliminar pedido"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
                         </TableRow>
                       )
                     })}
                     {orders.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                        <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                           No hay pedidos registrados
                         </TableCell>
                       </TableRow>
@@ -1904,18 +2101,94 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                     <div className="space-y-4">
                       <div>
                         <Label>Cliente</Label>
-                        <Select value={selectedClient} onValueChange={setSelectedClient}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar cliente" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {clients.map((client) => (
-                              <SelectItem key={client.id} value={client.id.toString()}>
-                                {client.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        {isCreatingClient ? (
+                          <div className="border p-4 rounded-md bg-gray-50 space-y-3 mt-2">
+                            <h4 className="font-medium text-sm">Nuevo Cliente Rápido</h4>
+                            <div className="grid grid-cols-2 gap-3">
+                              <Input
+                                placeholder="Nombre *"
+                                value={inlineNewClient.name}
+                                onChange={(e) => setInlineNewClient({ ...inlineNewClient, name: e.target.value })}
+                              />
+                              <Input
+                                placeholder="Razón Social *"
+                                value={inlineNewClient.business_name}
+                                onChange={(e) =>
+                                  setInlineNewClient({ ...inlineNewClient, business_name: e.target.value })
+                                }
+                              />
+                              <Input
+                                placeholder="CUIT *"
+                                value={inlineNewClient.cuit}
+                                onChange={(e) => setInlineNewClient({ ...inlineNewClient, cuit: e.target.value })}
+                              />
+                              <Input
+                                placeholder="Provincia"
+                                value={inlineNewClient.province}
+                                onChange={(e) => setInlineNewClient({ ...inlineNewClient, province: e.target.value })}
+                              />
+                              <Input
+                                placeholder="Localidad"
+                                value={inlineNewClient.city}
+                                onChange={(e) => setInlineNewClient({ ...inlineNewClient, city: e.target.value })}
+                              />
+                              <Input
+                                placeholder="Dirección"
+                                value={inlineNewClient.address}
+                                onChange={(e) => setInlineNewClient({ ...inlineNewClient, address: e.target.value })}
+                              />
+                              <Input
+                                placeholder="Contacto"
+                                value={inlineNewClient.contact_person}
+                                onChange={(e) =>
+                                  setInlineNewClient({ ...inlineNewClient, contact_person: e.target.value })
+                                }
+                              />
+                              <Input
+                                placeholder="Email"
+                                value={inlineNewClient.email}
+                                onChange={(e) => setInlineNewClient({ ...inlineNewClient, email: e.target.value })}
+                              />
+                              <Input
+                                placeholder="Whatsapp"
+                                value={inlineNewClient.whatsapp}
+                                onChange={(e) => setInlineNewClient({ ...inlineNewClient, whatsapp: e.target.value })}
+                              />
+                            </div>
+                            <div className="flex gap-2 justify-end">
+                              <Button variant="outline" size="sm" onClick={() => setIsCreatingClient(false)}>
+                                Cancelar
+                              </Button>
+                              <Button size="sm" onClick={handleCreateInlineClient} className="bg-purple-600">
+                                Guardar Cliente
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <Select value={selectedClient} onValueChange={setSelectedClient}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Seleccionar cliente" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {clients.map((client) => (
+                                    <SelectItem key={client.id} value={client.id.toString()}>
+                                      {client.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <Button
+                              variant="outline"
+                              onClick={() => setIsCreatingClient(true)}
+                              title="Crear nuevo cliente"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
 
                       <div className="border p-4 rounded-md bg-gray-50">

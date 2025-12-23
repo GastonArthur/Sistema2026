@@ -176,6 +176,7 @@ CREATE TABLE IF NOT EXISTS wholesale_clients (
   cuit VARCHAR(20) NOT NULL,
   address TEXT,
   province VARCHAR(100),
+  city VARCHAR(100),
   contact_person VARCHAR(255),
   email VARCHAR(255),
   whatsapp VARCHAR(50),

@@ -298,7 +298,7 @@ export default function InventoryManagement() {
       if (!expensesResult.error && expensesResult.data) {
         const currentMonth = new Date().toISOString().slice(0, 7)
         const currentMonthExpensesTotal = expensesResult.data
-          .filter((expense) => expense.expense_date.startsWith(currentMonth))
+          .filter((expense) => expense.expense_date && expense.expense_date.startsWith(currentMonth))
           .reduce((sum, expense) => sum + expense.amount, 0)
         setCurrentMonthExpenses(currentMonthExpensesTotal)
       }
