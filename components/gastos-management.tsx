@@ -51,6 +51,9 @@ interface GastosManagementProps {
 }
 
 export function GastosManagement({ isOpen, onClose, onUpdateExpenses }: GastosManagementProps) {
+  const currentUser = getCurrentUser()
+  const isReadOnly = currentUser?.role === "viewer"
+
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [categories, setCategories] = useState<ExpenseCategory[]>([])
   const [usersList, setUsersList] = useState<{ id: number; name: string; email: string }[]>([])
@@ -899,7 +902,7 @@ ${csvRows
 
           {/* Botones de acción */}
           <div className="flex gap-4 items-center">
-            {hasPermission("CREATE_EXPENSE") && (
+            {!isReadOnly && hasPermission("CREATE_EXPENSE") && (
               <Button
                 onClick={() => setShowForm(true)}
                 className="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700"
@@ -1221,6 +1224,7 @@ ${csvRows
                   onValueChange={(value: "efectivo" | "transferencia" | "cheque" | "tarjeta") =>
                     handleInputChange("payment_method", value)
                   }
+                  disabled={isReadOnly}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -1235,7 +1239,7 @@ ${csvRows
               </div>
               <div>
                 <Label htmlFor="paid_by">Pagado por</Label>
-                <Select value={formData.paid_by} onValueChange={(value) => handleInputChange("paid_by", value)}>
+                <Select value={formData.paid_by} onValueChange={(value) => handleInputChange("paid_by", value)} disabled={isReadOnly}>
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar usuario" />
                   </SelectTrigger>
@@ -1257,6 +1261,7 @@ ${csvRows
                   type="date"
                   value={formData.paid_date}
                   onChange={(e) => handleInputChange("paid_date", e.target.value)}
+                  disabled={isReadOnly}
                 />
               </div>
               <div className="flex items-center space-x-2 pt-6">
@@ -1264,6 +1269,7 @@ ${csvRows
                   id="has_invoice"
                   checked={formData.has_invoice}
                   onCheckedChange={(checked) => handleInputChange("has_invoice", checked)}
+                  disabled={isReadOnly}
                 />
                 <Label htmlFor="has_invoice">Tiene factura</Label>
               </div>
@@ -1277,6 +1283,7 @@ ${csvRows
                     value={formData.invoice_number}
                     onChange={(e) => handleInputChange("invoice_number", e.target.value)}
                     placeholder="Número de factura"
+                    disabled={isReadOnly}
                   />
                 </div>
                 <div>
@@ -1286,6 +1293,7 @@ ${csvRows
                     type="date"
                     value={formData.invoice_date}
                     onChange={(e) => handleInputChange("invoice_date", e.target.value)}
+                    disabled={isReadOnly}
                   />
                 </div>
               </div>
@@ -1298,6 +1306,7 @@ ${csvRows
                 onChange={(e) => handleInputChange("observations", e.target.value)}
                 placeholder="Observaciones adicionales..."
                 rows={3}
+                disabled={isReadOnly}
               />
             </div>
           </div>
@@ -1305,9 +1314,11 @@ ${csvRows
             <Button type="button" variant="secondary" onClick={resetForm}>
               Cancelar
             </Button>
-            <Button type="submit" onClick={handleSubmit}>
-              {editingExpense ? "Actualizar" : "Crear"} Gasto
-            </Button>
+            {!isReadOnly && (
+              <Button type="submit" onClick={handleSubmit}>
+                {editingExpense ? "Actualizar" : "Crear"} Gasto
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

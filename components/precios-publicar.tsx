@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Download, DollarSign, Filter, X, Settings } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
-import { logActivity, hasPermission } from "@/lib/auth"
+import { logActivity, hasPermission, getCurrentUser } from "@/lib/auth"
 
 type InventoryItem = {
   id: number
@@ -49,6 +49,9 @@ export function PreciosPublicar({
   cuotasConfig,
   onUpdateCuotasConfig,
 }: PreciosPublicarProps) {
+  const currentUser = getCurrentUser()
+  const isReadOnly = currentUser?.role === "viewer"
+
   const [promociones, setPromociones] = useState<{ [key: string]: number }>({})
 
   const [filters, setFilters] = useState({
@@ -420,21 +423,23 @@ ${csvRows
               <Download className="w-4 h-4 mr-2" />
               Exportar Precios
             </Button>
-            <Button
-              onClick={() => {
-                setPromociones({})
-                localStorage.removeItem("maycam-promociones")
-                toast({
-                  title: "Promociones limpiadas",
-                  description: "Todas las promociones han sido eliminadas",
-                })
-              }}
-              variant="outline"
-              className="shadow-sm"
-            >
-              <X className="w-4 h-4 mr-2" />
-              Limpiar Promociones
-            </Button>
+            {!isReadOnly && (
+              <Button
+                onClick={() => {
+                  setPromociones({})
+                  localStorage.removeItem("maycam-promociones")
+                  toast({
+                    title: "Promociones limpiadas",
+                    description: "Todas las promociones han sido eliminadas",
+                  })
+                }}
+                variant="outline"
+                className="shadow-sm"
+              >
+                <X className="w-4 h-4 mr-2" />
+                Limpiar Promociones
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -462,6 +467,7 @@ ${csvRows
                   onUpdateCuotasConfig(newConfig)
                 }}
                 className="mt-1"
+                disabled={isReadOnly}
               />
             </div>
             <div>
@@ -477,6 +483,7 @@ ${csvRows
                   onUpdateCuotasConfig(newConfig)
                 }}
                 className="mt-1"
+                disabled={isReadOnly}
               />
             </div>
             <div>
@@ -492,6 +499,7 @@ ${csvRows
                   onUpdateCuotasConfig(newConfig)
                 }}
                 className="mt-1"
+                disabled={isReadOnly}
               />
             </div>
             <div>
@@ -507,6 +515,7 @@ ${csvRows
                   onUpdateCuotasConfig(newConfig)
                 }}
                 className="mt-1"
+                disabled={isReadOnly}
               />
             </div>
           </div>
@@ -610,6 +619,7 @@ ${csvRows
                           value={promociones[item.sku] || ""}
                           onChange={(e) => handlePromocionChange(item.sku, e.target.value)}
                           className="w-20 text-center"
+                          disabled={isReadOnly}
                         />
                       </TableCell>
                     </TableRow>

@@ -71,7 +71,6 @@ type WholesaleClient = {
   cuit: string
   address: string
   province: string
-  city: string
   contact_person: string
   email: string
   whatsapp: string
@@ -109,6 +108,9 @@ interface MayoristasManagementProps {
 }
 
 export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, brands }: MayoristasManagementProps) {
+  const currentUser = getCurrentUser()
+  const isReadOnly = currentUser?.role === "viewer"
+
   const [activeTab, setActiveTab] = useState("precios")
   const [wholesaleConfig, setWholesaleConfig] = useState({
     percentage_1: 10,
@@ -126,7 +128,6 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
     cuit: "",
     address: "",
     province: "",
-    city: "",
     contact_person: "",
     email: "",
     whatsapp: "",
@@ -138,25 +139,8 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
   const [selectedClient, setSelectedClient] = useState<string>("")
   const [orderItems, setOrderItems] = useState<WholesaleOrderItem[]>([])
   const [currentSku, setCurrentSku] = useState("")
-  const [currentDescription, setCurrentDescription] = useState("")
-  const [currentPrice, setCurrentPrice] = useState("")
   const [currentQuantity, setCurrentQuantity] = useState(1)
   const [orderNotes, setOrderNotes] = useState("")
-  const [editingOrder, setEditingOrder] = useState<WholesaleOrder | null>(null)
-
-  // Estados para nuevo cliente en línea (dentro del pedido)
-  const [isCreatingClient, setIsCreatingClient] = useState(false)
-  const [inlineNewClient, setInlineNewClient] = useState({
-    name: "",
-    business_name: "",
-    cuit: "",
-    address: "",
-    province: "",
-    city: "",
-    contact_person: "",
-    email: "",
-    whatsapp: "",
-  })
 
   // Filtros para precios
   const [priceFilters, setPriceFilters] = useState({
@@ -164,8 +148,6 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
     search: "",
     showNewOnly: false,
   })
-  
-  const [orderStatusFilter, setOrderStatusFilter] = useState<string>("all")
 
   useEffect(() => {
     if (isOpen) {
@@ -382,7 +364,6 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
       cuit: client.cuit,
       address: client.address,
       province: client.province,
-      city: client.city || "",
       contact_person: client.contact_person,
       email: client.email,
       whatsapp: client.whatsapp,
@@ -415,7 +396,6 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
             cuit: updatedClient.cuit,
             address: updatedClient.address,
             province: updatedClient.province,
-            city: updatedClient.city,
             contact_person: updatedClient.contact_person,
             email: updatedClient.email,
             whatsapp: updatedClient.whatsapp,
@@ -441,7 +421,6 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
       cuit: "",
       address: "",
       province: "",
-      city: "",
       contact_person: "",
       email: "",
       whatsapp: "",
@@ -534,7 +513,6 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
               cuit: newClient.cuit,
               address: newClient.address,
               province: newClient.province,
-              city: newClient.city,
               contact_person: newClient.contact_person,
               email: newClient.email,
               whatsapp: newClient.whatsapp,
@@ -593,7 +571,6 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
         cuit: "",
         address: "",
         province: "",
-        city: "",
         contact_person: "",
         email: "",
         whatsapp: "",
@@ -609,33 +586,27 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
     }
   }
 
-  const handleSkuChange = (sku: string) => {
-    setCurrentSku(sku)
-    const item = inventory.find((i) => i.sku === sku)
-    if (item) {
-      setCurrentDescription(item.description)
-      const price = item.cost_without_tax * (1 + wholesaleConfig.percentage_1 / 100)
-      setCurrentPrice(price.toFixed(2))
-    }
-  }
-
   const addItemToOrder = () => {
-    if (!currentSku || !currentDescription || !currentPrice || currentQuantity <= 0) {
+    if (!currentSku || currentQuantity <= 0) return
+
+    const item = inventory.find((i) => i.sku === currentSku)
+    if (!item) {
       toast({
-        title: "Campos incompletos",
-        description: "Por favor complete SKU, descripción, precio y cantidad",
+        title: "Producto no encontrado",
+        description: "El SKU ingresado no existe en el inventario",
         variant: "destructive",
       })
       return
     }
 
-    const unitPrice = parseFloat(currentPrice.toString())
+    // Calculate price (using percentage 1 as default base)
+    const unitPrice = item.cost_without_tax * (1 + wholesaleConfig.percentage_1 / 100)
 
     const newItem: WholesaleOrderItem = {
       id: Date.now(),
       order_id: 0,
-      sku: currentSku,
-      description: currentDescription,
+      sku: item.sku,
+      description: item.description,
       quantity: currentQuantity,
       unit_price: unitPrice,
       total_price: unitPrice * currentQuantity,
@@ -643,74 +614,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
 
     setOrderItems((prev) => [...prev, newItem])
     setCurrentSku("")
-    setCurrentDescription("")
-    setCurrentPrice("")
     setCurrentQuantity(1)
-  }
-  
-  const handleCreateInlineClient = async () => {
-     if (!inlineNewClient.name || !inlineNewClient.business_name || !inlineNewClient.cuit) {
-      toast({
-        title: "Campos requeridos",
-        description: "Nombre, razón social y CUIT son obligatorios",
-        variant: "destructive",
-      })
-      return
-    }
-    
-    try {
-        let clientId = 0
-        
-        if (isSupabaseConfigured) {
-             const user = getCurrentUser()
-             const userId = user?.id || null
-
-             const { data, error } = await supabase
-              .from("wholesale_clients")
-              .insert([
-                {
-                  ...inlineNewClient,
-                  created_by: userId,
-                },
-              ])
-              .select()
-              .single()
-
-            if (error) throw error
-            
-            clientId = data.id
-            setClients(prev => [...prev, data])
-            toast({ title: "Cliente creado", description: "Cliente creado exitosamente" })
-        } else {
-             // Offline
-             clientId = Date.now()
-             const newClient = { id: clientId, ...inlineNewClient, created_at: new Date().toISOString() }
-             setClients(prev => [...prev, newClient])
-             toast({ title: "Cliente creado (Offline)", description: "Cliente creado localmente" })
-        }
-        
-        setSelectedClient(clientId.toString())
-        setIsCreatingClient(false)
-        setInlineNewClient({
-            name: "",
-            business_name: "",
-            cuit: "",
-            address: "",
-            province: "",
-            city: "",
-            contact_person: "",
-            email: "",
-            whatsapp: "",
-        })
-        
-    } catch (error) {
-        console.error("Error creating inline client:", error)
-        toast({
-          title: "Error",
-          description: "No se pudo crear el cliente",
-          variant: "destructive",
-        })
-    }
   }
 
   const removeItemFromOrder = (id: number) => {
@@ -748,130 +652,71 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
         const user = getCurrentUser()
         const userId = user?.id || null
 
-        if (editingOrder) {
-          // Update order
-          const { error: orderError } = await supabase
-            .from("wholesale_orders")
-            .update({
+        // Create order
+        const { data: orderData, error: orderError } = await supabase
+          .from("wholesale_orders")
+          .insert([
+            {
               client_id: clientId,
+              order_date: new Date().toISOString(),
+              status: "pending",
               total_amount: totalAmount,
               notes: orderNotes,
-              updated_by: userId,
-            })
-            .eq("id", editingOrder.id)
+<<<<<<< HEAD
+              created_by: 1, // Default admin
+=======
+              created_by: userId,
+>>>>>>> cfdb2897791e6610d2eeb399f41ec26d521ad4d0
+            },
+          ])
+          .select()
+          .single()
 
-          if (orderError) throw orderError
+        if (orderError) throw orderError
 
-          // Delete existing items
-          const { error: deleteError } = await supabase
-            .from("wholesale_order_items")
-            .delete()
-            .eq("order_id", editingOrder.id)
+        // Create order items
+        const itemsToInsert = orderItems.map((item) => ({
+          order_id: orderData.id,
+          sku: item.sku,
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total_price: item.total_price,
+        }))
 
-          if (deleteError) throw deleteError
+        const { error: itemsError } = await supabase.from("wholesale_order_items").insert(itemsToInsert)
 
-          // Create new items
-          const itemsToInsert = orderItems.map((item) => ({
-            order_id: editingOrder.id,
-            sku: item.sku,
-            description: item.description,
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-            total_price: item.total_price,
-          }))
+        if (itemsError) throw itemsError
 
-          const { error: itemsError } = await supabase.from("wholesale_order_items").insert(itemsToInsert)
-
-          if (itemsError) throw itemsError
-
-          toast({
-            title: "Pedido actualizado",
-            description: "El pedido se ha actualizado correctamente",
-          })
-        } else {
-          // Create order
-          const { data: orderData, error: orderError } = await supabase
-            .from("wholesale_orders")
-            .insert([
-              {
-                client_id: clientId,
-                order_date: new Date().toISOString(),
-                status: "pending",
-                total_amount: totalAmount,
-                notes: orderNotes,
-                created_by: userId,
-              },
-            ])
-            .select()
-            .single()
-
-          if (orderError) throw orderError
-
-          // Create order items
-          const itemsToInsert = orderItems.map((item) => ({
-            order_id: orderData.id,
-            sku: item.sku,
-            description: item.description,
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-            total_price: item.total_price,
-          }))
-
-          const { error: itemsError } = await supabase.from("wholesale_order_items").insert(itemsToInsert)
-
-          if (itemsError) throw itemsError
-
-          toast({
-            title: "Pedido creado",
-            description: "El pedido se ha guardado correctamente",
-          })
-        }
+        toast({
+          title: "Pedido creado",
+          description: "El pedido se ha guardado correctamente",
+        })
 
         // Refresh orders
         loadWholesaleData()
       } else {
         console.log("Offline mode for order")
-        if (editingOrder) {
-          setOrders((prev) =>
-            prev.map((o) =>
-              o.id === editingOrder.id
-                ? {
-                    ...o,
-                    client_id: clientId,
-                    total_amount: totalAmount,
-                    items: orderItems,
-                    notes: orderNotes,
-                  }
-                : o,
-            ),
-          )
-          toast({
-            title: "Pedido actualizado (Offline)",
-            description: "El pedido se ha actualizado localmente",
-          })
-        } else {
-          // Offline mode
-          const newOrder: WholesaleOrder = {
-            id: Date.now(),
-            client_id: clientId,
-            order_date: new Date().toISOString(),
-            status: "pending",
-            total_amount: totalAmount,
-            items: orderItems,
-            notes: orderNotes,
-            created_at: new Date().toISOString(),
-          }
-          setOrders((prev) => [newOrder, ...prev])
-          toast({
-            title: "Pedido creado (Offline)",
-            description: "El pedido se ha guardado localmente",
-          })
+        // Offline mode
+        const newOrder: WholesaleOrder = {
+          id: Date.now(),
+          client_id: clientId,
+          order_date: new Date().toISOString(),
+          status: "pending",
+          total_amount: totalAmount,
+          items: orderItems,
+          notes: orderNotes,
+          created_at: new Date().toISOString(),
         }
+        setOrders((prev) => [newOrder, ...prev])
+        toast({
+          title: "Pedido creado (Offline)",
+          description: "El pedido se ha guardado localmente",
+        })
       }
 
       // Reset form
       setShowOrderForm(false)
-      setEditingOrder(null)
       setOrderItems([])
       setSelectedClient("")
       setOrderNotes("")
@@ -885,66 +730,6 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
     }
   }
 
-  const updateOrderStatus = async (orderId: number, newStatus: WholesaleOrder["status"]) => {
-    if (isSupabaseConfigured) {
-      try {
-        const { error } = await supabase
-          .from("wholesale_orders")
-          .update({ status: newStatus })
-          .eq("id", orderId)
-
-        if (error) throw error
-      } catch (error) {
-        console.error("Error updating order status:", error)
-        toast({
-          title: "Error",
-          description: "No se pudo actualizar el estado del pedido",
-          variant: "destructive",
-        })
-        return
-      }
-    }
-
-    setOrders((prev) =>
-      prev.map((order) => (order.id === orderId ? { ...order, status: newStatus } : order))
-    )
-
-    toast({
-      title: "Estado actualizado",
-      description: `El pedido #${orderId} ha cambiado a ${newStatus}`,
-    })
-  }
-
-  const deleteOrder = async (orderId: number) => {
-    if (!confirm("¿Está seguro de eliminar este pedido?")) return
-
-    if (isSupabaseConfigured) {
-      try {
-        const { error } = await supabase.from("wholesale_orders").delete().eq("id", orderId)
-        if (error) throw error
-      } catch (error) {
-        console.error("Error deleting order:", error)
-        toast({
-          title: "Error",
-          description: "No se pudo eliminar el pedido",
-          variant: "destructive",
-        })
-        return
-      }
-    }
-
-    setOrders((prev) => prev.filter((o) => o.id !== orderId))
-    toast({ title: "Pedido eliminado", description: "El pedido ha sido eliminado correctamente" })
-  }
-
-  const editOrder = (order: WholesaleOrder) => {
-    setEditingOrder(order)
-    setSelectedClient(order.client_id.toString())
-    setOrderItems(order.items)
-    setOrderNotes(order.notes)
-    setShowOrderForm(true)
-  }
-
   const exportWholesalePrices = () => {
     if (!hasPermission("EXPORT")) {
       toast({
@@ -955,9 +740,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
       return
     }
 
-
-
-  const groupedPrices = getFilteredWholesalePrices()
+    const groupedPrices = getFilteredWholesalePrices()
     const allPrices = Object.values(groupedPrices).flat()
 
     const headers = [
@@ -1569,7 +1352,6 @@ Este reporte contiene información confidencial y está destinado únicamente pa
       cuit: "",
       address: "",
       province: "",
-      city: "",
       contact_person: "",
       email: "",
       whatsapp: "",
@@ -1629,6 +1411,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                           percentage_1: Number(e.target.value),
                         }))
                       }
+                      disabled={isReadOnly}
                     />
                   </div>
                   <div>
@@ -1642,6 +1425,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                           percentage_2: Number(e.target.value),
                         }))
                       }
+                      disabled={isReadOnly}
                     />
                   </div>
                   <div>
@@ -1655,16 +1439,19 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                           percentage_3: Number(e.target.value),
                         }))
                       }
+                      disabled={isReadOnly}
                     />
                   </div>
                 </div>
-                <Button
-                  type="button"
-                  onClick={() => updateWholesaleConfig(wholesaleConfig)}
-                  className="mt-4 bg-purple-600 hover:bg-purple-700"
-                >
-                  Guardar Configuración
-                </Button>
+                {!isReadOnly && (
+                  <Button
+                    type="button"
+                    onClick={() => updateWholesaleConfig(wholesaleConfig)}
+                    className="mt-4 bg-purple-600 hover:bg-purple-700"
+                  >
+                    Guardar Configuración
+                  </Button>
+                )}
               </CardContent>
             </Card>
 
@@ -1830,10 +1617,12 @@ Este reporte contiene información confidencial y está destinado únicamente pa
           <TabsContent value="clientes" className="space-y-4 h-[calc(95vh-200px)] overflow-y-auto">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold">Clientes Mayoristas</h3>
-              <Button onClick={() => setShowClientForm(true)} className="bg-purple-600 hover:bg-purple-700">
-                <Plus className="w-4 h-4 mr-2" />
-                Nuevo Cliente
-              </Button>
+              {!isReadOnly && (
+                  <Button onClick={() => setShowClientForm(true)} className="bg-purple-600 hover:bg-purple-700">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nuevo Cliente
+                  </Button>
+                )}
             </div>
 
             <Card>
@@ -1872,20 +1661,22 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => editClient(client)} title="Editar cliente">
-                              <Edit className="w-3 h-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => deleteClient(client)}
-                              title="Eliminar cliente"
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </div>
+                          {!isReadOnly && (
+                            <div className="flex gap-2">
+                              <Button variant="ghost" size="sm" onClick={() => editClient(client)} title="Editar cliente">
+                                <Edit className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteClient(client)}
+                                title="Eliminar cliente"
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -1928,13 +1719,6 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                       <Input
                         value={newClient.province}
                         onChange={(e) => setNewClient((prev) => ({ ...prev, province: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <Label>Localidad</Label>
-                      <Input
-                        value={newClient.city}
-                        onChange={(e) => setNewClient((prev) => ({ ...prev, city: e.target.value }))}
                       />
                     </div>
                     <div>
@@ -1983,25 +1767,12 @@ Este reporte contiene información confidencial y está destinado únicamente pa
           <TabsContent value="pedidos" className="space-y-4 h-[calc(95vh-200px)] overflow-y-auto">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold">Pedidos Mayoristas</h3>
-              <div className="flex gap-2">
-                <Select value={orderStatusFilter} onValueChange={setOrderStatusFilter}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Filtrar por estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos los estados</SelectItem>
-                    <SelectItem value="pending">Pendiente</SelectItem>
-                    <SelectItem value="confirmed">Confirmado</SelectItem>
-                    <SelectItem value="shipped">Enviado</SelectItem>
-                    <SelectItem value="delivered">Entregado</SelectItem>
-                    <SelectItem value="cancelled">Cancelado</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button onClick={() => setShowOrderForm(true)} className="bg-purple-600 hover:bg-purple-700">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nuevo Pedido
-                </Button>
-              </div>
+              {!isReadOnly && (
+                  <Button onClick={() => setShowOrderForm(true)} className="bg-purple-600 hover:bg-purple-700">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nuevo Pedido
+                  </Button>
+                )}
             </div>
 
             <Card>
@@ -2016,13 +1787,10 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                       <TableHead className="text-right">Total</TableHead>
                       <TableHead>Notas</TableHead>
                       <TableHead>Items</TableHead>
-                      <TableHead>Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {orders
-                      .filter((order) => orderStatusFilter === "all" || order.status === orderStatusFilter)
-                      .map((order) => {
+                    {orders.map((order) => {
                       const clientName = clients.find((c) => c.id === order.client_id)?.name || "Cliente desconocido"
                       return (
                         <TableRow key={order.id}>
@@ -2033,6 +1801,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                           <Select
                             value={order.status}
                             onValueChange={(value) => updateOrderStatus(order.id, value as WholesaleOrder["status"])}
+                            disabled={isReadOnly}
                           >
                             <SelectTrigger className="w-[130px] h-8">
                               <SelectValue />
@@ -2049,33 +1818,12 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                           <TableCell className="text-right">${order.total_amount.toFixed(2)}</TableCell>
                           <TableCell className="max-w-[200px] truncate">{order.notes}</TableCell>
                           <TableCell>{order.items?.length || 0} items</TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => editOrder(order)}
-                                title="Editar pedido"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => deleteOrder(order.id)}
-                                className="text-red-600 hover:text-red-700"
-                                title="Eliminar pedido"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
                         </TableRow>
                       )
                     })}
                     {orders.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                           No hay pedidos registrados
                         </TableCell>
                       </TableRow>
@@ -2097,128 +1845,35 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                     <div className="space-y-4">
                       <div>
                         <Label>Cliente</Label>
-                        {isCreatingClient ? (
-                          <div className="border p-4 rounded-md bg-gray-50 space-y-3 mt-2">
-                            <h4 className="font-medium text-sm">Nuevo Cliente Rápido</h4>
-                            <div className="grid grid-cols-2 gap-3">
-                              <Input
-                                placeholder="Nombre *"
-                                value={inlineNewClient.name}
-                                onChange={(e) => setInlineNewClient({ ...inlineNewClient, name: e.target.value })}
-                              />
-                              <Input
-                                placeholder="Razón Social *"
-                                value={inlineNewClient.business_name}
-                                onChange={(e) =>
-                                  setInlineNewClient({ ...inlineNewClient, business_name: e.target.value })
-                                }
-                              />
-                              <Input
-                                placeholder="CUIT *"
-                                value={inlineNewClient.cuit}
-                                onChange={(e) => setInlineNewClient({ ...inlineNewClient, cuit: e.target.value })}
-                              />
-                              <Input
-                                placeholder="Provincia"
-                                value={inlineNewClient.province}
-                                onChange={(e) => setInlineNewClient({ ...inlineNewClient, province: e.target.value })}
-                              />
-                              <Input
-                                placeholder="Localidad"
-                                value={inlineNewClient.city}
-                                onChange={(e) => setInlineNewClient({ ...inlineNewClient, city: e.target.value })}
-                              />
-                              <Input
-                                placeholder="Dirección"
-                                value={inlineNewClient.address}
-                                onChange={(e) => setInlineNewClient({ ...inlineNewClient, address: e.target.value })}
-                              />
-                              <Input
-                                placeholder="Contacto"
-                                value={inlineNewClient.contact_person}
-                                onChange={(e) =>
-                                  setInlineNewClient({ ...inlineNewClient, contact_person: e.target.value })
-                                }
-                              />
-                              <Input
-                                placeholder="Email"
-                                value={inlineNewClient.email}
-                                onChange={(e) => setInlineNewClient({ ...inlineNewClient, email: e.target.value })}
-                              />
-                              <Input
-                                placeholder="Whatsapp"
-                                value={inlineNewClient.whatsapp}
-                                onChange={(e) => setInlineNewClient({ ...inlineNewClient, whatsapp: e.target.value })}
-                              />
-                            </div>
-                            <div className="flex gap-2 justify-end">
-                              <Button variant="outline" size="sm" onClick={() => setIsCreatingClient(false)}>
-                                Cancelar
-                              </Button>
-                              <Button size="sm" onClick={handleCreateInlineClient} className="bg-purple-600">
-                                Guardar Cliente
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex gap-2">
-                            <div className="flex-1">
-                              <Select value={selectedClient} onValueChange={setSelectedClient}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Seleccionar cliente" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {clients.map((client) => (
-                                    <SelectItem key={client.id} value={client.id.toString()}>
-                                      {client.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <Button
-                              variant="outline"
-                              onClick={() => setIsCreatingClient(true)}
-                              title="Crear nuevo cliente"
-                            >
-                              <Plus className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        )}
+                        <Select value={selectedClient} onValueChange={setSelectedClient}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar cliente" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {clients.map((client) => (
+                              <SelectItem key={client.id} value={client.id.toString()}>
+                                {client.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div className="border p-4 rounded-md bg-gray-50">
                         <h4 className="font-medium mb-2">Agregar Producto</h4>
                         <div className="space-y-3">
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <Label>SKU</Label>
+                          <div>
+                            <Label>SKU</Label>
+                            <div className="flex gap-2">
                               <Input
                                 value={currentSku}
-                                onChange={(e) => handleSkuChange(e.target.value)}
-                                placeholder="SKU"
+                                onChange={(e) => setCurrentSku(e.target.value)}
+                                placeholder="Escanear o escribir SKU"
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter") addItemToOrder()
                                 }}
                               />
                             </div>
-                            <div>
-                              <Label>Precio</Label>
-                              <Input
-                                type="number"
-                                value={currentPrice}
-                                onChange={(e) => setCurrentPrice(e.target.value)}
-                                placeholder="Precio unitario"
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <Label>Descripción</Label>
-                            <Input
-                              value={currentDescription}
-                              onChange={(e) => setCurrentDescription(e.target.value)}
-                              placeholder="Descripción del producto"
-                            />
                           </div>
                           <div>
                             <Label>Cantidad</Label>
@@ -2229,7 +1884,11 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                               onChange={(e) => setCurrentQuantity(parseInt(e.target.value) || 1)}
                             />
                           </div>
+<<<<<<< HEAD
+                          <Button onClick={addItemToOrder} className="w-full">
+=======
                           <Button type="button" onClick={addItemToOrder} className="w-full bg-purple-600 hover:bg-purple-700">
+>>>>>>> cfdb2897791e6610d2eeb399f41ec26d521ad4d0
                             <Plus className="w-4 h-4 mr-2" /> Agregar al Pedido
                           </Button>
                         </div>

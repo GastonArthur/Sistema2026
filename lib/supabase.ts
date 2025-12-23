@@ -14,16 +14,11 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-// Check if variables are set and not default placeholders
-export const isSupabaseConfigured =
-  !!SUPABASE_URL &&
-  !!SUPABASE_ANON_KEY &&
-  SUPABASE_URL !== "your_supabase_project_url" &&
-  SUPABASE_ANON_KEY !== "your_supabase_anon_key"
+export const isSupabaseConfigured = !!SUPABASE_URL && !!SUPABASE_ANON_KEY
 
 let client: SupabaseClient
 
-if (!isSupabaseConfigured) {
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   // Warn the developer and create a placeholder client
   /* eslint-disable no-console */
   console.warn(
