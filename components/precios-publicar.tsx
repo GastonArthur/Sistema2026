@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Download, DollarSign, Filter, X, Settings } from "lucide-react"
+import { Download, DollarSign, Filter, X, Settings, Trash2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { logActivity, hasPermission, getCurrentUser } from "@/lib/auth"
 import { logError } from "@/lib/logger"
@@ -19,11 +19,32 @@ type InventoryItem = {
   sku: string
   ean: string | null
   description: string
-  price: number
-  stock: number
-  platform?: string
-  status?: string
+  cost_without_tax: number
+  cost_with_tax: number
+  pvp_without_tax: number
+  pvp_with_tax: number
+  quantity: number
+  company: string
+  channel: string
+  date_entered: string
+  stock_status: string
+  supplier_id: number | null
+  brand_id: number | null
+  invoice_number: string | null
+  observations: string | null
   created_at: string
+  suppliers?: { name: string }
+  brands?: { name: string }
+}
+
+type Supplier = {
+  id: number
+  name: string
+}
+
+type Brand = {
+  id: number
+  name: string
 }
 
 interface PreciosPublicarProps {

@@ -80,6 +80,7 @@ type WholesaleClient = {
   business_name: string
   cuit: string
   address: string
+  city?: string
   province: string
   contact_person: string
   email: string
@@ -117,6 +118,34 @@ interface MayoristasManagementProps {
   brands: Brand[]
 }
 
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "pending":
+      return "bg-yellow-500 hover:bg-yellow-600 text-white"
+    case "confirmed":
+      return "bg-blue-500 hover:bg-blue-600 text-white"
+    case "shipped":
+      return "bg-purple-500 hover:bg-purple-600 text-white"
+    case "delivered":
+      return "bg-green-500 hover:bg-green-600 text-white"
+    case "cancelled":
+      return "bg-red-500 hover:bg-red-600 text-white"
+    default:
+      return "bg-gray-500 hover:bg-gray-600 text-white"
+  }
+}
+
+const getStatusLabel = (status: string) => {
+  const labels: Record<string, string> = {
+    pending: "Pendiente",
+    confirmed: "Confirmado",
+    shipped: "Enviado",
+    delivered: "Entregado",
+    cancelled: "Cancelado",
+  }
+  return labels[status] || status
+}
+
 export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, brands }: MayoristasManagementProps) {
   const currentUser = getCurrentUser()
   const isReadOnly = currentUser?.role === "viewer"
@@ -137,6 +166,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
     business_name: "",
     cuit: "",
     address: "",
+    city: "",
     province: "",
     contact_person: "",
     email: "",
@@ -408,6 +438,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
             business_name: updatedClient.business_name,
             cuit: updatedClient.cuit,
             address: updatedClient.address,
+            city: updatedClient.city,
             province: updatedClient.province,
             contact_person: updatedClient.contact_person,
             email: updatedClient.email,
@@ -431,10 +462,11 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
     setNewClient({
       name: "",
       business_name: "",
-        cuit: "",
-        address: "",
-        province: "",
-        contact_person: "",
+      cuit: "",
+      address: "",
+      city: "",
+      province: "",
+      contact_person: "",
       email: "",
       whatsapp: "",
     })
@@ -557,6 +589,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
               business_name: newClient.business_name,
               cuit: newClient.cuit,
               address: newClient.address,
+              city: newClient.city,
               province: newClient.province,
               contact_person: newClient.contact_person,
               email: newClient.email,
@@ -615,6 +648,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
         business_name: "",
         cuit: "",
         address: "",
+        city: "",
         province: "",
         contact_person: "",
         email: "",
@@ -1437,6 +1471,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
       business_name: "",
       cuit: "",
       address: "",
+      city: "",
       province: "",
       contact_person: "",
       email: "",
