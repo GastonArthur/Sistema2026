@@ -1557,8 +1557,8 @@ export default function InventoryManagement() {
       formatCurrency(item.cost_with_tax),
       formatCurrency(item.pvp_without_tax),
       formatCurrency(item.pvp_with_tax),
-      priceVariations[item.sku]?.hasVariation
-        ? `${priceVariations[item.sku].isIncrease ? "+" : "-"}${priceVariations[item.sku].percentage.toFixed(1)}%`
+      priceVariations[item.id]?.hasVariation
+        ? `${priceVariations[item.id].isIncrease ? "+" : "-"}${priceVariations[item.id].percentage.toFixed(1)}%`
         : "Sin variación",
       item.quantity,
       item.company,
@@ -1632,8 +1632,8 @@ ${csvRows
     <td class="data-number">${row[6]}</td>
     <td class="data-number">${row[7]}</td>
     <td class="data-center ${
-      priceVariations[item.sku]?.hasVariation
-        ? priceVariations[item.sku].isIncrease
+      priceVariations[item.id]?.hasVariation
+        ? priceVariations[item.id].isIncrease
           ? "text-red-600"
           : "text-green-600"
         : "text-gray-400"
@@ -1788,7 +1788,7 @@ ${csvRows
   }
 
   const getPriceVariations = () => {
-    const priceVariations: { [key: string]: { percentage: number; isIncrease: boolean; hasVariation: boolean } } = {}
+    const priceVariations: { [key: number]: { percentage: number; isIncrease: boolean; hasVariation: boolean } } = {}
 
     const skuGroups: { [key: string]: InventoryItem[] } = {}
     inventory.forEach((item) => {
@@ -1801,34 +1801,34 @@ ${csvRows
     Object.keys(skuGroups).forEach((sku) => {
       const items = skuGroups[sku].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
 
-      if (items.length > 1) {
-        const oldestItem = items[0]
-        const newestItem = items[items.length - 1]
+      items.forEach((item, index) => {
+        if (index > 0) {
+          const prevItem = items[index - 1]
+          const oldPrice = prevItem.cost_without_tax
+          const newPrice = item.cost_without_tax
 
-        const oldPrice = oldestItem.cost_without_tax
-        const newPrice = newestItem.cost_without_tax
-
-        if (oldPrice !== newPrice && oldPrice > 0) {
-          const percentage = ((newPrice - oldPrice) / oldPrice) * 100
-          priceVariations[sku] = {
-            percentage: Math.abs(percentage),
-            isIncrease: percentage > 0,
-            hasVariation: true,
+          if (oldPrice !== newPrice && oldPrice > 0) {
+            const percentage = ((newPrice - oldPrice) / oldPrice) * 100
+            priceVariations[item.id] = {
+              percentage: Math.abs(percentage),
+              isIncrease: percentage > 0,
+              hasVariation: true,
+            }
+          } else {
+            priceVariations[item.id] = {
+              percentage: 0,
+              isIncrease: false,
+              hasVariation: false,
+            }
           }
         } else {
-          priceVariations[sku] = {
+          priceVariations[item.id] = {
             percentage: 0,
             isIncrease: false,
             hasVariation: false,
           }
         }
-      } else {
-        priceVariations[sku] = {
-          percentage: 0,
-          isIncrease: false,
-          hasVariation: false,
-        }
-      }
+      })
     })
 
     return priceVariations
@@ -2329,6 +2329,8 @@ ${csvRows
             setShowGastos={setShowGastos}
             onLogout={handleLogout}
             userEmail={getCurrentUser()?.email}
+            isOnline={isOnline}
+            lastSync={lastSync}
           />
         <div className="relative flex min-h-svh flex-1 flex-col bg-background peer-data-[variant=inset]:min-h-[calc(100svh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow">
           {/* Zócalo de Anuncios - Solo visible si hay anuncios */}
@@ -2360,17 +2362,8 @@ ${csvRows
           <div className="flex items-center gap-2">
              <SidebarTrigger className="md:hidden" />
              <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  Sistema MAYCAM
-                </h1>
-                <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${isOnline ? "bg-green-500" : "bg-red-500"}`}></div>
-                  <span className={`text-sm ${isOnline ? "text-green-600" : "text-red-600"}`}>
-                    {isOnline ? "En línea" : "Sin conexión"}
-                  </span>
-                  {lastSync && <span className="text-xs text-slate-500">Última sync: {lastSync.toLocaleTimeString()}</span>}
-                </div>
-                <p className="text-slate-600 mt-2">Gestión Integral de Inventario</p>
+                <p className="text-slate-600 font-medium">Gestión Integral de Inventario</p>
+                {lastSync && <span className="text-xs text-slate-500">Última sync: {lastSync.toLocaleTimeString()}</span>}
              </div>
           </div>
           <div className="flex items-center gap-4">
@@ -2453,7 +2446,25 @@ ${csvRows
             </CardContent>
           </Card>
 
-          {/* 2. SKUs Únicos */}
+          {/* 2. Gastos Filtrados */}
+          <Card className="bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-lg transform transition-all hover:scale-105">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-pink-100 text-xs font-medium">
+                    Gastos {dashboardFilter === "monthly" ? "Mes" : 
+                             dashboardFilter === "weekly" ? "Semana" : 
+                             dashboardFilter === "daily" ? "Hoy" : 
+                             dashboardFilter === "historical" ? "Histórico" : "Personalizado"}
+                  </p>
+                  <p className="text-lg font-bold">{formatCurrency(stats.currentMonthExpenses)}</p>
+                </div>
+                <Receipt className="w-5 h-5 text-pink-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 3. SKUs Únicos */}
           <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg transform transition-all hover:scale-105">
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
@@ -3094,19 +3105,19 @@ ${csvRows
                           <TableCell className="border-r border-slate-100 text-right font-mono font-medium text-slate-800 py-1 px-2 text-xs hidden md:table-cell">${item.pvp_without_tax.toFixed(2)}</TableCell>
                           <TableCell className="border-r border-slate-100 text-right font-mono font-bold text-slate-900 py-1 px-2 text-xs">${item.pvp_with_tax.toFixed(2)}</TableCell>
                           <TableCell className="border-r border-slate-100 py-1 px-2 text-xs hidden md:table-cell">
-                            {priceVariations[item.sku]?.hasVariation ? (
+                            {priceVariations[item.id]?.hasVariation ? (
                               <div className="flex items-center justify-center gap-1">
-                                {priceVariations[item.sku].isIncrease ? (
+                                {priceVariations[item.id].isIncrease ? (
                                   <TrendingUp className="w-3 h-3 text-red-500" />
                                 ) : (
                                   <TrendingDown className="w-3 h-3 text-green-500" />
                                 )}
                                 <span
                                   className={`text-[10px] font-medium ${
-                                    priceVariations[item.sku].isIncrease ? "text-red-600" : "text-green-600"
+                                    priceVariations[item.id].isIncrease ? "text-red-600" : "text-green-600"
                                   }`}
                                 >
-                                  {priceVariations[item.sku].percentage.toFixed(1)}%
+                                  {priceVariations[item.id].percentage.toFixed(1)}%
                                 </span>
                               </div>
                             ) : (

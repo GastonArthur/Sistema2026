@@ -34,6 +34,8 @@ import {
   FileText,
   Phone,
   Mail,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { logActivity, hasPermission, getCurrentUser } from "@/lib/auth"
@@ -93,6 +95,7 @@ type WholesaleOrder = {
   client_id: number
   order_date: string
   status: "pending" | "confirmed" | "shipped" | "delivered" | "cancelled"
+  is_paid: boolean
   total_amount: number
   items: WholesaleOrderItem[]
   notes: string
@@ -185,6 +188,13 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
   const [orderNotes, setOrderNotes] = useState("")
   const [editingOrder, setEditingOrder] = useState<WholesaleOrder | null>(null)
   const [viewingClient, setViewingClient] = useState<WholesaleClient | null>(null)
+  const [expandedOrders, setExpandedOrders] = useState<number[]>([])
+
+  const toggleOrderExpansion = (orderId: number) => {
+    setExpandedOrders(prev => 
+      prev.includes(orderId) ? prev.filter(id => id !== orderId) : [...prev, orderId]
+    )
+  }
 
   // Filtros para precios
   const [priceFilters, setPriceFilters] = useState({
@@ -1039,6 +1049,36 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
       toast({
         title: "Estado actualizado (Offline)",
         description: `El pedido #${orderId} ha cambiado a ${newStatus}`,
+      })
+    }
+  }
+
+  const updateOrderPaymentStatus = async (orderId: number, isPaid: boolean) => {
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, is_paid: isPaid } : o)))
+
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase.from("wholesale_orders").update({ is_paid: isPaid }).eq("id", orderId)
+
+        if (error) throw error
+
+        toast({
+          title: "Estado de pago actualizado",
+          description: `El pedido #${orderId} ha sido marcado como ${isPaid ? "Pagado" : "No Pagado"}`,
+        })
+      } catch (error) {
+        logError("Error updating order payment status:", error)
+        toast({
+          title: "Error",
+          description: "No se pudo actualizar el estado de pago en la base de datos",
+          variant: "destructive",
+        })
+        loadWholesaleData()
+      }
+    } else {
+      toast({
+        title: "Estado de pago actualizado (Offline)",
+        description: `El pedido #${orderId} ha sido marcado como ${isPaid ? "Pagado" : "No Pagado"}`,
       })
     }
   }
@@ -2104,6 +2144,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                       <TableHead className="hidden md:table-cell">Fecha</TableHead>
                       <TableHead>Cliente</TableHead>
                       <TableHead>Estado</TableHead>
+                      <TableHead>Pagado</TableHead>
                       <TableHead className="text-right">Total</TableHead>
                       <TableHead className="hidden md:table-cell">Notas</TableHead>
                       <TableHead className="hidden md:table-cell">Items</TableHead>
@@ -2113,64 +2154,146 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                   <TableBody>
                     {orders.map((order) => {
                       const clientName = clients.find((c) => c.id === order.client_id)?.name || "Cliente desconocido"
+                      const hasMultipleItems = (order.items?.length || 0) > 1
+
                       return (
-                        <TableRow key={order.id}>
-                          <TableCell className="font-medium">#{order.id}</TableCell>
-                          <TableCell className="hidden md:table-cell">{new Date(order.order_date).toLocaleDateString()}</TableCell>
-                          <TableCell>{clientName}</TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger disabled={isReadOnly} className="focus:outline-none">
-                                <Badge className={`cursor-pointer ${getStatusColor(order.status)} border-0`}>
-                                  {getStatusLabel(order.status)}
-                                </Badge>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent>
-                                <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "pending")}>
-                                  Pendiente
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "confirmed")}>
-                                  Confirmado
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "shipped")}>
-                                  Enviado
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "delivered")}>
-                                  Entregado
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "cancelled")}>
-                                  Cancelado
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                        </TableCell>
-                          <TableCell className="text-right">${order.total_amount.toFixed(2)}</TableCell>
-                          <TableCell className="max-w-[200px] truncate hidden md:table-cell">{order.notes}</TableCell>
-                          <TableCell className="hidden md:table-cell">{order.items?.length || 0} items</TableCell>
-                          <TableCell>
-                            {!isReadOnly && (
-                              <div className="flex gap-2">
-                                <Button variant="ghost" size="sm" onClick={() => editOrder(order)} title="Editar pedido">
-                                  <Edit className="w-3 h-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => deleteOrder(order)}
-                                  title="Eliminar pedido"
-                                  className="text-red-600 hover:text-red-700"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            )}
-                          </TableCell>
-                        </TableRow>
+                        <>
+                          <TableRow key={order.id}>
+                            <TableCell className="font-medium">#{order.id}</TableCell>
+                            <TableCell className="hidden md:table-cell">{new Date(order.order_date).toLocaleDateString()}</TableCell>
+                            <TableCell>{clientName}</TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger disabled={isReadOnly} className="focus:outline-none">
+                                  <Badge className={`cursor-pointer ${getStatusColor(order.status)} border-0`}>
+                                    {getStatusLabel(order.status)}
+                                  </Badge>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                  <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "pending")}>
+                                    Pendiente
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "confirmed")}>
+                                    Confirmado
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "shipped")}>
+                                    Enviado
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "delivered")}>
+                                    Entregado
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "cancelled")}>
+                                    Cancelado
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger disabled={isReadOnly} className="focus:outline-none">
+                                  <Badge className={`cursor-pointer border-0 ${order.is_paid ? "bg-green-600 hover:bg-green-700" : "bg-red-500 hover:bg-red-600"} text-white`}>
+                                    {order.is_paid ? "SÍ" : "NO"}
+                                  </Badge>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                  <DropdownMenuItem onClick={() => updateOrderPaymentStatus(order.id, true)}>
+                                    SÍ
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => updateOrderPaymentStatus(order.id, false)}>
+                                    NO
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                            <TableCell className="text-right">${order.total_amount.toFixed(2)}</TableCell>
+                            <TableCell className="max-w-[200px] truncate hidden md:table-cell">{order.notes}</TableCell>
+                            <TableCell className="hidden md:table-cell">
+                              {hasMultipleItems ? (
+                                <div className="flex items-center gap-2">
+                                  <span>{order.items?.length || 0} items</span>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-6 w-6 p-0" 
+                                    onClick={() => toggleOrderExpansion(order.id)}
+                                  >
+                                    {expandedOrders.includes(order.id) ? (
+                                      <ChevronUp className="w-4 h-4" />
+                                    ) : (
+                                      <ChevronDown className="w-4 h-4" />
+                                    )}
+                                  </Button>
+                                </div>
+                              ) : (
+                                <span>{order.items?.length || 0} items</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {!isReadOnly && (
+                                <div className="flex gap-2">
+                                  <Button variant="ghost" size="sm" onClick={() => editOrder(order)} title="Editar pedido">
+                                    <Edit className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => deleteOrder(order)}
+                                    title="Eliminar pedido"
+                                    className="text-red-600 hover:text-red-700"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                          {expandedOrders.includes(order.id) && hasMultipleItems && (
+                            <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
+                              <TableCell colSpan={9} className="p-4">
+                                <div className="bg-white rounded-md border p-4 shadow-sm">
+                                  <h4 className="font-semibold mb-3 text-sm text-gray-700 flex items-center gap-2">
+                                    <Package className="w-4 h-4" />
+                                    Detalle del Pedido
+                                  </h4>
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow className="hover:bg-transparent">
+                                        <TableHead className="h-8">SKU</TableHead>
+                                        <TableHead className="h-8">Descripción</TableHead>
+                                        <TableHead className="h-8 text-right">Cantidad</TableHead>
+                                        <TableHead className="h-8 text-right">Precio Unit.</TableHead>
+                                        <TableHead className="h-8 text-right">Total</TableHead>
+                                        <TableHead className="h-8 text-right">Costo Est.</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {order.items?.map((item, idx) => (
+                                        <TableRow key={idx} className="hover:bg-gray-50">
+                                          <TableCell className="py-2 text-sm">{item.sku}</TableCell>
+                                          <TableCell className="py-2 text-sm">{item.description}</TableCell>
+                                          <TableCell className="text-right py-2 text-sm">{item.quantity}</TableCell>
+                                          <TableCell className="text-right py-2 text-sm">{formatCurrency(item.unit_price)}</TableCell>
+                                          <TableCell className="text-right py-2 text-sm font-medium">{formatCurrency(item.total_price)}</TableCell>
+                                          <TableCell className="text-right py-2 text-sm text-gray-500">
+                                            {(() => {
+                                              const invItem = inventory.find(i => i.sku === item.sku)
+                                              return invItem ? formatCurrency(invItem.cost_without_tax) : "-"
+                                            })()}
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </>
                       )
                     })}
                     {orders.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                        <TableCell colSpan={9} className="text-center py-8 text-gray-500">
                           No hay pedidos registrados
                         </TableCell>
                       </TableRow>

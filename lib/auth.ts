@@ -611,6 +611,11 @@ export const deleteUser = async (userId: number): Promise<{ success: boolean; er
 }
 
 export const clearLogs = async (): Promise<{ success: boolean; error?: string }> => {
+  const user = getCurrentUser()
+  if (user?.role !== "admin") {
+    return { success: false, error: "No tiene permisos para realizar esta acción" }
+  }
+
   if (!isSupabaseConfigured) {
     OFFLINE_LOGS = []
     // Crear un nuevo log indicando que se limpiaron
@@ -650,7 +655,7 @@ export const hasPermission = (action: string): boolean => {
     case "admin":
       return true
     case "user":
-      return !["DELETE_USER", "CREATE_USER", "EDIT_USER", "UPDATE_USER"].includes(action)
+      return !["DELETE_USER", "CREATE_USER", "EDIT_USER", "UPDATE_USER", "ADMIN"].includes(action)
     case "viewer":
       return ["VIEW", "EXPORT"].includes(action)
     default:

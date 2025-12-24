@@ -25,7 +25,9 @@ import {
   Calendar,
   CreditCard,
   Truck,
-  Package
+  Package,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
@@ -37,6 +39,7 @@ type InventoryItem = {
   pvp_with_tax: number
   quantity: number
   stock_status: "normal" | "missing" | "excess"
+  cost_without_tax?: number
 }
 
 type RetailClient = {
@@ -55,6 +58,7 @@ type RetailSaleItem = {
   quantity: number
   unit_price: number
   total_price: number
+  cost?: number
 }
 
 type RetailSale = {
@@ -100,6 +104,31 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
   const [paymentStatus, setPaymentStatus] = useState("no_pagado")
   const [deliveryStatus, setDeliveryStatus] = useState("no_entregado")
   const [notes, setNotes] = useState("")
+
+  // New State for features
+  const [editingSale, setEditingSale] = useState<RetailSale | null>(null)
+  const [viewingClient, setViewingClient] = useState<RetailClient | null>(null)
+  const [expandedSales, setExpandedSales] = useState<number[]>([])
+
+  const toggleSaleExpansion = (saleId: number) => {
+    setExpandedSales(prev => 
+      prev.includes(saleId) ? prev.filter(id => id !== saleId) : [...prev, saleId]
+    )
+  }
+  
+  // Client creation state
+  const [showClientForm, setShowClientForm] = useState(false)
+  const [newClientData, setNewClientData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: ""
+  })
+
+  // Product addition state
+  const [currentDescription, setCurrentDescription] = useState("")
+  const [currentQuantity, setCurrentQuantity] = useState(1)
+  const [currentUnitPrice, setCurrentUnitPrice] = useState(0)
 
   // Stats
   const totalSales = sales.reduce((sum, sale) => sum + sale.total, 0)
@@ -154,40 +183,53 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
     ])
   }, [])
 
-  const addItemToSale = (sku: string) => {
-    const item = inventory.find(i => i.sku === sku)
+  // Auto-fill details when SKU exists in inventory
+  useEffect(() => {
+    if (!currentSku) return
+    
+    const item = inventory.find((i) => i.sku.toLowerCase() === currentSku.toLowerCase())
     if (item) {
-      const newItem: RetailSaleItem = {
-        id: Date.now(),
-        sku: item.sku,
-        description: item.description,
-        quantity: 1,
-        unit_price: item.pvp_with_tax,
-        total_price: item.pvp_with_tax
-      }
-      setNewSaleItems([...newSaleItems, newItem])
-      setCurrentSku("")
-    } else {
+      setCurrentDescription(item.description)
+      setCurrentUnitPrice(item.pvp_with_tax)
+    }
+  }, [currentSku, inventory])
+
+  const addItemToSale = () => {
+    if (!currentSku && !currentDescription) {
       toast({
-        title: "Producto no encontrado",
-        description: "El SKU ingresado no existe en el inventario",
+        title: "Datos incompletos",
+        description: "Debe ingresar al menos una descripción",
         variant: "destructive"
       })
+      return
     }
-  }
 
-  const addManualItem = () => {
-    if (!currentManualProduct.description || currentManualProduct.price <= 0) return
+    if (currentQuantity <= 0 || currentUnitPrice < 0) {
+      toast({
+        title: "Datos inválidos",
+        description: "Cantidad debe ser mayor a 0 y precio no negativo",
+        variant: "destructive"
+      })
+      return
+    }
+
+    const inventoryItem = inventory.find(i => i.sku.toLowerCase() === currentSku.toLowerCase())
+
     const newItem: RetailSaleItem = {
       id: Date.now(),
-      sku: "MANUAL",
-      description: currentManualProduct.description,
-      quantity: 1,
-      unit_price: currentManualProduct.price,
-      total_price: currentManualProduct.price
+      sku: currentSku || "MANUAL",
+      description: currentDescription,
+      quantity: currentQuantity,
+      unit_price: currentUnitPrice,
+      total_price: currentUnitPrice * currentQuantity,
+      cost: inventoryItem?.cost_without_tax
     }
+
     setNewSaleItems([...newSaleItems, newItem])
-    setCurrentManualProduct({ description: "", price: 0 })
+    setCurrentSku("")
+    setCurrentDescription("")
+    setCurrentQuantity(1)
+    setCurrentUnitPrice(0)
   }
 
   const calculateTotals = () => {
@@ -209,26 +251,46 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
       return
     }
 
-    const newSale: RetailSale = {
-      id: Date.now(),
-      date: newSaleDate,
-      client_id: 0, // Logic to find or create client
-      client_name: newSaleClient,
-      items: newSaleItems,
-      subtotal,
-      discount_percentage: discount,
-      shipping_cost: shippingCost,
-      total,
-      stock_status: stockStatus as any,
-      payment_status: paymentStatus === "pagado" ? "pagado" : "pendiente",
-      delivery_status: deliveryStatus === "entregado" ? "entregado" : "pendiente",
-      notes
+    if (editingSale) {
+      const updatedSale: RetailSale = {
+        ...editingSale,
+        date: newSaleDate,
+        client_name: newSaleClient,
+        items: newSaleItems,
+        subtotal,
+        discount_percentage: discount,
+        shipping_cost: shippingCost,
+        total,
+        stock_status: stockStatus as any,
+        payment_status: paymentStatus as any,
+        delivery_status: deliveryStatus as any,
+        notes
+      }
+      
+      setSales(sales.map(s => s.id === editingSale.id ? updatedSale : s))
+      toast({ title: "Venta actualizada", description: "La venta se ha actualizado correctamente" })
+    } else {
+      const newSale: RetailSale = {
+        id: Date.now(),
+        date: newSaleDate,
+        client_id: 0,
+        client_name: newSaleClient,
+        items: newSaleItems,
+        subtotal,
+        discount_percentage: discount,
+        shipping_cost: shippingCost,
+        total,
+        stock_status: stockStatus as any,
+        payment_status: paymentStatus as any,
+        delivery_status: deliveryStatus as any,
+        notes
+      }
+      setSales([newSale, ...sales])
+      toast({ title: "Venta registrada", description: "La venta se ha registrado correctamente" })
     }
 
-    setSales([newSale, ...sales])
     setShowNewSaleForm(false)
     resetForm()
-    toast({ title: "Venta registrada", description: "La venta se ha registrado correctamente" })
   }
 
   const resetForm = () => {
@@ -237,6 +299,55 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
     setDiscount(0)
     setShippingCost(0)
     setNotes("")
+    setEditingSale(null)
+    setNewSaleDate(new Date().toISOString().split("T")[0])
+    setStockStatus("restado")
+    setPaymentStatus("no_pagado")
+    setDeliveryStatus("no_entregado")
+    setCurrentSku("")
+    setCurrentDescription("")
+    setCurrentQuantity(1)
+    setCurrentUnitPrice(0)
+  }
+
+  const editSale = (sale: RetailSale) => {
+    setEditingSale(sale)
+    setNewSaleDate(sale.date)
+    setNewSaleClient(sale.client_name)
+    setNewSaleItems(sale.items)
+    setDiscount(sale.discount_percentage)
+    setShippingCost(sale.shipping_cost)
+    setStockStatus(sale.stock_status)
+    setPaymentStatus(sale.payment_status)
+    setDeliveryStatus(sale.delivery_status)
+    setNotes(sale.notes || "")
+    setShowNewSaleForm(true)
+  }
+
+  const deleteSale = (id: number) => {
+    if (confirm("¿Está seguro de eliminar esta venta?")) {
+      setSales(sales.filter(s => s.id !== id))
+      toast({ title: "Venta eliminada", description: "La venta ha sido eliminada correctamente" })
+    }
+  }
+
+  const handleCreateClient = () => {
+    if (!newClientData.name) {
+      toast({ title: "Error", description: "El nombre es obligatorio", variant: "destructive" })
+      return
+    }
+
+    const newClient: RetailClient = {
+      id: Date.now(),
+      ...newClientData,
+      created_at: new Date().toISOString().split("T")[0]
+    }
+
+    setClients([...clients, newClient])
+    setNewSaleClient(newClient.name)
+    setShowClientForm(false)
+    setNewClientData({ name: "", email: "", phone: "", address: "" })
+    toast({ title: "Cliente creado", description: "El cliente se ha creado correctamente" })
   }
 
   return (
@@ -310,12 +421,29 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
                   <Input placeholder="Buscar por cliente, ID o SKU..." className="pl-9" />
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" className="gap-2 text-green-600 border-green-600 hover:bg-green-50">
+                  <Button 
+                    variant="outline" 
+                    className="gap-2 text-green-600 border-green-600 hover:bg-green-50"
+                    onClick={() => {
+                       if (!hasPermission("EXPORT")) {
+                         toast({
+                           title: "Sin permisos",
+                           description: "No tiene permisos para exportar datos",
+                           variant: "destructive",
+                         })
+                         return
+                       }
+                       // Logic for export would go here
+                       toast({ title: "Exportar", description: "Funcionalidad de exportación en desarrollo" })
+                    }}
+                  >
                     <Download className="w-4 h-4" /> Exportar Excel
                   </Button>
-                  <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowNewSaleForm(true)}>
-                    <Plus className="w-4 h-4" /> Nueva Venta
-                  </Button>
+                  {!isReadOnly && (
+                    <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700" onClick={() => setShowNewSaleForm(true)}>
+                      <Plus className="w-4 h-4" /> Nueva Venta
+                    </Button>
+                  )}
                 </div>
               </div>
 
@@ -337,47 +465,123 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
                         <TableHead>Entregado</TableHead>
                         <TableHead>Nro. Guía</TableHead>
                         <TableHead>Bultos</TableHead>
+                        <TableHead>Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {sales.map((sale) => (
-                        <TableRow key={sale.id}>
-                          <TableCell className="font-bold">#{sale.id}</TableCell>
-                          <TableCell>{sale.date}</TableCell>
-                          <TableCell>{sale.client_name}</TableCell>
-                          <TableCell>{sale.items.length} item(s)</TableCell>
-                          <TableCell>{formatCurrency(sale.subtotal)}</TableCell>
-                          <TableCell>{sale.discount_percentage > 0 ? `${sale.discount_percentage}%` : "-"}</TableCell>
-                          <TableCell>{sale.shipping_cost > 0 ? formatCurrency(sale.shipping_cost) : "-"}</TableCell>
-                          <TableCell className="font-bold">{formatCurrency(sale.total)}</TableCell>
-                          <TableCell>
-                            {sale.stock_status === "restado" ? (
-                              <Badge variant="outline" className="border-green-500 text-green-700 bg-green-50 gap-1">
-                                <CheckCircle className="w-3 h-3" /> Stock Restado
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="border-orange-500 text-orange-700 bg-orange-50 gap-1">
-                                <XCircle className="w-3 h-3" /> Restar Stock
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {sale.payment_status === "pagado" ? (
-                              <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-0">SÍ</Badge>
-                            ) : (
-                              <Badge className="bg-red-100 text-red-700 hover:bg-red-200 border-0">NO</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {sale.delivery_status === "entregado" ? (
-                              <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-0">SÍ</Badge>
-                            ) : (
-                              <Badge className="bg-red-100 text-red-700 hover:bg-red-200 border-0">NO</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>{sale.tracking_number || "-"}</TableCell>
-                          <TableCell>{sale.bultos || 0}</TableCell>
-                        </TableRow>
+                        <>
+                          <TableRow key={sale.id}>
+                            <TableCell className="font-bold">#{sale.id}</TableCell>
+                            <TableCell>{sale.date}</TableCell>
+                            <TableCell>{sale.client_name}</TableCell>
+                            <TableCell>
+                              {sale.items.length > 1 ? (
+                                <div className="flex items-center gap-2">
+                                  <span>{sale.items.length} items</span>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-6 w-6 p-0" 
+                                    onClick={() => toggleSaleExpansion(sale.id)}
+                                  >
+                                    {expandedSales.includes(sale.id) ? (
+                                      <ChevronUp className="w-4 h-4" />
+                                    ) : (
+                                      <ChevronDown className="w-4 h-4" />
+                                    )}
+                                  </Button>
+                                </div>
+                              ) : (
+                                <span>{sale.items.length} item(s)</span>
+                              )}
+                            </TableCell>
+                            <TableCell>{formatCurrency(sale.subtotal)}</TableCell>
+                            <TableCell>{sale.discount_percentage > 0 ? `${sale.discount_percentage}%` : "-"}</TableCell>
+                            <TableCell>{sale.shipping_cost > 0 ? formatCurrency(sale.shipping_cost) : "-"}</TableCell>
+                            <TableCell className="font-bold">{formatCurrency(sale.total)}</TableCell>
+                            <TableCell>
+                              {sale.stock_status === "restado" ? (
+                                <Badge variant="outline" className="border-green-500 text-green-700 bg-green-50 gap-1">
+                                  <CheckCircle className="w-3 h-3" /> Stock Restado
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="border-orange-500 text-orange-700 bg-orange-50 gap-1">
+                                  <XCircle className="w-3 h-3" /> Restar Stock
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {sale.payment_status === "pagado" ? (
+                                <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-0">SÍ</Badge>
+                              ) : (
+                                <Badge className="bg-red-100 text-red-700 hover:bg-red-200 border-0">NO</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {sale.delivery_status === "entregado" ? (
+                                <Badge className="bg-green-100 text-green-700 hover:bg-green-200 border-0">SÍ</Badge>
+                              ) : (
+                                <Badge className="bg-red-100 text-red-700 hover:bg-red-200 border-0">NO</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>{sale.tracking_number || "-"}</TableCell>
+                            <TableCell>{sale.bultos || 0}</TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button variant="ghost" size="sm" onClick={() => editSale(sale)} title="Editar venta">
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => deleteSale(sale.id)} title="Eliminar venta">
+                                  <Trash2 className="w-4 h-4 text-red-500" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                          {expandedSales.includes(sale.id) && sale.items.length > 1 && (
+                            <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
+                              <TableCell colSpan={14} className="p-4">
+                                <div className="bg-white rounded-md border p-4 shadow-sm">
+                                  <h4 className="font-semibold mb-3 text-sm text-gray-700 flex items-center gap-2">
+                                    <ShoppingBag className="w-4 h-4" />
+                                    Detalle de Productos
+                                  </h4>
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow className="hover:bg-transparent">
+                                        <TableHead className="h-8">SKU</TableHead>
+                                        <TableHead className="h-8">Descripción</TableHead>
+                                        <TableHead className="h-8 text-right">Cantidad</TableHead>
+                                        <TableHead className="h-8 text-right">Precio Unit.</TableHead>
+                                        <TableHead className="h-8 text-right">Total</TableHead>
+                                        <TableHead className="h-8 text-right">Costo Est.</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {sale.items.map((item, idx) => (
+                                        <TableRow key={idx} className="hover:bg-gray-50">
+                                          <TableCell className="py-2 text-sm">{item.sku}</TableCell>
+                                          <TableCell className="py-2 text-sm">{item.description}</TableCell>
+                                          <TableCell className="text-right py-2 text-sm">{item.quantity}</TableCell>
+                                          <TableCell className="text-right py-2 text-sm">{formatCurrency(item.unit_price)}</TableCell>
+                                          <TableCell className="text-right py-2 text-sm font-medium">{formatCurrency(item.total_price)}</TableCell>
+                                          <TableCell className="text-right py-2 text-sm text-gray-500">
+                                            {item.cost ? formatCurrency(item.cost) : (
+                                              // Fallback to inventory lookup if cost not saved in item
+                                              inventory.find(i => i.sku === item.sku)?.cost_without_tax 
+                                                ? formatCurrency(inventory.find(i => i.sku === item.sku)?.cost_without_tax || 0)
+                                                : "-"
+                                            )}
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </>
                       ))}
                     </TableBody>
                   </Table>
@@ -404,7 +608,15 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
                     <TableBody>
                       {clients.map(client => (
                         <TableRow key={client.id}>
-                          <TableCell className="font-medium">{client.name}</TableCell>
+                          <TableCell className="font-medium">
+                            <Button 
+                              variant="link" 
+                              className="p-0 h-auto font-medium text-emerald-700 hover:text-emerald-900" 
+                              onClick={() => setViewingClient(client)}
+                            >
+                              {client.name}
+                            </Button>
+                          </TableCell>
                           <TableCell>{client.email}</TableCell>
                           <TableCell>{client.phone}</TableCell>
                           <TableCell>{client.address}</TableCell>
@@ -438,33 +650,65 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
                     <Label>Cliente *</Label>
                     <div className="flex gap-2">
                       <Input placeholder="Buscar cliente o escribir nombre..." value={newSaleClient} onChange={e => setNewSaleClient(e.target.value)} />
-                      <Button variant="outline" size="icon"><Users className="w-4 h-4" /></Button>
+                      <Button variant="outline" size="icon" onClick={() => setShowClientForm(true)} title="Nuevo Cliente">
+                        <Plus className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Agregar Productos</Label>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                      <Input 
-                        placeholder="Buscar SKU o descripción..." 
-                        className="pl-9" 
-                        value={currentSku}
-                        onChange={e => setCurrentSku(e.target.value)}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') {
-                            addItemToSale(currentSku)
-                          }
-                        }}
+                <div className="border p-4 rounded-md bg-gray-50">
+                  <h4 className="font-medium mb-2">Agregar Producto</h4>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label>SKU</Label>
+                        <Input
+                          value={currentSku}
+                          onChange={(e) => setCurrentSku(e.target.value)}
+                          placeholder="SKU"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") addItemToSale()
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <Label>Cantidad</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={currentQuantity}
+                          onChange={(e) => setCurrentQuantity(parseInt(e.target.value) || 1)}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label>Nombre</Label>
+                      <Input
+                        value={currentDescription}
+                        onChange={(e) => setCurrentDescription(e.target.value)}
+                        placeholder="Nombre del producto"
                       />
                     </div>
-                    <Button variant="secondary" className="gap-2" onClick={() => addItemToSale(currentSku)}>
-                      <Plus className="w-4 h-4" /> Agregar
-                    </Button>
-                    <Button variant="outline" className="gap-2">
-                      + Agregar Manual
+                    
+                    <div>
+                      <Label>Precio Unitario</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={currentUnitPrice}
+                          onChange={(e) => setCurrentUnitPrice(parseFloat(e.target.value) || 0)}
+                          className="pl-7"
+                        />
+                      </div>
+                    </div>
+
+                    <Button type="button" onClick={addItemToSale} className="w-full bg-emerald-600 hover:bg-emerald-700">
+                      <Plus className="w-4 h-4 mr-2" /> Agregar a la Venta
                     </Button>
                   </div>
                 </div>
