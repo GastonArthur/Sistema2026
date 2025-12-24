@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Activity, Search, Eye, RefreshCw } from "lucide-react"
-import { getActivityLogs, type ActivityLog } from "@/lib/auth"
+import { toast } from "@/hooks/use-toast"
+import { getActivityLogs, hasPermission, clearLogs, type ActivityLog } from "@/lib/auth"
 import { logError } from "@/lib/logger"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -240,6 +241,39 @@ export function ActivityLogs({ isOpen, onClose }: ActivityLogsProps) {
       .join(", ")
 
     return preview || "Datos del registro"
+  }
+
+  const handleClearLogs = async () => {
+    if (!confirm("¿Estás seguro de que deseas eliminar todos los logs? Esta acción no se puede deshacer.")) {
+      return
+    }
+
+    setLoading(true)
+    try {
+      const result = await clearLogs()
+      if (result.success) {
+        toast({
+          title: "Logs eliminados",
+          description: "El historial de actividad ha sido limpiado correctamente.",
+        })
+        loadLogs()
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "No se pudieron eliminar los logs.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      logError("Error limpiando logs:", error)
+      toast({
+        title: "Error",
+        description: "Ocurrió un error inesperado.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

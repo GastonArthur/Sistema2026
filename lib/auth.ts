@@ -576,6 +576,28 @@ export const deleteUser = async (userId: number): Promise<{ success: boolean; er
   }
 }
 
+export const clearLogs = async (): Promise<{ success: boolean; error?: string }> => {
+  if (!isSupabaseConfigured) {
+    OFFLINE_LOGS = []
+    // Crear un nuevo log indicando que se limpiaron
+    await logActivity("CLEAR_LOGS", "activity_logs", null, null, null, "Logs del sistema limpiados")
+    return { success: true }
+  }
+
+  try {
+    const { error } = await supabase.from("activity_logs").delete().neq("id", -1)
+
+    if (error) throw error
+
+    await logActivity("CLEAR_LOGS", "activity_logs", null, null, null, "Logs del sistema limpiados")
+
+    return { success: true }
+  } catch (error) {
+    logError("Error limpiando logs:", error)
+    return { success: false, error: "Error interno del servidor" }
+  }
+}
+
 export const hasPermission = (action: string): boolean => {
   const user = getCurrentUser()
   if (!user) return false
