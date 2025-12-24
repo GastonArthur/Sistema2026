@@ -112,6 +112,7 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
 
   // New State for features
   const [editingSale, setEditingSale] = useState<RetailSale | null>(null)
+  const [editingClient, setEditingClient] = useState<RetailClient | null>(null)
   const [viewingClient, setViewingClient] = useState<RetailClient | null>(null)
   const [expandedSales, setExpandedSales] = useState<number[]>([])
 
@@ -596,8 +597,17 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
 
             <TabsContent value="clientes" className="m-0">
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Gestión de Clientes</CardTitle>
+                  {!isReadOnly && (
+                    <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => {
+                      setEditingClient(null)
+                      setNewClientData({ name: "", email: "", phone: "", address: "" })
+                      setShowClientForm(true)
+                    }}>
+                      <Plus className="w-4 h-4 mr-2" /> Nuevo Cliente
+                    </Button>
+                  )}
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -882,7 +892,11 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
                   <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleRegisterSale}>Registrar Venta</Button>
                 </div>
               </div>
-              {showClientForm && (
+
+      </DialogContent>
+          </Dialog>
+        )}
+        {showClientForm && (
           <Dialog open={showClientForm} onOpenChange={setShowClientForm}>
             <DialogContent className="max-w-md">
               <DialogHeader>
@@ -929,9 +943,6 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
                 </div>
               </div>
             </DialogContent>
-          </Dialog>
-        )}
-      </DialogContent>
           </Dialog>
         )}
       </DialogContent>
