@@ -75,6 +75,38 @@ export default function RentabilidadPage() {
     }
   }
 
+  const handleAddAccount = async () => {
+    if (!supabase) return
+    if (!newAccount.name || !newAccount.seller_id || !newAccount.refresh_token) {
+      alert("Por favor completa todos los campos")
+      return
+    }
+
+    try {
+      setAddingAccount(true)
+      const { error } = await supabase.from("rt_ml_accounts").insert([
+        {
+          name: newAccount.name,
+          seller_id: parseInt(newAccount.seller_id),
+          refresh_token: newAccount.refresh_token,
+          created_at: new Date().toISOString()
+        }
+      ])
+
+      if (error) throw error
+      
+      // Reset form and reload
+      setNewAccount({ name: "", seller_id: "", refresh_token: "" })
+      await fetchAccounts()
+      alert("Cuenta agregada correctamente")
+    } catch (err: any) {
+      console.error("Error adding account:", err)
+      alert("Error al agregar la cuenta: " + err.message)
+    } finally {
+      setAddingAccount(false)
+    }
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar 
