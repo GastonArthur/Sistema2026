@@ -193,6 +193,144 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
     showNewOnly: false,
   })
 
+  // Estadísticas reales
+  const [statistics, setStatistics] = useState({
+    totalSales: 0,
+    totalOrders: 0,
+    averageTicket: 0,
+    activeClients: 0,
+    growth: 0,
+    retention: 0,
+    activeProducts: 0,
+    topClients: [] as any[],
+    topProducts: [] as any[],
+  })
+
+  const [reportFilters, setReportFilters] = useState({
+    dateFrom: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+    dateTo: new Date().toISOString().split("T")[0],
+    clientId: "all",
+  })
+
+  useEffect(() => {
+    calculateStatistics()
+  }, [orders, clients]) // Initial calculation on load
+
+  const calculateStatistics = () => {
+    const from = new Date(reportFilters.dateFrom)
+    const to = new Date(reportFilters.dateTo)
+    to.setHours(23, 59, 59, 999)
+
+    // Calculate previous period for growth comparison
+    const duration = to.getTime() - from.getTime()
+    const prevFrom = new Date(from.getTime() - duration)
+    const prevTo = new Date(from.getTime() - 1)
+
+    // Filter valid orders (confirmed, shipped, delivered)
+    const validOrders = orders.filter(o => {
+        const d = new Date(o.order_date)
+        // Correct date parsing often requires handling timezone, but assuming ISO string YYYY-MM-DD is local or UTC consistent
+        // For simplicity, let's treat string comparison or Date object comparison
+        return ["confirmed", "shipped", "delivered"].includes(o.status)
+    })
+    
+    const currentPeriodOrders = validOrders.filter(o => {
+        const d = new Date(o.order_date)
+        const dateInRange = d >= from && d <= to
+        const clientMatch = reportFilters.clientId === "all" || o.client_id.toString() === reportFilters.clientId
+        return dateInRange && clientMatch
+    })
+
+    const prevPeriodOrders = validOrders.filter(o => {
+        const d = new Date(o.order_date)
+        const dateInRange = d >= prevFrom && d <= prevTo
+        const clientMatch = reportFilters.clientId === "all" || o.client_id.toString() === reportFilters.clientId
+        return dateInRange && clientMatch
+    })
+    
+    // Total Sales
+    const totalSales = currentPeriodOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0)
+    const prevTotalSales = prevPeriodOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0)
+    
+    // Total Orders
+    const totalOrdersCount = currentPeriodOrders.length
+    
+    // Average Ticket
+    const averageTicket = totalOrdersCount > 0 ? totalSales / totalOrdersCount : 0
+
+    // Active Clients (clients with at least one valid order in period)
+    const activeClientIds = new Set(currentPeriodOrders.map(o => o.client_id))
+    const activeClients = activeClientIds.size
+
+    // Growth
+    const growth = prevTotalSales > 0 ? ((totalSales - prevTotalSales) / prevTotalSales) * 100 : (totalSales > 0 ? 100 : 0)
+
+    // Retention (Clients with > 1 order in period OR Clients who ordered in previous period AND this period)
+    // Let's use: Clients in this period who have ordered before (lifetime) or >1 in this period?
+    // Standard retention: % of customers from previous period who bought in this period.
+    // Simple retention for this dashboard: % of active clients who are "repeat" buyers (have > 1 order lifetime or within period)
+    // Let's stick to "Repeat Buyers in Period" or similar.
+    // Original logic was: Clients with > 1 order.
+    const clientOrderCounts = currentPeriodOrders.reduce((acc, order) => {
+        acc[order.client_id] = (acc[order.client_id] || 0) + 1
+        return acc
+    }, {} as Record<number, number>)
+    
+    const repeatClients = Object.values(clientOrderCounts).filter(count => count > 1).length
+    const retention = activeClients > 0 ? (repeatClients / activeClients) * 100 : 0
+
+    // Top Clients
+    const clientSales = Object.entries(clientOrderCounts).map(([clientId, count]) => {
+        const id = parseInt(clientId)
+        const client = clients.find(c => c.id === id)
+        const sales = currentPeriodOrders.filter(o => o.client_id === id).reduce((sum, o) => sum + (o.total_amount || 0), 0)
+        return {
+            id,
+            name: client?.name || "Desconocido",
+            businessName: client?.business_name || "",
+            province: client?.province || "N/A",
+            sales,
+            orders: count,
+            percentage: totalSales > 0 ? (sales / totalSales) * 100 : 0
+        }
+    }).sort((a, b) => b.sales - a.sales)
+
+    // Active Products & Top Products
+    const productSalesMap = new Map<string, { quantity: number, revenue: number, description: string }>()
+    
+    currentPeriodOrders.forEach(order => {
+        if (order.items && Array.isArray(order.items)) {
+            order.items.forEach(item => {
+                const current = productSalesMap.get(item.sku) || { quantity: 0, revenue: 0, description: item.description }
+                productSalesMap.set(item.sku, {
+                    quantity: current.quantity + (item.quantity || 0),
+                    revenue: current.revenue + (item.total_price || 0),
+                    description: item.description
+                })
+            })
+        }
+    })
+
+    const activeProducts = productSalesMap.size
+    
+    const topProducts = Array.from(productSalesMap.entries()).map(([sku, data]) => ({
+        sku,
+        ...data
+    })).sort((a, b) => b.quantity - a.quantity)
+
+    setStatistics({
+        totalSales,
+        totalOrders: totalOrdersCount,
+        averageTicket,
+        activeClients,
+        growth,
+        retention,
+        activeProducts,
+        topClients: clientSales,
+        topProducts
+    })
+  }
+
   useEffect(() => {
     if (isOpen) {
       loadWholesaleData()
@@ -1087,29 +1225,37 @@ ${csvRows
     // Generar datos del reporte completo
     const reportData = {
       period: `${new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString()} - ${new Date().toLocaleDateString()}`,
-      totalSales: 125450,
-      totalOrders: 47,
-      averageTicket: 2670,
-      activeClients: 23,
-      growth: 18.5,
-      retention: 87,
-      activeProducts: 342,
+      totalSales: statistics.totalSales,
+      totalOrders: statistics.totalOrders,
+      averageTicket: statistics.averageTicket,
+      activeClients: statistics.activeClients,
+      growth: statistics.growth.toFixed(1),
+      retention: statistics.retention.toFixed(0),
+      activeProducts: statistics.activeProducts,
     }
 
-    const clientSales = clients.map((client, index) => ({
-      name: client.name,
-      businessName: client.business_name,
-      province: client.province,
-      sales: Math.floor(Math.random() * 50000) + 10000,
-      orders: Math.floor(Math.random() * 15) + 3,
-      lastOrder: Math.floor(Math.random() * 30) + 1,
-    }))
+    const clientSales = statistics.topClients.map((client) => {
+      const clientOrders = orders.filter(o => o.client_id === client.id && ["confirmed", "shipped", "delivered"].includes(o.status))
+      let lastOrderDays = 0
+      if (clientOrders.length > 0) {
+          const lastOrderDate = new Date(Math.max(...clientOrders.map(o => new Date(o.order_date).getTime())))
+          lastOrderDays = Math.floor((Date.now() - lastOrderDate.getTime()) / (1000 * 60 * 60 * 24))
+      }
+      return {
+        name: client.name,
+        businessName: client.businessName,
+        province: client.province,
+        sales: client.sales,
+        orders: client.orders,
+        lastOrder: lastOrderDays,
+      }
+    })
 
-    const productSales = inventory.slice(0, 10).map((item, index) => ({
+    const productSales = statistics.topProducts.slice(0, 20).map((item) => ({
       sku: item.sku,
       description: item.description,
-      quantity: Math.floor(Math.random() * 100) + 20,
-      revenue: (Math.floor(Math.random() * 100) + 20) * item.cost_without_tax * 1.2,
+      quantity: item.quantity,
+      revenue: item.revenue,
     }))
 
     const excelContent = `
@@ -1301,14 +1447,14 @@ Reporte generado el ${new Date().toLocaleString()} | Sistema de Inventario Mayor
 
     const analysisData = {
       period: `${new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString()} - ${new Date().toLocaleDateString()}`,
-      growth: 18.5,
-      retention: 87,
-      activeProducts: 342,
+      growth: statistics.growth.toFixed(1),
+      retention: statistics.retention.toFixed(0),
+      activeProducts: statistics.activeProducts,
       trends: [
-        { metric: "Ventas", trend: "Crecimiento sostenido", percentage: "+18.5%" },
-        { metric: "Clientes", trend: "Alta retención", percentage: "87%" },
-        { metric: "Productos", trend: "Diversificación", percentage: "342 activos" },
-        { metric: "Ticket Promedio", trend: "Incremento gradual", percentage: "+3%" },
+        { metric: "Ventas", trend: statistics.growth >= 0 ? "Crecimiento" : "Decrecimiento", percentage: `${statistics.growth >= 0 ? "+" : ""}${statistics.growth.toFixed(1)}%` },
+        { metric: "Clientes", trend: "Retención", percentage: `${statistics.retention.toFixed(0)}%` },
+        { metric: "Productos", trend: "Diversificación", percentage: `${statistics.activeProducts} activos` },
+        { metric: "Ticket Promedio", trend: "Valor Promedio", percentage: `$${statistics.averageTicket.toFixed(0)}` },
       ],
     }
 
@@ -1467,11 +1613,41 @@ Este reporte contiene información confidencial y está destinado únicamente pa
     }
 
     const clientsData = clients.map((client) => {
-      const lastOrder = Math.floor(Math.random() * 30) + 1
-      const totalOrders = Math.floor(Math.random() * 20) + 5
-      const totalSales = Math.floor(Math.random() * 50000) + 10000
-      const frequency = Math.floor(Math.random() * 15) + 7
-      const status = lastOrder <= 7 ? "Activo" : lastOrder <= 30 ? "Regular" : "Inactivo"
+      const clientOrders = orders.filter(o => o.client_id === client.id && ["confirmed", "shipped", "delivered"].includes(o.status))
+      const totalOrders = clientOrders.length
+      const totalSales = clientOrders.reduce((sum, o) => sum + o.total_amount, 0)
+      
+      let lastOrder = "Sin pedidos"
+      let daysSinceLastOrder = -1
+      if (totalOrders > 0) {
+          const lastOrderDate = new Date(Math.max(...clientOrders.map(o => new Date(o.order_date).getTime())))
+          daysSinceLastOrder = Math.floor((Date.now() - lastOrderDate.getTime()) / (1000 * 60 * 60 * 24))
+          lastOrder = `Hace ${daysSinceLastOrder} días`
+      }
+
+      // Calculate frequency (average days between orders)
+      let frequency = "N/A"
+      if (totalOrders > 1) {
+          const dates = clientOrders.map(o => new Date(o.order_date).getTime()).sort((a, b) => a - b)
+          const firstOrder = dates[0]
+          const lastOrderTime = dates[dates.length - 1]
+          const daysDiff = (lastOrderTime - firstOrder) / (1000 * 60 * 60 * 24)
+          const avgDays = Math.round(daysDiff / (totalOrders - 1))
+          frequency = `Cada ${avgDays} días`
+      }
+
+      // Monthly Average (Total Sales / months since first order or registration)
+      const createdDate = new Date(client.created_at)
+      const monthsSinceRegistration = Math.max(1, (Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24 * 30))
+      const monthlyAverage = (totalOrders / monthsSinceRegistration).toFixed(1)
+
+      let status = "Inactivo"
+      if (totalOrders > 0) {
+          if (daysSinceLastOrder <= 30) status = "Activo"
+          else if (daysSinceLastOrder <= 90) status = "Regular"
+      } else if ((Date.now() - new Date(client.created_at).getTime()) / (1000 * 60 * 60 * 24) < 30) {
+          status = "Nuevo"
+      }
 
       return {
         name: client.name,
@@ -1482,11 +1658,11 @@ Este reporte contiene información confidencial y está destinado únicamente pa
         contactPerson: client.contact_person,
         email: client.email,
         whatsapp: client.whatsapp,
-        lastOrder: `Hace ${lastOrder} días`,
+        lastOrder,
         totalOrders,
         totalSales: `$${totalSales.toLocaleString()}`,
-        frequency: `Cada ${frequency} días`,
-        monthlyAverage: (totalOrders / 6).toFixed(1),
+        frequency,
+        monthlyAverage,
         status,
         createdAt: new Date(client.created_at).toLocaleDateString(),
       }
@@ -1505,7 +1681,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
       "Total Pedidos",
       "Ventas Totales",
       "Frecuencia de Compra",
-      "Promedio Mensual",
+      "Promedio Mensual (Pedidos)",
       "Estado",
       "Fecha de Registro",
     ]
@@ -2198,8 +2374,8 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                   <Label className="text-xs text-slate-500 mb-1 block">Fecha Desde</Label>
                   <Input
                     type="date"
-                    value={new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]}
-                    onChange={() => {}}
+                    value={reportFilters.dateFrom}
+                    onChange={(e) => setReportFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
                     className="h-8 text-sm"
                   />
                 </div>
@@ -2207,14 +2383,17 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                   <Label className="text-xs text-slate-500 mb-1 block">Fecha Hasta</Label>
                   <Input 
                     type="date" 
-                    value={new Date().toISOString().split("T")[0]} 
-                    onChange={() => {}} 
+                    value={reportFilters.dateTo} 
+                    onChange={(e) => setReportFilters(prev => ({ ...prev, dateTo: e.target.value }))} 
                     className="h-8 text-sm"
                   />
                 </div>
                 <div>
                   <Label className="text-xs text-slate-500 mb-1 block">Cliente</Label>
-                  <Select defaultValue="all">
+                  <Select 
+                    value={reportFilters.clientId} 
+                    onValueChange={(val) => setReportFilters(prev => ({ ...prev, clientId: val }))}
+                  >
                     <SelectTrigger className="h-8 text-sm">
                       <SelectValue />
                     </SelectTrigger>
@@ -2229,7 +2408,10 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                   </Select>
                 </div>
                 <div className="flex items-end">
-                  <Button className="bg-purple-600 hover:bg-purple-700 h-8 text-sm w-full">
+                  <Button 
+                    className="bg-purple-600 hover:bg-purple-700 h-8 text-sm w-full"
+                    onClick={calculateStatistics}
+                  >
                     <TrendingUp className="w-3.5 h-3.5 mr-2" />
                     Generar Reporte
                   </Button>
@@ -2243,8 +2425,8 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                 <CardContent className="p-4">
                   <div className="text-center">
                     <p className="text-purple-100 text-sm">Ventas Totales</p>
-                    <p className="text-2xl font-bold">{formatCurrency(125450)}</p>
-                    <p className="text-xs text-purple-200">+15% vs mes anterior</p>
+                    <p className="text-2xl font-bold">{formatCurrency(statistics.totalSales)}</p>
+                    <p className="text-xs text-purple-200">{statistics.growth >= 0 ? "+" : ""}{statistics.growth.toFixed(1)}% vs mes anterior</p>
                   </div>
                 </CardContent>
               </Card>
@@ -2252,8 +2434,8 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                 <CardContent className="p-4">
                   <div className="text-center">
                     <p className="text-green-100 text-sm">Pedidos Realizados</p>
-                    <p className="text-2xl font-bold">47</p>
-                    <p className="text-xs text-green-200">+8% vs mes anterior</p>
+                    <p className="text-2xl font-bold">{statistics.totalOrders}</p>
+                    <p className="text-xs text-green-200">Total acumulado</p>
                   </div>
                 </CardContent>
               </Card>
@@ -2261,8 +2443,8 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                 <CardContent className="p-4">
                   <div className="text-center">
                     <p className="text-blue-100 text-sm">Ticket Promedio</p>
-                    <p className="text-2xl font-bold">$2,670</p>
-                    <p className="text-xs text-blue-200">+3% vs mes anterior</p>
+                    <p className="text-2xl font-bold">{formatCurrency(statistics.averageTicket)}</p>
+                    <p className="text-xs text-blue-200">Por pedido</p>
                   </div>
                 </CardContent>
               </Card>
@@ -2270,8 +2452,8 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                 <CardContent className="p-4">
                   <div className="text-center">
                     <p className="text-orange-100 text-sm">Clientes Activos</p>
-                    <p className="text-2xl font-bold">23</p>
-                    <p className="text-xs text-orange-200">+12% vs mes anterior</p>
+                    <p className="text-2xl font-bold">{statistics.activeClients}</p>
+                    <p className="text-xs text-orange-200">Con compras registradas</p>
                   </div>
                 </CardContent>
               </Card>
@@ -2281,13 +2463,11 @@ Este reporte contiene información confidencial y está destinado únicamente pa
             <div className="grid grid-cols-2 gap-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Ventas por Cliente (Top 10)</CardTitle>
+                  <CardTitle>Ventas por Cliente (Top 5)</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {clients.slice(0, 5).map((client, index) => {
-                      const salesAmount = Math.floor(Math.random() * 50000) + 10000
-                      const percentage = Math.floor(Math.random() * 30) + 10
+                    {statistics.topClients.slice(0, 5).map((client, index) => {
                       return (
                         <div key={client.id} className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -2300,14 +2480,17 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold">${salesAmount.toLocaleString()}</p>
+                            <p className="font-semibold">{formatCurrency(client.sales)}</p>
                             <div className="w-20 bg-gray-200 rounded-full h-2 mt-1">
-                              <div className="bg-purple-600 h-2 rounded-full" style={{ width: `${percentage}%` }}></div>
+                              <div className="bg-purple-600 h-2 rounded-full" style={{ width: `${client.percentage}%` }}></div>
                             </div>
                           </div>
                         </div>
                       )
                     })}
+                    {statistics.topClients.length === 0 && (
+                        <p className="text-center text-gray-500 py-4">No hay datos de ventas disponibles</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -2318,11 +2501,9 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {inventory.slice(0, 5).map((item, index) => {
-                      const quantity = Math.floor(Math.random() * 100) + 20
-                      const revenue = quantity * item.cost_without_tax * 1.2
+                    {statistics.topProducts.slice(0, 5).map((item, index) => {
                       return (
-                        <div key={item.id} className="flex items-center justify-between">
+                        <div key={item.sku} className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-semibold text-sm">
                               {index + 1}
@@ -2333,12 +2514,15 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold">{quantity} unidades</p>
-                            <p className="text-sm text-gray-500">${revenue.toFixed(0)}</p>
+                            <p className="font-semibold">{item.quantity} unidades</p>
+                            <p className="text-sm text-gray-500">{formatCurrency(item.revenue)}</p>
                           </div>
                         </div>
                       )
                     })}
+                    {statistics.topProducts.length === 0 && (
+                        <p className="text-center text-gray-500 py-4">No hay datos de productos disponibles</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -2356,7 +2540,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                       <TrendingUp className="w-8 h-8 text-purple-600" />
                     </div>
                     <h4 className="font-semibold mb-2">Crecimiento Mensual</h4>
-                    <p className="text-2xl font-bold text-purple-600">+18.5%</p>
+                    <p className="text-2xl font-bold text-purple-600">{statistics.growth >= 0 ? "+" : ""}{statistics.growth.toFixed(1)}%</p>
                     <p className="text-sm text-gray-500">Comparado con el mes anterior</p>
                   </div>
                   <div className="text-center">
@@ -2364,7 +2548,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                       <Users className="w-8 h-8 text-green-600" />
                     </div>
                     <h4 className="font-semibold mb-2">Retención de Clientes</h4>
-                    <p className="text-2xl font-bold text-green-600">87%</p>
+                    <p className="text-2xl font-bold text-green-600">{statistics.retention.toFixed(0)}%</p>
                     <p className="text-sm text-gray-500">Clientes que repiten compras</p>
                   </div>
                   <div className="text-center">
@@ -2372,7 +2556,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                       <Package className="w-8 h-8 text-blue-600" />
                     </div>
                     <h4 className="font-semibold mb-2">Productos Activos</h4>
-                    <p className="text-2xl font-bold text-blue-600">342</p>
+                    <p className="text-2xl font-bold text-blue-600">{statistics.activeProducts}</p>
                     <p className="text-sm text-gray-500">Con ventas en el período</p>
                   </div>
                 </div>
@@ -2398,19 +2582,49 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                   </TableHeader>
                   <TableBody>
                     {clients.map((client) => {
-                      const lastOrder = Math.floor(Math.random() * 30) + 1
-                      const totalOrders = Math.floor(Math.random() * 20) + 5
-                      const frequency = Math.floor(Math.random() * 15) + 7
-                      const monthlyAvg = (totalOrders / 6).toFixed(1)
-                      const status = lastOrder <= 7 ? "Activo" : lastOrder <= 30 ? "Regular" : "Inactivo"
+                      const clientOrders = orders.filter(o => o.client_id === client.id && ["confirmed", "shipped", "delivered"].includes(o.status))
+                      const totalOrders = clientOrders.length
+                      
+                      let lastOrderStr = "Sin pedidos"
+                      let daysSinceLastOrder = -1
+                      
+                      if (totalOrders > 0) {
+                          const lastOrderDate = new Date(Math.max(...clientOrders.map(o => new Date(o.order_date).getTime())))
+                          daysSinceLastOrder = Math.floor((Date.now() - lastOrderDate.getTime()) / (1000 * 60 * 60 * 24))
+                          lastOrderStr = `Hace ${daysSinceLastOrder} días`
+                      }
+
+                      // Calculate frequency
+                      let frequencyStr = "N/A"
+                      if (totalOrders > 1) {
+                          const dates = clientOrders.map(o => new Date(o.order_date).getTime()).sort((a, b) => a - b)
+                          const firstOrder = dates[0]
+                          const lastOrderTime = dates[dates.length - 1]
+                          const daysDiff = (lastOrderTime - firstOrder) / (1000 * 60 * 60 * 24)
+                          const avgDays = Math.round(daysDiff / (totalOrders - 1))
+                          frequencyStr = `Cada ${avgDays} días`
+                      }
+
+                      const createdDate = new Date(client.created_at)
+                      const monthsSinceRegistration = Math.max(1, (Date.now() - createdDate.getTime()) / (1000 * 60 * 60 * 24 * 30))
+                      const monthlyAvg = (totalOrders / monthsSinceRegistration).toFixed(1)
+
+                      let status = "Inactivo"
+                      if (totalOrders > 0) {
+                          if (daysSinceLastOrder <= 30) status = "Activo"
+                          else if (daysSinceLastOrder <= 90) status = "Regular"
+                      } else if ((Date.now() - new Date(client.created_at).getTime()) / (1000 * 60 * 60 * 24) < 30) {
+                          status = "Nuevo"
+                      }
+                      
                       const statusColor =
-                        status === "Activo" ? "bg-green-500" : status === "Regular" ? "bg-yellow-500" : "bg-red-500"
+                        status === "Activo" ? "bg-green-500" : status === "Regular" ? "bg-yellow-500" : status === "Nuevo" ? "bg-blue-500" : "bg-red-500"
 
                       return (
                         <TableRow key={client.id}>
                           <TableCell className="font-medium">{client.name}</TableCell>
-                          <TableCell>Hace {lastOrder} días</TableCell>
-                          <TableCell>Cada {frequency} días</TableCell>
+                          <TableCell>{lastOrderStr}</TableCell>
+                          <TableCell>{frequencyStr}</TableCell>
                           <TableCell>{totalOrders}</TableCell>
                           <TableCell>{monthlyAvg}/mes</TableCell>
                           <TableCell>
