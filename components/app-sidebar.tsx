@@ -200,6 +200,14 @@ export function AppSidebar({
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <a href="/dashboard/rentabilidad">
+                    <TrendingUp />
+                    <span>Rentabilidad Real</span>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
                 <SidebarMenuButton onClick={handleOpenRetail}>
                   <ShoppingBag />
                   <span>Ventas Minoristas</span>

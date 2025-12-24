@@ -2366,7 +2366,6 @@ ${csvRows
              <SidebarTrigger className="md:hidden" />
              <div>
                 <p className="text-slate-600 font-medium">Gestión Integral de Inventario</p>
-                {lastSync && <span className="text-xs text-slate-500">Última sync: {lastSync.toLocaleTimeString()}</span>}
              </div>
           </div>
           <div className="flex items-center gap-4">
