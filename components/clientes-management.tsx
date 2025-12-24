@@ -595,6 +595,9 @@ export function ClientesManagement({ isOpen, onClose }: ClientesManagementProps)
               <DialogTitle>
                 {editingClient ? "Editar Cliente" : "Nuevo Cliente"}
               </DialogTitle>
+              <DialogDescription>
+                Complete los datos del formulario para {editingClient ? "editar el" : "crear un nuevo"} cliente.
+              </DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-2 gap-4 py-4">
               <div className="col-span-2">

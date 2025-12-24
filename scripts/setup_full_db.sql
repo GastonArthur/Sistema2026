@@ -199,6 +199,25 @@ CREATE TABLE IF NOT EXISTS inventory_public (
   updated_by INTEGER REFERENCES users(id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_wholesale_order_items_order_id ON wholesale_order_items(order_id);
+
+-- 7b. Retail Management
+CREATE TABLE IF NOT EXISTS retail_clients (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  dni_cuit VARCHAR(50),
+  email VARCHAR(255),
+  phone VARCHAR(50),
+  address TEXT,
+  city VARCHAR(100),
+  province VARCHAR(100),
+  zip_code VARCHAR(20),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_retail_clients_dni_cuit ON retail_clients(dni_cuit);
+
 -- 8. Expenses
 CREATE TABLE IF NOT EXISTS expense_categories (
   id SERIAL PRIMARY KEY,

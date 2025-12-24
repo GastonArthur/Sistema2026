@@ -233,6 +233,24 @@ CREATE TABLE IF NOT EXISTS wholesale_order_items (
 CREATE INDEX IF NOT EXISTS idx_wholesale_orders_client_id ON wholesale_orders(client_id);
 CREATE INDEX IF NOT EXISTS idx_wholesale_order_items_order_id ON wholesale_order_items(order_id);
 
+-- 8b. Retail Management
+CREATE TABLE IF NOT EXISTS retail_clients (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    dni_cuit TEXT,
+    email TEXT,
+    phone TEXT,
+    address TEXT,
+    city TEXT,
+    province TEXT,
+    zip_code TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_retail_clients_dni_cuit ON retail_clients(dni_cuit);
+CREATE INDEX IF NOT EXISTS idx_retail_clients_name ON retail_clients(name);
+
 -- 9. Initial Data Seed (Admin User)
 -- Password: maycamadmin2025!
 INSERT INTO users (email, name, password_hash, role, is_active, can_view_logs, can_view_wholesale) 
