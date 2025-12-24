@@ -13,6 +13,10 @@ export async function POST(req: NextRequest) {
     if (!supabaseUrl || !supabaseKey) {
       return NextResponse.json({ error: "Supabase credentials missing" }, { status: 500 })
     }
+    
+    // Check query param for full sync
+    const { searchParams } = new URL(req.url)
+    const fullHistory = searchParams.get('full') === 'true'
 
     const supabase = createClient(supabaseUrl, supabaseKey)
 
@@ -33,8 +37,8 @@ export async function POST(req: NextRequest) {
 
     for (const account of accounts) {
       try {
-        await mlService.syncOrders(account as RT_ML_Account)
-        results.push({ account: account.name, status: "success" })
+        await mlService.syncOrders(account as RT_ML_Account, fullHistory)
+        results.push({ account: account.name, status: "success", mode: fullHistory ? "full" : "partial" })
       } catch (err: any) {
         console.error(`Error syncing orders for ${account.name}:`, err)
         results.push({ account: account.name, status: "error", error: err.message })

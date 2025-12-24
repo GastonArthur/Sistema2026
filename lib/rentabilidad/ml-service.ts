@@ -3,6 +3,8 @@ import { RT_ML_Account, RT_ML_Order, RT_Stock_Current } from "./types"
 
 const ML_API_URL = "https://api.mercadolibre.com"
 
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+
 export class MLService {
   private supabaseUrl: string
   private supabaseKey: string
@@ -28,8 +30,8 @@ export class MLService {
         },
         body: new URLSearchParams({
           grant_type: "refresh_token",
-          client_id: process.env.ML_CLIENT_ID || "", // Should be in env
-          client_secret: process.env.ML_CLIENT_SECRET || "", // Should be in env
+          client_id: process.env.ML_CLIENT_ID || "", 
+          client_secret: process.env.ML_CLIENT_SECRET || "", 
           refresh_token: account.refresh_token,
         }),
       })
@@ -46,7 +48,7 @@ export class MLService {
         .from("rt_ml_accounts")
         .update({
           access_token: data.access_token,
-          refresh_token: data.refresh_token, // ML rotates refresh tokens too usually
+          refresh_token: data.refresh_token, 
           access_expires_at: new Date(Date.now() + data.expires_in * 1000).toISOString(),
           updated_at: new Date().toISOString(),
         })
@@ -73,9 +75,6 @@ export class MLService {
     const sellerId = account.seller_id
 
     // 1. Get all items
-    // This is a simplified version. In reality we need to scroll/paginate.
-    // ML API /users/{id}/items/search
-    
     let offset = 0
     const limit = 50
     let hasMore = true
@@ -87,7 +86,7 @@ export class MLService {
         headers: { Authorization: `Bearer ${token}` },
       })
       
-      if (!searchRes.ok) break // Log error
+      if (!searchRes.ok) break 
 
       const searchData = await searchRes.json()
       const itemIds = searchData.results || []
@@ -133,10 +132,8 @@ export class MLService {
   }
 
   private extractSku(itemOrVar: any, parent: any | null): string | null {
-    // Try seller_sku first
     if (itemOrVar.seller_sku) return itemOrVar.seller_sku
     
-    // Try attributes
     const attrs = itemOrVar.attributes || []
     const skuAttr = attrs.find((a: any) => a.id === "SELLER_SKU")
     if (skuAttr) return skuAttr.value_name
@@ -147,7 +144,6 @@ export class MLService {
   private async upsertStock(accountId: string, sku: string, qty: number, status: string) {
     const supabase = this.getSupabase()
     
-    // Map status
     let stockStatus = "Stock"
     if (qty === 0) stockStatus = "Sin stock"
     if (status === "paused" || status === "closed") stockStatus = "No publicado"
@@ -194,7 +190,7 @@ export class MLService {
 
   // --- Orders ---
   
-  async syncOrders(account: RT_ML_Account) {
+  async syncOrders(account: RT_ML_Account, fullHistory: boolean = false) {
       const token = await this.getValidAccessToken(account)
       const sellerId = account.seller_id
       const supabase = this.getSupabase()
@@ -204,72 +200,123 @@ export class MLService {
       const lastDate = await this.getLastSync(jobName)
       
       let dateFrom: Date
-      if (lastDate) {
+      
+      if (fullHistory) {
+          // If full history requested, start from beginning of current year (or earlier if needed)
+          // 2024-01-01 is a safe bet for "Complete" relevant history for this system
+          dateFrom = new Date('2024-01-01T00:00:00.000Z')
+          console.log(`[Sync] Full history requested. Starting from ${dateFrom.toISOString()}`)
+      } else if (lastDate) {
           dateFrom = lastDate
       } else {
-          // Default to 7 days ago if never synced
+          // Default to 15 days ago to be safe on first sync
           dateFrom = new Date()
-          dateFrom.setDate(dateFrom.getDate() - 7)
+          dateFrom.setDate(dateFrom.getDate() - 15)
       }
       
       const dateFromStr = dateFrom.toISOString()
       
-      // We should capture the latest date seen to update cursor
-      let maxDate = dateFrom
-
-      // Note: ML API might need pagination for large volumes, assuming limited for now or relying on frequent syncs
-      const res = await fetch(`${ML_API_URL}/orders/search?seller=${sellerId}&order.date_created.from=${dateFromStr}&sort=date_asc`, {
-          headers: { Authorization: `Bearer ${token}` }
-      })
+      // LOGGING: Debug what we are sending
+      console.log(`[Sync] Fetching orders for ${account.name} (Seller ${sellerId}) from ${dateFromStr}`)
       
-      if (!res.ok) return // Log error
+      let maxDate = dateFrom
+      
+      let offset = 0
+      const limit = 50
+      let hasMore = true
+      let totalFetched = 0
 
-      const data = await res.json()
-      const orders = data.results || []
-
-      for (const order of orders) {
-          const orderDate = new Date(order.date_created)
-          if (orderDate > maxDate) maxDate = orderDate
-
-          // Upsert Order
-          await supabase.from("rt_ml_orders").upsert({
-              account_id: account.id,
-              order_id: order.id,
-              status: order.status,
-              date_created: order.date_created,
-              total_amount: order.total_amount,
-              paid_amount: order.paid_amount,
-              buyer_id: order.buyer.id,
-              shipment_id: order.shipping.id,
-              raw: order,
-              updated_at: new Date().toISOString()
+      while (hasMore) {
+          const url = `${ML_API_URL}/orders/search?seller=${sellerId}&order.date_created.from=${dateFromStr}&sort=date_asc&limit=${limit}&offset=${offset}`
+          
+          const res = await fetch(url, {
+              headers: { Authorization: `Bearer ${token}` }
           })
+          
+          if (!res.ok) {
+              const errText = await res.text()
+              console.error(`[Sync] Error fetching orders: ${res.status} - ${errText}`)
+              break
+          }
 
-          // Upsert Items
-          // Clean existing items for this order to avoid duplicates on re-sync
-          await supabase.from("rt_ml_order_items").delete().match({ account_id: account.id, order_id: order.id })
+          const data = await res.json()
+          const orders = data.results || []
+          
+          if (orders.length === 0) {
+              hasMore = false
+              break
+          }
 
-          for (const item of order.order_items) {
-              const sku = item.item.seller_sku || item.item.id // Fallback
-              
-              await supabase.from("rt_ml_order_items").insert({
+          console.log(`[Sync] Found ${orders.length} orders (Offset: ${offset})`)
+
+          for (const order of orders) {
+              const orderDate = new Date(order.date_created)
+              if (orderDate > maxDate) maxDate = orderDate
+
+              // Upsert Order
+              await supabase.from("rt_ml_orders").upsert({
                   account_id: account.id,
                   order_id: order.id,
-                  sku: sku,
-                  item_id: item.item.id,
-                  variation_id: item.item.variation_id,
-                  title: item.item.title,
-                  quantity: item.quantity,
-                  unit_price: item.unit_price,
-                  discount: item.unit_price * 0, // Placeholder, need real discount field if available
-                  raw: item
+                  status: order.status,
+                  date_created: order.date_created,
+                  total_amount: order.total_amount,
+                  paid_amount: order.paid_amount,
+                  buyer_id: order.buyer.id,
+                  shipment_id: order.shipping.id,
+                  raw: order,
+                  updated_at: new Date().toISOString()
               })
+
+              // Upsert Items
+              await supabase.from("rt_ml_order_items").delete().match({ account_id: account.id, order_id: order.id })
+
+              for (const item of order.order_items) {
+                  const sku = item.item.seller_sku || item.item.id 
+                  
+                  await supabase.from("rt_ml_order_items").insert({
+                      account_id: account.id,
+                      order_id: order.id,
+                      sku: sku,
+                      item_id: item.item.id,
+                      variation_id: item.item.variation_id,
+                      title: item.item.title,
+                      quantity: item.quantity,
+                      unit_price: item.unit_price,
+                      discount: 0,
+                      raw: item
+                  })
+              }
+          }
+          
+          totalFetched += orders.length
+          offset += limit
+          
+          // Safety break: ONLY if NOT full history. If full history, we want everything.
+          // However, we must respect ML offset limits.
+          // ML usually limits offset to 1000 or so on public search.
+          // But /orders/search for owner usually supports more.
+          // Let's set a higher safety limit for full history.
+          const maxFetchLimit = fullHistory ? 10000 : 1000
+          
+          if (totalFetched >= maxFetchLimit) {
+              console.log(`[Sync] Hit safety limit of ${maxFetchLimit} orders. Stopping.`)
+              hasMore = false 
+          }
+          
+          if (offset >= data.paging.total) hasMore = false
+          
+          // Rate Limiting Protection
+          if (hasMore) {
+              await wait(300) // 300ms delay between pages
           }
       }
       
-      // Update cursor
-      if (orders.length > 0) {
+      // Update cursor only if we actually fetched something new
+      if (totalFetched > 0) {
+          console.log(`[Sync] Updating cursor to ${maxDate.toISOString()}`)
           await this.updateLastSync(jobName, maxDate)
+      } else {
+          console.log(`[Sync] No new orders found. Cursor remains at ${dateFromStr}`)
       }
   }
 }

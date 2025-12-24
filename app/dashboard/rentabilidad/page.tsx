@@ -29,7 +29,8 @@ import {
   BarChart3,
   Calendar as CalendarIcon,
   Filter,
-  Download
+  Download,
+  Database
 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
@@ -46,6 +47,7 @@ export default function RentabilidadPage() {
   const [accounts, setAccounts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
+  const [fullSyncing, setFullSyncing] = useState(false)
   const [setupMode, setSetupMode] = useState(false)
   const [addingAccount, setAddingAccount] = useState(false)
   const [newAccount, setNewAccount] = useState({
@@ -200,6 +202,28 @@ export default function RentabilidadPage() {
       setSyncing(false)
     }
   }
+  
+  const handleFullSync = async () => {
+    if (!confirm("Esto descargará todo el historial desde 2024. Puede tardar varios minutos. ¿Continuar?")) return;
+    
+    try {
+      setFullSyncing(true)
+      toast({ title: "Iniciando descarga histórica...", description: "Esto puede tardar un poco. No cierres la ventana." })
+      
+      // Sync Orders with FULL flag
+      const res = await fetch("/api/cron/rt/sync-orders?full=true", { method: "POST" })
+      if (!res.ok) throw new Error("Error en la sincronización")
+
+      toast({ title: "Historial completo", description: "Se han descargado todas las ventas desde 2024." })
+      
+      await fetchSales()
+    } catch (err) {
+      console.error("Full Sync error:", err)
+      toast({ title: "Error", description: "Hubo un problema con la descarga histórica.", variant: "destructive" })
+    } finally {
+      setFullSyncing(false)
+    }
+  }
 
   const handleAddAccount = async () => {
     if (!supabase) return
@@ -264,7 +288,7 @@ export default function RentabilidadPage() {
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <h2 className="text-3xl font-bold tracking-tight">Panel de Rentabilidad</h2>
             <div className="flex items-center space-x-2">
-              <Button onClick={handleSync} disabled={syncing}>
+              <Button onClick={handleSync} disabled={syncing || fullSyncing}>
                 <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
                 {syncing ? "Sincronizando..." : "Sincronizar Datos"}
               </Button>
@@ -605,6 +629,19 @@ export default function RentabilidadPage() {
                     <div className="flex items-center gap-2">
                        <CheckCircle className="h-4 w-4 text-green-500" />
                        <span className="text-sm">Tablas de Rentabilidad (rt_*) detectadas.</span>
+                    </div>
+
+                    <div className="mt-6 border-t pt-6">
+                        <h4 className="text-md font-semibold mb-2 flex items-center gap-2">
+                            <Database className="h-4 w-4" />
+                            Acciones Avanzadas
+                        </h4>
+                        <p className="text-sm text-muted-foreground mb-4">
+                            Utiliza estas opciones solo si es necesario descargar todo el historial antiguo.
+                        </p>
+                        <Button variant="outline" onClick={handleFullSync} disabled={fullSyncing}>
+                            {fullSyncing ? "Descargando..." : "Descargar Historial Completo (2024)"}
+                        </Button>
                     </div>
                   </div>
                 </CardContent>
