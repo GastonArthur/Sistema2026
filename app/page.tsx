@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from "react"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { formatCurrency } from "@/lib/utils"
 import { logError } from "@/lib/logger"
-import { read, utils } from "xlsx"
+import { read, utils, writeFile } from "xlsx"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -469,37 +469,13 @@ export default function InventoryManagement() {
     })
 
     try {
-      let text = ""
+      const arrayBuffer = await file.arrayBuffer()
+      const workbook = read(arrayBuffer, { type: "array" })
+      const sheetName = workbook.SheetNames[0]
+      const worksheet = workbook.Sheets[sheetName]
+      const jsonData = utils.sheet_to_json(worksheet, { defval: "" })
 
-      // Manejar diferentes tipos de archivo
-      if (file.name.toLowerCase().endsWith(".csv")) {
-        text = await file.text()
-      } else if (file.name.toLowerCase().endsWith(".xls") || file.name.toLowerCase().endsWith(".xlsx")) {
-        try {
-          const arrayBuffer = await file.arrayBuffer()
-          const workbook = read(arrayBuffer)
-          const sheetName = workbook.SheetNames[0]
-          const worksheet = workbook.Sheets[sheetName]
-          text = utils.sheet_to_csv(worksheet)
-        } catch (error) {
-          console.error("Error parsing Excel file:", error)
-          toast({
-            title: "Error al leer Excel",
-            description: "No se pudo procesar el archivo Excel. Asegúrese de que no esté corrupto.",
-            variant: "destructive",
-          })
-          return
-        }
-      } else {
-        toast({
-          title: "Error",
-          description: "Formato de archivo no soportado. Use CSV, XLS o XLSX.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      if (!text || text.trim().length === 0) {
+      if (jsonData.length === 0) {
         toast({
           title: "Error",
           description: "El archivo está vacío o no se pudo leer",
@@ -508,44 +484,16 @@ export default function InventoryManagement() {
         return
       }
 
-      const lines = text.split(/\r?\n/).filter((line) => line.trim())
-
-      if (lines.length < 2) {
-        toast({
-          title: "Error",
-          description: "El archivo debe tener al menos una fila de encabezados y una de datos",
-          variant: "destructive",
-        })
-        return
-      }
-
-      // Detectar separador automáticamente
-      let separator = ";"
-      const firstLine = lines[0]
-
-      const semicolonCount = (firstLine.match(/;/g) || []).length
-      const commaCount = (firstLine.match(/,/g) || []).length
-      const tabCount = (firstLine.match(/\t/g) || []).length
-
-      if (semicolonCount > commaCount && semicolonCount > tabCount) {
-        separator = ";"
-      } else if (tabCount > commaCount && tabCount > semicolonCount) {
-        separator = "\t"
-      } else if (commaCount > 0) {
-        separator = ","
-      }
-
-      const headers = firstLine.split(separator).map((h) => h.trim().replace(/"/g, ""))
-
       // Función para convertir notación científica a número completo
-      const convertScientificNotation = (value: string): string => {
-        if (!value || typeof value !== "string") return value
+      const convertScientificNotation = (value: any): string => {
+        if (!value) return ""
+        const strVal = String(value)
 
         // Detectar si es notación científica (contiene E+ o E-)
-        if (value.includes("E+") || value.includes("E-") || value.includes("e+") || value.includes("e-")) {
+        if (strVal.includes("E+") || strVal.includes("E-") || strVal.includes("e+") || strVal.includes("e-")) {
           try {
             // Convertir a número y luego a string para obtener el valor completo
-            const num = Number.parseFloat(value)
+            const num = Number.parseFloat(strVal)
             if (!isNaN(num)) {
               // Usar toFixed(0) para números enteros grandes
               return num.toFixed(0)
@@ -554,64 +502,92 @@ export default function InventoryManagement() {
             console.warn("Error converting scientific notation:", value, error)
           }
         }
-
-        return value
+        return strVal
       }
 
       // Procesar datos para vista previa
-      const jsonData: any[] = []
+      const processedData: any[] = []
       const errors: string[] = []
       let validCount = 0
 
-      for (let i = 1; i < lines.length; i++) {
-        const line = lines[i]
-        if (!line.trim()) continue
+      // Mapeo de columnas flexible (insensitive case)
+      const firstRow = jsonData[0] as any
+      const availableKeys = Object.keys(firstRow)
+      
+      const findKey = (target: string) => 
+        availableKeys.find(k => k.toUpperCase().trim() === target) || target
 
-        const values = line.split(separator).map((v) => v.trim().replace(/"/g, ""))
+      const keyMap = {
+        SKU: findKey("SKU"),
+        DESCRIPCION: findKey("DESCRIPCION"),
+        COSTO: findKey("COSTO"),
+        PVP: findKey("PVP"),
+        MARCA: findKey("MARCA"),
+        EAN: findKey("EAN"),
+        CANTIDAD: findKey("CANTIDAD"),
+        FACTURA: findKey("FACTURA"),
+        PROVEEDOR: findKey("PROVEEDOR")
+      }
 
-        const row: any = {}
-        headers.forEach((header, index) => {
-          row[header] = values[index] || ""
+      jsonData.forEach((row: any, index) => {
+        const i = index + 1 // Row number for user (1-based index)
+        
+        // Normalizar objeto usando el mapa de claves
+        const normalizedRow: any = {}
+        Object.entries(keyMap).forEach(([target, actualKey]) => {
+          normalizedRow[target] = row[actualKey] !== undefined ? row[actualKey] : ""
+        })
+        
+        // Agregar cualquier otra columna que no esté en el mapa
+        Object.keys(row).forEach(key => {
+          if (!Object.values(keyMap).includes(key)) {
+            normalizedRow[key] = row[key]
+          }
         })
 
         // Solo agregar filas que tengan SKU
-        if (row.SKU && row.SKU.trim()) {
+        if (normalizedRow.SKU && String(normalizedRow.SKU).trim()) {
           // Convertir SKU de notación científica si es necesario
-          const originalSku = row.SKU?.toString().trim()
+          const originalSku = String(normalizedRow.SKU).trim()
           const convertedSku = convertScientificNotation(originalSku)
 
           // Actualizar el SKU en el objeto row
-          row.SKU = convertedSku
+          normalizedRow.SKU = convertedSku
 
-          jsonData.push(row)
+          processedData.push(normalizedRow)
 
-          // Validar datos obligatorios usando el SKU convertido
+          // Validar datos obligatorios
           const sku = convertedSku
-          const description = row.DESCRIPCION?.toString().trim()
-          const cost = row.COSTO?.toString().trim()
-          const pvp = row.PVP?.toString().trim()
-          const brand = row.MARCA?.toString().trim()
+          const description = String(normalizedRow.DESCRIPCION || "").trim()
+          const costStr = String(normalizedRow.COSTO || "").trim()
+          const pvpStr = String(normalizedRow.PVP || "").trim()
+          const brand = String(normalizedRow.MARCA || "").trim()
 
-          if (!sku || !description || !cost || !pvp || !brand) {
+          const cost = Number.parseFloat(costStr)
+          const pvp = Number.parseFloat(pvpStr)
+
+          if (!sku || !description || !costStr || !pvpStr || !brand) {
             errors.push(
-              `Fila ${i + 1}: Faltan datos obligatorios (SKU: ${sku}, DESC: ${description ? "OK" : "FALTA"}, COSTO: ${cost ? "OK" : "FALTA"}, PVP: ${pvp ? "OK" : "FALTA"}, MARCA: ${brand ? "OK" : "FALTA"})`,
+              `Fila ${i}: Faltan datos obligatorios (SKU: ${sku}, DESC: ${description ? "OK" : "FALTA"}, COSTO: ${costStr ? "OK" : "FALTA"}, PVP: ${pvpStr ? "OK" : "FALTA"}, MARCA: ${brand ? "OK" : "FALTA"})`,
             )
-          } else if (isNaN(Number.parseFloat(cost)) || isNaN(Number.parseFloat(pvp))) {
-            errors.push(`Fila ${i + 1}: Precios inválidos (COSTO: ${cost}, PVP: ${pvp})`)
+          } else if (isNaN(cost) || isNaN(pvp)) {
+            errors.push(`Fila ${i}: Precios inválidos (COSTO: ${costStr}, PVP: ${pvpStr})`)
           } else {
             // Calcular precios con IVA para la vista previa
-            const costVal = Number.parseFloat(cost)
-            const pvpVal = Number.parseFloat(pvp)
-            row.COSTO_CON_IVA = calculateWithTax(costVal).toFixed(2)
-            row.PVP_CON_IVA = calculateWithTax(pvpVal).toFixed(2)
+            normalizedRow.COSTO_CON_IVA = calculateWithTax(cost).toFixed(2)
+            normalizedRow.PVP_CON_IVA = calculateWithTax(pvp).toFixed(2)
             validCount++
           }
         } else {
-          errors.push(`Fila ${i + 1}: SKU faltante o vacío`)
+          // Solo reportar error si la fila no está totalmente vacía
+          const hasData = Object.values(row).some(v => String(v).trim().length > 0)
+          if (hasData) {
+            errors.push(`Fila ${i}: SKU faltante o vacío`)
+          }
         }
-      }
+      })
 
-      if (jsonData.length === 0) {
+      if (processedData.length === 0) {
         toast({
           title: "Error",
           description: "El archivo no contiene datos válidos con SKU",
@@ -623,10 +599,10 @@ export default function InventoryManagement() {
       // Mostrar vista previa
       setImportPreview({
         show: true,
-        data: jsonData,
+        data: processedData,
         fileName: file.name,
         summary: {
-          total: jsonData.length,
+          total: processedData.length,
           valid: validCount,
           errors: errors,
         },
@@ -4106,27 +4082,6 @@ ${csvRows
                         data: [],
                         fileName: "",
                         summary: { total: 0, valid: 0, errors: [] },
-                      })
-                    }
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    onClick={confirmImport}
-                    disabled={importPreview.summary.valid === 0}
-                    className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700"
-                  >
-                    Confirmar Importación ({importPreview.summary.valid} productos)
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
                       })
                     }
                   >
