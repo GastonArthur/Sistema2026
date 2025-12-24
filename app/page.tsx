@@ -2331,7 +2331,7 @@ ${csvRows
             setShowGastos={setShowGastos}
             setShowClients={setShowClients}
             onLogout={handleLogout}
-            userEmail={currentUser?.email}
+            userEmail={getCurrentUser()?.email}
             isOnline={isOnline}
             lastSync={lastSync}
           />
