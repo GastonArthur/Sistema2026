@@ -2335,14 +2335,15 @@ ${csvRows
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <AppSidebar 
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          setShowWholesale={setShowWholesale}
-          setShowGastos={setShowGastos}
-          onLogout={handleLogout}
-          userEmail={getCurrentUser()?.email}
-        />
-        <SidebarInset>
+            activeTab={activeTab} 
+            setActiveTab={setActiveTab} 
+            setShowWholesale={setShowWholesale}
+            setShowRetail={setShowRetail}
+            setShowGastos={setShowGastos}
+            onLogout={handleLogout}
+            userEmail={getCurrentUser()?.email}
+          />
+        <div className="relative flex min-h-svh flex-1 flex-col bg-background peer-data-[variant=inset]:min-h-[calc(100svh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow">
           {/* Zócalo de Anuncios - Solo visible si hay anuncios */}
           {announcement && (
         <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg">
@@ -2361,8 +2362,8 @@ ${csvRows
                 >
                   <X className="w-4 h-4" />
                 </Button>
-              )}
-            </div>
+               )}
+             </div>
           </div>
         </div>
       )}
@@ -3614,6 +3615,12 @@ ${csvRows
             brands={brands}
           />
         )}
+        
+        <VentasMinoristas
+          isOpen={showRetail}
+          onClose={() => setShowRetail(false)}
+          inventory={inventory}
+        />
 
         {/* Modal de confirmación de eliminación */}
         {deleteConfirm.show && (
@@ -4128,7 +4135,9 @@ ${csvRows
             </div>
           </div>
         )}
+        </div>
       </div>
-    </div>
+      </div>
+    </SidebarProvider>
   )
 }

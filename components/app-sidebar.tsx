@@ -150,6 +150,12 @@ export function AppSidebar({
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
+                <SidebarMenuButton onClick={handleOpenRetail}>
+                  <ShoppingBag />
+                  <span>Ventas Minoristas</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
                 <SidebarMenuButton onClick={handleOpenWholesale}>
                   <ShoppingCart />
                   <span>Ventas Mayoristas</span>
