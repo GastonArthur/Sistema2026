@@ -84,7 +84,7 @@ export function GastosManagement({ isOpen, onClose, onUpdateExpenses }: GastosMa
     invoice_date: "",
     paid_by: "",
     paid_date: "",
-    payment_method: "efectivo" as const,
+    payment_method: "efectivo" as "efectivo" | "transferencia" | "cheque" | "tarjeta",
     observations: "",
   })
 

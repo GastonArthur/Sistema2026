@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
-import { formatCurrency } from "@/lib/utils"
+import { formatCurrency, convertScientificNotation } from "@/lib/utils"
 import { logError } from "@/lib/logger"
 import { read, utils, writeFile } from "xlsx"
 import { 
@@ -150,7 +150,9 @@ export default function InventoryManagement() {
     ean: "",
     description: "",
     cost_without_tax: "",
+    cost_with_tax: "",
     pvp_without_tax: "",
+    pvp_with_tax: "",
     quantity: "",
     company: "",
     channel: "",
@@ -528,27 +530,6 @@ export default function InventoryManagement() {
           variant: "destructive",
         })
         return
-      }
-
-      // Función para convertir notación científica a número completo
-      const convertScientificNotation = (value: any): string => {
-        if (!value) return ""
-        const strVal = String(value)
-
-        // Detectar si es notación científica (contiene E+ o E-)
-        if (strVal.includes("E+") || strVal.includes("E-") || strVal.includes("e+") || strVal.includes("e-")) {
-          try {
-            // Convertir a número y luego a string para obtener el valor completo
-            const num = Number.parseFloat(strVal)
-            if (!isNaN(num)) {
-              // Usar toFixed(0) para números enteros grandes
-              return num.toFixed(0)
-            }
-          } catch (error) {
-            console.warn("Error converting scientific notation:", value, error)
-          }
-        }
-        return strVal
       }
 
       // Procesar datos para vista previa
@@ -1090,7 +1071,9 @@ export default function InventoryManagement() {
         ean: "",
         description: "",
         cost_without_tax: "",
+        cost_with_tax: "",
         pvp_without_tax: "",
+        pvp_with_tax: "",
         quantity: "",
         company: "",
         channel: "",
@@ -1175,7 +1158,9 @@ export default function InventoryManagement() {
         ean: "",
         description: "",
         cost_without_tax: "",
+        cost_with_tax: "",
         pvp_without_tax: "",
+        pvp_with_tax: "",
         quantity: "",
         company: "",
         channel: "",
@@ -2798,7 +2783,7 @@ ${csvRows
                   </div>
 
                   <Button
-                    onClick={addInventoryItem}
+                    onClick={() => addInventoryItem()}
                     className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg"
                     disabled={
                       !formData.sku?.trim() ||
@@ -3159,8 +3144,8 @@ ${csvRows
                                   : "Sobró"}
                             </Badge>
                           </TableCell>
-                          <TableCell className="border-r border-slate-100 font-mono text-[10px] py-1 px-2 truncate max-w-[80px] hidden md:table-cell" title={item.invoice_number}>{item.invoice_number}</TableCell>
-                          <TableCell className="max-w-[100px] truncate border-r border-slate-100 text-slate-500 italic py-1 px-2 text-[10px] hidden md:table-cell" title={item.observations}>
+                          <TableCell className="border-r border-slate-100 font-mono text-[10px] py-1 px-2 truncate max-w-[80px] hidden md:table-cell" title={item.invoice_number || undefined}>{item.invoice_number}</TableCell>
+                          <TableCell className="max-w-[100px] truncate border-r border-slate-100 text-slate-500 italic py-1 px-2 text-[10px] hidden md:table-cell" title={item.observations || undefined}>
                             {item.observations}
                           </TableCell>
                           <TableCell className="border-r border-slate-100 py-1 px-2 text-xs hidden md:table-cell">
@@ -3747,7 +3732,7 @@ ${csvRows
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue value={editingItem.company} />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="MAYCAM">MAYCAM</SelectItem>
@@ -3763,7 +3748,7 @@ ${csvRows
                     onValueChange={(value: "A" | "B") => setEditingItem({ ...editingItem, channel: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue value={editingItem.channel} />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="A">Canal A</SelectItem>

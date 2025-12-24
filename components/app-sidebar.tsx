@@ -5,6 +5,7 @@ import {
   Users,
   Tag,
   DollarSign,
+  ShoppingBag,
   ShoppingCart,
   Receipt,
   LayoutDashboard,

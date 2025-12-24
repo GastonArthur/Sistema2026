@@ -545,6 +545,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
       business_name: client.business_name,
       cuit: client.cuit,
       address: client.address,
+      city: client.city || "",
       province: client.province,
       contact_person: client.contact_person,
       email: client.email,

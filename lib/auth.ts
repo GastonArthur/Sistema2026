@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
-import { compare } from "bcryptjs"
+import { compare, hash } from "bcryptjs"
 import { logError } from "@/lib/logger"
 
 export type User = {
@@ -11,6 +11,7 @@ export type User = {
   can_view_logs: boolean
   can_view_wholesale: boolean
   created_at: string
+  password_hash?: string
 }
 
 export type ActivityLog = {
@@ -253,8 +254,9 @@ export const checkSession = async (): Promise<User | null> => {
         .eq("session_token", sessionToken)
     }
 
-    currentUser = session.users
-    return session.users
+    currentUser = Array.isArray(session.users) ? session.users[0] : session.users
+    // @ts-ignore
+    return currentUser
   } catch (error) {
     logError("Error verificando sesión:", error)
     localStorage.removeItem("session_token")
@@ -339,7 +341,7 @@ export const getActivityLogs = async (limit = 100): Promise<ActivityLog[]> => {
   try {
     let query = supabase
       .from("activity_logs")
-      .select("id, user_id, user_email, user_name, action, table_name, record_id, description, created_at")
+      .select("id, user_id, user_email, user_name, action, table_name, record_id, description, created_at, old_data, new_data, ip_address, user_agent")
       .order("created_at", { ascending: false })
       .limit(Math.min(limit, 500)) // Limitar para mejor rendimiento
 

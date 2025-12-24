@@ -12,6 +12,7 @@ import { Activity, Search, Eye, RefreshCw, Trash2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { getActivityLogs, hasPermission, clearLogs, type ActivityLog } from "@/lib/auth"
 import { logError } from "@/lib/logger"
+import { formatCurrency } from "@/lib/utils"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import type { JSX } from "react"
@@ -191,7 +192,7 @@ export function ActivityLogs({ isOpen, onClose }: ActivityLogsProps) {
     return changes.length > 0 ? (
       changes
     ) : (
-      <div className="text-gray-500 italic p-3 bg-gray-50 rounded">No se detectaron cambios específicos</div>
+      [<div key="no-changes" className="text-gray-500 italic p-3 bg-gray-50 rounded">No se detectaron cambios específicos</div>]
     )
   }
 

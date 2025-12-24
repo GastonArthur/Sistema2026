@@ -16,3 +16,23 @@ export const formatCurrency = (amount: number): string => {
     maximumFractionDigits: 2,
   }).format(amount)
 }
+
+export const convertScientificNotation = (value: any): string => {
+  if (!value) return ""
+  const strVal = String(value)
+
+  // Detectar si es notación científica (contiene E+ o E-)
+  if (strVal.includes("E+") || strVal.includes("E-") || strVal.includes("e+") || strVal.includes("e-")) {
+    try {
+      // Convertir a número y luego a string para obtener el valor completo
+      const num = Number.parseFloat(strVal)
+      if (!isNaN(num)) {
+        // Usar toFixed(0) para números enteros grandes
+        return num.toFixed(0)
+      }
+    } catch (error) {
+      console.warn("Error converting scientific notation:", value, error)
+    }
+  }
+  return strVal
+}
