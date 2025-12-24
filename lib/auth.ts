@@ -471,7 +471,7 @@ export const createUser = async (userData: {
 
 export const updateUser = async (
   userId: number,
-  updates: Partial<User>,
+  updates: Partial<User> & { password?: string },
 ): Promise<{ success: boolean; error?: string }> => {
   if (!isSupabaseConfigured) {
     const userIndex = OFFLINE_USERS.findIndex((u) => u.id === userId)
@@ -480,7 +480,24 @@ export const updateUser = async (
     }
 
     const oldUser = { ...OFFLINE_USERS[userIndex] }
-    OFFLINE_USERS[userIndex] = { ...OFFLINE_USERS[userIndex], ...updates }
+    let updatedUser = { ...OFFLINE_USERS[userIndex], ...updates }
+
+    if (updates.password) {
+      // En modo offline, guardamos el hash
+      // Nota: En una aplicación real, esto debería ser asíncrono, pero para este mock está bien
+      // Usamos un hash simulado o real si es posible
+      try {
+        const hashedPassword = await hash(updates.password, 10)
+        updatedUser.password_hash = hashedPassword
+      } catch (e) {
+        console.error("Error hashing password offline", e)
+      }
+    }
+    
+    // Eliminar password plano de updates para evitar que se guarde si User lo tuviera
+    delete (updatedUser as any).password
+
+    OFFLINE_USERS[userIndex] = updatedUser
 
     await logActivity(
       "UPDATE_USER",
@@ -496,17 +513,24 @@ export const updateUser = async (
   try {
     const oldUser = await supabase.from("users").select("*").eq("id", userId).single()
 
+    const updateData: any = {
+      name: updates.name,
+      email: updates.email,
+      role: updates.role,
+      is_active: updates.is_active,
+      can_view_logs: updates.can_view_logs,
+      can_view_wholesale: updates.can_view_wholesale,
+      updated_by: getCurrentUser()?.id,
+    }
+
+    if (updates.password) {
+      const hashedPassword = await hash(updates.password, 10)
+      updateData.password_hash = hashedPassword
+    }
+
     const { error } = await supabase
       .from("users")
-      .update({
-        name: updates.name,
-        email: updates.email,
-        role: updates.role,
-        is_active: updates.is_active,
-        can_view_logs: updates.can_view_logs,
-        can_view_wholesale: updates.can_view_wholesale,
-        updated_by: getCurrentUser()?.id,
-      })
+      .update(updateData)
       .eq("id", userId)
 
     if (error) throw error

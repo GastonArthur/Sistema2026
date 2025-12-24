@@ -330,93 +330,14 @@ ${csvRows
       </Card>
 
       {/* Filtros */}
-      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-        <CardHeader className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-t-lg">
-          <CardTitle className="flex items-center gap-2 text-amber-800">
-            <Filter className="w-5 h-5" />
-            Filtros de Precios
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <Label htmlFor="searchSku" className="text-slate-700 font-medium">
-                Buscar SKU
-              </Label>
-              <Input
-                id="searchSku"
-                type="text"
-                placeholder="Buscar por SKU..."
-                value={filters.searchSku}
-                onChange={(e) => setFilters((prev) => ({ ...prev, searchSku: e.target.value }))}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="filterSupplier" className="text-slate-700 font-medium">
-                Proveedor
-              </Label>
-              <Select
-                value={filters.supplier}
-                onValueChange={(value) => setFilters((prev) => ({ ...prev, supplier: value }))}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  {suppliers.map((supplier) => (
-                    <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                      {supplier.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="filterBrand" className="text-slate-700 font-medium">
-                Marca
-              </Label>
-              <Select
-                value={filters.brand}
-                onValueChange={(value) => setFilters((prev) => ({ ...prev, brand: value }))}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Todas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  {brands.map((brand) => (
-                    <SelectItem key={brand.id} value={brand.id.toString()}>
-                      {brand.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="filterCompany" className="text-slate-700 font-medium">
-                Empresa
-              </Label>
-              <Select
-                value={filters.company}
-                onValueChange={(value) => setFilters((prev) => ({ ...prev, company: value }))}
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Todas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="MAYCAM">MAYCAM</SelectItem>
-                  <SelectItem value="BLUE DOGO">BLUE DOGO</SelectItem>
-                  <SelectItem value="GLOBOBAZAAR">GLOBOBAZAAR</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="flex gap-2 mt-4">
+      <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
+          <Filter className="w-3.5 h-3.5 text-slate-500" />
+          <h3 className="text-sm font-semibold text-slate-700">Filtros de Precios</h3>
+          <div className="ml-auto flex gap-2">
             <Button
-              variant="outline"
+              variant="ghost"
+              size="sm"
               onClick={() =>
                 setFilters({
                   searchSku: "",
@@ -425,9 +346,9 @@ ${csvRows
                   company: "all",
                 })
               }
-              className="shadow-sm"
+              className="h-6 text-xs text-slate-400 hover:text-red-500 px-2"
             >
-              <X className="w-4 h-4 mr-2" />
+              <X className="w-3 h-3 mr-1" />
               Limpiar Filtros
             </Button>
             {!isReadOnly && (
@@ -440,16 +361,93 @@ ${csvRows
                     description: "Todas las promociones han sido eliminadas",
                   })
                 }}
-                variant="outline"
-                className="shadow-sm"
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs text-orange-400 hover:text-orange-600 px-2"
               >
-                <X className="w-4 h-4 mr-2" />
-                Limpiar Promociones
+                <Trash2 className="w-3 h-3 mr-1" />
+                Limpiar Promos
               </Button>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div>
+            <Label htmlFor="searchSku" className="text-xs text-slate-500 mb-1 block">
+              Buscar SKU
+            </Label>
+            <Input
+              id="searchSku"
+              type="text"
+              placeholder="Buscar por SKU..."
+              value={filters.searchSku}
+              onChange={(e) => setFilters((prev) => ({ ...prev, searchSku: e.target.value }))}
+              className="h-8 text-sm"
+            />
+          </div>
+          <div>
+            <Label htmlFor="filterSupplier" className="text-xs text-slate-500 mb-1 block">
+              Proveedor
+            </Label>
+            <Select
+              value={filters.supplier}
+              onValueChange={(value) => setFilters((prev) => ({ ...prev, supplier: value }))}
+            >
+              <SelectTrigger className="h-8 text-sm">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                {suppliers.map((supplier) => (
+                  <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                    {supplier.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="filterBrand" className="text-xs text-slate-500 mb-1 block">
+              Marca
+            </Label>
+            <Select
+              value={filters.brand}
+              onValueChange={(value) => setFilters((prev) => ({ ...prev, brand: value }))}
+            >
+              <SelectTrigger className="h-8 text-sm">
+                <SelectValue placeholder="Todas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                {brands.map((brand) => (
+                  <SelectItem key={brand.id} value={brand.id.toString()}>
+                    {brand.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="filterCompany" className="text-xs text-slate-500 mb-1 block">
+              Empresa
+            </Label>
+            <Select
+              value={filters.company}
+              onValueChange={(value) => setFilters((prev) => ({ ...prev, company: value }))}
+            >
+              <SelectTrigger className="h-8 text-sm">
+                <SelectValue placeholder="Todas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="MAYCAM">MAYCAM</SelectItem>
+                <SelectItem value="BLUE DOGO">BLUE DOGO</SelectItem>
+                <SelectItem value="GLOBOBAZAAR">GLOBOBAZAAR</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
 
       {/* Tabla de Precios */}
       <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">

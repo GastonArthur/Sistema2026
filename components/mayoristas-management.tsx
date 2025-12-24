@@ -13,6 +13,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   ShoppingCart,
   Users,
   Settings,
@@ -1534,68 +1542,67 @@ Este reporte contiene información confidencial y está destinado únicamente pa
             </Card>
 
             {/* Filtros */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Filter className="w-5 h-5" />
-                  Filtros
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-4 gap-4">
-                  <div>
-                    <Label>Buscar</Label>
-                    <Input
-                      placeholder="SKU o descripción..."
-                      value={priceFilters.search}
-                      onChange={(e) =>
-                        setPriceFilters((prev) => ({
-                          ...prev,
-                          search: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label>Marca</Label>
-                    <Select
-                      value={priceFilters.brand}
-                      onValueChange={(value) =>
-                        setPriceFilters((prev) => ({
-                          ...prev,
-                          brand: value,
-                        }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todas las marcas</SelectItem>
-                        {brands.map((brand) => (
-                          <SelectItem key={brand.id} value={brand.id.toString()}>
-                            {brand.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-end">
-                    <Button
-                      variant={priceFilters.showNewOnly ? "default" : "outline"}
-                      onClick={() =>
-                        setPriceFilters((prev) => ({
-                          ...prev,
-                          showNewOnly: !prev.showNewOnly,
-                        }))
-                      }
-                    >
-                      Solo productos NUEVOS
-                    </Button>
-                  </div>
+            <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm mb-4">
+              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
+                <Filter className="w-3.5 h-3.5 text-slate-500" />
+                <h3 className="text-sm font-semibold text-slate-700">Filtros</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div>
+                  <Label className="text-xs text-slate-500 mb-1 block">Buscar</Label>
+                  <Input
+                    placeholder="SKU o descripción..."
+                    value={priceFilters.search}
+                    onChange={(e) =>
+                      setPriceFilters((prev) => ({
+                        ...prev,
+                        search: e.target.value,
+                      }))
+                    }
+                    className="h-8 text-sm"
+                  />
                 </div>
-              </CardContent>
-            </Card>
+                <div>
+                  <Label className="text-xs text-slate-500 mb-1 block">Marca</Label>
+                  <Select
+                    value={priceFilters.brand}
+                    onValueChange={(value) =>
+                      setPriceFilters((prev) => ({
+                        ...prev,
+                        brand: value,
+                      }))
+                    }
+                  >
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas las marcas</SelectItem>
+                      {brands.map((brand) => (
+                        <SelectItem key={brand.id} value={brand.id.toString()}>
+                          {brand.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end">
+                  <Button
+                    variant={priceFilters.showNewOnly ? "default" : "outline"}
+                    onClick={() =>
+                      setPriceFilters((prev) => ({
+                        ...prev,
+                        showNewOnly: !prev.showNewOnly,
+                      }))
+                    }
+                    className="h-8 text-sm w-full"
+                    size="sm"
+                  >
+                    Solo productos NUEVOS
+                  </Button>
+                </div>
+              </div>
+            </div>
 
             {/* Estadísticas */}
             <div className="grid grid-cols-4 gap-4">
@@ -2096,52 +2103,54 @@ Este reporte contiene información confidencial y está destinado únicamente pa
 
           <TabsContent value="reportes" className="space-y-4 h-[calc(95vh-200px)] overflow-y-auto">
             {/* Filtros de reportes */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Filter className="w-5 h-5" />
-                  Filtros de Reportes
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-4 gap-4">
-                  <div>
-                    <Label>Fecha Desde</Label>
-                    <Input
-                      type="date"
-                      value={new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]}
-                      onChange={() => {}}
-                    />
-                  </div>
-                  <div>
-                    <Label>Fecha Hasta</Label>
-                    <Input type="date" value={new Date().toISOString().split("T")[0]} onChange={() => {}} />
-                  </div>
-                  <div>
-                    <Label>Cliente</Label>
-                    <Select defaultValue="all">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todos los clientes</SelectItem>
-                        {clients.map((client) => (
-                          <SelectItem key={client.id} value={client.id.toString()}>
-                            {client.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-end">
-                    <Button className="bg-purple-600 hover:bg-purple-700">
-                      <TrendingUp className="w-4 h-4 mr-2" />
-                      Generar Reporte
-                    </Button>
-                  </div>
+            <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm mb-4">
+              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
+                <Filter className="w-3.5 h-3.5 text-slate-500" />
+                <h3 className="text-sm font-semibold text-slate-700">Filtros de Reportes</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div>
+                  <Label className="text-xs text-slate-500 mb-1 block">Fecha Desde</Label>
+                  <Input
+                    type="date"
+                    value={new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]}
+                    onChange={() => {}}
+                    className="h-8 text-sm"
+                  />
                 </div>
-              </CardContent>
-            </Card>
+                <div>
+                  <Label className="text-xs text-slate-500 mb-1 block">Fecha Hasta</Label>
+                  <Input 
+                    type="date" 
+                    value={new Date().toISOString().split("T")[0]} 
+                    onChange={() => {}} 
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-slate-500 mb-1 block">Cliente</Label>
+                  <Select defaultValue="all">
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los clientes</SelectItem>
+                      {clients.map((client) => (
+                        <SelectItem key={client.id} value={client.id.toString()}>
+                          {client.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end">
+                  <Button className="bg-purple-600 hover:bg-purple-700 h-8 text-sm w-full">
+                    <TrendingUp className="w-3.5 h-3.5 mr-2" />
+                    Generar Reporte
+                  </Button>
+                </div>
+              </div>
+            </div>
 
             {/* Métricas principales */}
             <div className="grid grid-cols-4 gap-4">

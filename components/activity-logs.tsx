@@ -290,18 +290,18 @@ export function ActivityLogs({ isOpen, onClose }: ActivityLogsProps) {
 
           <div className="space-y-4">
             {/* Filtros */}
-            <div className="flex gap-4 items-center">
+            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 flex gap-3 items-center">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-slate-400 w-3.5 h-3.5" />
                 <Input
                   placeholder="Buscar por usuario, email, descripción..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-8 h-8 text-sm bg-white"
                 />
               </div>
               <Select value={actionFilter} onValueChange={setActionFilter}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-48 h-8 text-sm bg-white">
                   <SelectValue placeholder="Filtrar por acción" />
                 </SelectTrigger>
                 <SelectContent>
@@ -313,14 +313,14 @@ export function ActivityLogs({ isOpen, onClose }: ActivityLogsProps) {
                   ))}
                 </SelectContent>
               </Select>
-              <Button onClick={loadLogs} variant="outline" size="sm" disabled={loading}>
-                <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+              <Button onClick={loadLogs} variant="outline" size="sm" disabled={loading} className="h-8 bg-white">
+                <RefreshCw className={`w-3.5 h-3.5 mr-2 ${loading ? "animate-spin" : ""}`} />
                 Actualizar
               </Button>
               {hasPermission("ADMIN") && (
-                <Button onClick={handleClearLogs} variant="destructive" size="sm" disabled={loading}>
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Limpiar LOGS
+                <Button onClick={handleClearLogs} variant="destructive" size="sm" disabled={loading} className="h-8">
+                  <Trash2 className="w-3.5 h-3.5 mr-2" />
+                  Limpiar
                 </Button>
               )}
             </div>

@@ -227,6 +227,27 @@ export default function InventoryManagement() {
       ])
       setInventory([])
 
+      // Calcular gastos offline (simulados para coincidir con GastosManagement)
+      const currentDate = new Date()
+      const currentMonthStr = currentDate.toISOString().slice(0, 7) // YYYY-MM
+      
+      const offlineExpenses = [
+        {
+          amount: 150000,
+          expense_date: currentDate.toISOString().split("T")[0],
+        },
+        {
+          amount: 25000,
+          expense_date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+        }
+      ]
+      
+      const currentMonthExpensesTotal = offlineExpenses
+        .filter(e => e.expense_date.startsWith(currentMonthStr))
+        .reduce((sum, e) => sum + e.amount, 0)
+        
+      setCurrentMonthExpenses(currentMonthExpensesTotal)
+
       // Mostrar mensaje sobre datos de prueba en modo offline
       toast({
         title: "Modo Offline",
@@ -299,7 +320,11 @@ export default function InventoryManagement() {
 
       // Configurar gastos del mes
       if (!expensesResult.error && expensesResult.data) {
-        const total = expensesResult.data.reduce((sum, item) => sum + item.amount, 0)
+        const currentMonth = new Date().toISOString().slice(0, 7)
+        const currentMonthExpenses = expensesResult.data.filter((expense) =>
+          expense.expense_date.startsWith(currentMonth)
+        )
+        const total = currentMonthExpenses.reduce((sum, item) => sum + item.amount, 0)
         setCurrentMonthExpenses(total)
       }
 
@@ -2275,12 +2300,18 @@ ${csvRows
             <p className="text-slate-600 mt-2">Gestión Integral de Inventario</p>
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex gap-2">
-              <Button onClick={exportToCSV} variant="outline" className="shadow-sm bg-transparent">
-                <Download className="w-4 h-4 mr-2" />
-                Exportar Excel
+            {/* Botón para gestionar anuncios - Solo administradores */}
+            {getCurrentUser()?.role === "admin" && (
+              <Button
+                onClick={() => setShowAnnouncementForm(true)}
+                variant="outline"
+                className="shadow-sm bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 hidden md:flex"
+              >
+                <AlertTriangle className="w-4 h-4 mr-2" />
+                Gestionar Anuncio
               </Button>
-            </div>
+            )}
+
             <UserHeader
               onLogout={handleLogout}
               onShowLogs={() => setShowLogs(true)}
@@ -2290,13 +2321,14 @@ ${csvRows
           </div>
         </div>
 
-        {/* Stats Cards - Ahora con 8 elementos en una línea */}
-        <div className="grid grid-cols-8 gap-3">
-          <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg">
+        {/* Stats Cards - Reorganizado y optimizado para diferentes pantallas */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-9 gap-3">
+          {/* 1. Compras Mes */}
+          <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transform transition-all hover:scale-105">
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-blue-100 text-xs">Compras Mes</p>
+                  <p className="text-blue-100 text-xs font-medium">Compras Mes</p>
                   <p className="text-lg font-bold">{formatCurrency(stats.currentMonthValue)}</p>
                 </div>
                 <TrendingUp className="w-5 h-5 text-blue-200" />
@@ -2304,11 +2336,12 @@ ${csvRows
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg">
+          {/* 2. Total Histórico */}
+          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg transform transition-all hover:scale-105">
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-green-100 text-xs">Total Histórico</p>
+                  <p className="text-green-100 text-xs font-medium">Total Histórico</p>
                   <p className="text-lg font-bold">{formatCurrency(stats.totalHistoricalValue)}</p>
                 </div>
                 <TrendingUp className="w-5 h-5 text-green-200" />
@@ -2316,49 +2349,7 @@ ${csvRows
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg">
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-red-100 text-xs">SKUs Únicos</p>
-                  <p className="text-lg font-bold">{stats.uniqueSKUs}</p>
-                </div>
-                <Package className="w-5 h-5 text-red-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card 
-            className="bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg cursor-pointer hover:from-purple-600 hover:to-purple-700 transition-all transform hover:scale-105"
-            onClick={() => setActiveTab("brands")}
-          >
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-purple-100 text-xs">Marcas</p>
-                  <p className="text-lg font-bold">{stats.totalBrands}</p>
-                </div>
-                <Tag className="w-5 h-5 text-purple-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card 
-            className="bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg cursor-pointer hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105"
-            onClick={() => setActiveTab("suppliers")}
-          >
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-orange-100 text-xs">Proveedores</p>
-                  <p className="text-lg font-bold">{stats.totalSuppliers}</p>
-                </div>
-                <Users className="w-5 h-5 text-orange-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Nuevo zócalo turquesa clickeable para GASTOS */}
+          {/* 3. Gastos (Movido aquí para agrupar financieros) */}
           <Card
             className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg cursor-pointer hover:from-teal-600 hover:to-cyan-700 transition-all transform hover:scale-105"
             onClick={() => setShowGastos(true)}
@@ -2366,7 +2357,7 @@ ${csvRows
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-teal-100 text-xs">Gastos</p>
+                  <p className="text-teal-100 text-xs font-medium">Gastos</p>
                   <p className="text-lg font-bold">{formatCurrency(stats.currentMonthExpenses)}</p>
                 </div>
                 <Receipt className="w-5 h-5 text-teal-200" />
@@ -2374,7 +2365,52 @@ ${csvRows
             </CardContent>
           </Card>
 
-          {/* Zócalo amarillo para Precios a Publicar */}
+          {/* 4. SKUs Únicos */}
+          <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg transform transition-all hover:scale-105">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-red-100 text-xs font-medium">SKUs Únicos</p>
+                  <p className="text-lg font-bold">{stats.uniqueSKUs}</p>
+                </div>
+                <Package className="w-5 h-5 text-red-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 5. Marcas */}
+          <Card 
+            className="bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg cursor-pointer hover:from-purple-600 hover:to-purple-700 transition-all transform hover:scale-105"
+            onClick={() => setActiveTab("brands")}
+          >
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-purple-100 text-xs font-medium">Marcas</p>
+                  <p className="text-lg font-bold">{stats.totalBrands}</p>
+                </div>
+                <Tag className="w-5 h-5 text-purple-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 6. Proveedores */}
+          <Card 
+            className="bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg cursor-pointer hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105"
+            onClick={() => setActiveTab("suppliers")}
+          >
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-orange-100 text-xs font-medium">Proveedores</p>
+                  <p className="text-lg font-bold">{stats.totalSuppliers}</p>
+                </div>
+                <Users className="w-5 h-5 text-orange-200" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 7. Precios a Publicar */}
           <Card
             className="bg-gradient-to-r from-yellow-500 to-amber-600 text-white shadow-lg cursor-pointer hover:from-yellow-600 hover:to-amber-700 transition-all transform hover:scale-105"
             onClick={() => setActiveTab("precios")}
@@ -2382,7 +2418,7 @@ ${csvRows
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-yellow-100 text-xs">Precios a</p>
+                  <p className="text-yellow-100 text-xs font-medium">Precios a</p>
                   <p className="text-lg font-bold">Publicar</p>
                 </div>
                 <DollarSign className="w-5 h-5 text-yellow-200" />
@@ -2390,7 +2426,7 @@ ${csvRows
             </CardContent>
           </Card>
 
-          {/* Zócalo gris oscuro para ZENTOR */}
+          {/* 8. Lista ZENTOR */}
           <Card
             className="bg-gradient-to-r from-gray-700 to-slate-800 text-white shadow-lg cursor-pointer hover:from-gray-800 hover:to-slate-900 transition-all transform hover:scale-105"
             onClick={() => setActiveTab("zentor")}
@@ -2398,7 +2434,7 @@ ${csvRows
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-200 text-xs">Lista</p>
+                  <p className="text-gray-200 text-xs font-medium">Lista</p>
                   <p className="text-lg font-bold">ZENTOR</p>
                 </div>
                 <Package className="w-5 h-5 text-gray-300" />
@@ -2406,7 +2442,7 @@ ${csvRows
             </CardContent>
           </Card>
 
-          {/* Zócalo morado para Ventas Mayoristas */}
+          {/* 9. Ventas Mayoristas */}
           <Card
             className="bg-gradient-to-r from-purple-500 to-violet-600 text-white shadow-lg cursor-pointer hover:from-purple-600 hover:to-violet-700 transition-all transform hover:scale-105"
             onClick={() => setShowWholesale(true)}
@@ -2414,7 +2450,7 @@ ${csvRows
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-purple-100 text-xs">Ventas</p>
+                  <p className="text-purple-100 text-xs font-medium">Ventas</p>
                   <p className="text-lg font-bold">Mayoristas</p>
                 </div>
                 <ShoppingCart className="w-5 h-5 text-purple-200" />
@@ -2422,20 +2458,6 @@ ${csvRows
             </CardContent>
           </Card>
         </div>
-
-        {/* Botón para gestionar anuncios - Solo administradores */}
-        {getCurrentUser()?.role === "admin" && (
-          <div className="flex justify-end">
-            <Button
-              onClick={() => setShowAnnouncementForm(true)}
-              variant="outline"
-              className="shadow-sm bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100"
-            >
-              <AlertTriangle className="w-4 h-4 mr-2" />
-              Gestionar Anuncio
-            </Button>
-          </div>
-        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-white shadow-sm">
@@ -2782,181 +2804,11 @@ ${csvRows
             )}
 
             {/* Filters */}
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 rounded-t-lg py-3">
-                <CardTitle className="flex items-center gap-2 text-slate-800 text-base">
-                  <Filter className="w-4 h-4" />
-                  Filtros de Búsqueda
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4">
-                <div className="flex flex-col gap-4">
-                  {/* Top Row: Search + Period + Sort */}
-                  <div className="flex flex-col md:flex-row gap-4">
-                    <div className="flex-1">
-                      <Label htmlFor="searchSku" className="text-xs font-medium text-slate-500 mb-1 block">
-                        Buscar SKU / Descripción
-                      </Label>
-                      <div className="relative">
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
-                        <Input
-                          id="searchSku"
-                          placeholder="Buscar..."
-                          value={filters.searchSku}
-                          onChange={(e) => setFilters((prev) => ({ ...prev, searchSku: e.target.value }))}
-                          className="pl-8"
-                        />
-                      </div>
-                    </div>
-                    <div className="w-full md:w-48">
-                      <Label className="text-xs font-medium text-slate-500 mb-1 block">Periodo</Label>
-                      <Select
-                        value={filters.period}
-                        onValueChange={(value) => setFilters((prev) => ({ ...prev, period: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Periodo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todo el historial</SelectItem>
-                          <SelectItem value="today">Hoy</SelectItem>
-                          <SelectItem value="week">Esta Semana</SelectItem>
-                          <SelectItem value="month">Este Mes</SelectItem>
-                          <SelectItem value="year">Este Año</SelectItem>
-                          <SelectItem value="custom">Personalizado</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="w-full md:w-48">
-                      <Label className="text-xs font-medium text-slate-500 mb-1 block">Ordenar por</Label>
-                      <Select
-                        value={filters.sortBy}
-                        onValueChange={(value) => setFilters((prev) => ({ ...prev, sortBy: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Ordenar" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="date_desc">Más recientes primero</SelectItem>
-                          <SelectItem value="date_asc">Más antiguos primero</SelectItem>
-                          <SelectItem value="price_asc">Menor precio</SelectItem>
-                          <SelectItem value="price_desc">Mayor precio</SelectItem>
-                          <SelectItem value="sku_duplicates">Duplicados</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  {/* Custom Date Range - Only if custom */}
-                  {filters.period === "custom" && (
-                    <div className="flex gap-4 items-end bg-slate-50 p-3 rounded-md border border-slate-100">
-                      <div className="w-full md:w-auto">
-                        <Label htmlFor="dateFrom" className="text-xs font-medium text-slate-500 mb-1 block">
-                          Desde
-                        </Label>
-                        <Input
-                          id="dateFrom"
-                          type="date"
-                          value={filters.dateFrom}
-                          onChange={(e) => setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))}
-                          className="bg-white"
-                        />
-                      </div>
-                      <div className="w-full md:w-auto">
-                        <Label htmlFor="dateTo" className="text-xs font-medium text-slate-500 mb-1 block">
-                          Hasta
-                        </Label>
-                        <Input
-                          id="dateTo"
-                          type="date"
-                          value={filters.dateTo}
-                          onChange={(e) => setFilters((prev) => ({ ...prev, dateTo: e.target.value }))}
-                          className="bg-white"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Secondary Filters Row */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <Label className="text-xs font-medium text-slate-500 mb-1 block">Proveedor</Label>
-                      <Select
-                        value={filters.supplier || "all"}
-                        onChange={(value) => setFilters((prev) => ({ ...prev, supplier: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Todos" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todos</SelectItem>
-                          <SelectItem value="none">Sin proveedor</SelectItem>
-                          {suppliers.map((supplier) => (
-                            <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                              {supplier.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="text-xs font-medium text-slate-500 mb-1 block">Marca</Label>
-                      <Select
-                        value={filters.brand || "all"}
-                        onChange={(value) => setFilters((prev) => ({ ...prev, brand: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Todas" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todas</SelectItem>
-                          <SelectItem value="none">Sin marca</SelectItem>
-                          {brands.map((brand) => (
-                            <SelectItem key={brand.id} value={brand.id.toString()}>
-                              {brand.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="text-xs font-medium text-slate-500 mb-1 block">Empresa</Label>
-                      <Select
-                        value={filters.company}
-                        onChange={(value) => setFilters((prev) => ({ ...prev, company: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Todas" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todas</SelectItem>
-                          <SelectItem value="MAYCAM">MAYCAM</SelectItem>
-                          <SelectItem value="BLUE DOGO">BLUE DOGO</SelectItem>
-                          <SelectItem value="GLOBOBAZAAR">GLOBOBAZAAR</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="text-xs font-medium text-slate-500 mb-1 block">Duplicados</Label>
-                      <Select
-                        value={filters.duplicates || "all"}
-                        onChange={(value) => setFilters((prev) => ({ ...prev, duplicates: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Todos" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todos</SelectItem>
-                          <SelectItem value="duplicated">Solo Duplicados</SelectItem>
-                          <SelectItem value="unique">Solo Únicos</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 mt-4 justify-end">
-                  <Button
+            <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
+                <Filter className="w-3.5 h-3.5 text-slate-500" />
+                <h3 className="text-sm font-semibold text-slate-700">Filtros de Búsqueda</h3>
+                <Button
                     variant="ghost"
                     size="sm"
                     onClick={() =>
@@ -2972,14 +2824,173 @@ ${csvRows
                         searchSku: "",
                       })
                     }
-                    className="text-slate-500 hover:text-slate-700"
+                    className="ml-auto h-6 text-xs text-slate-400 hover:text-red-500 px-2"
                   >
-                    <X className="w-4 h-4 mr-2" />
-                    Limpiar Filtros
-                  </Button>
+                    <X className="w-3 h-3 mr-1" />
+                    Limpiar
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                {/* Row 1: Search & Time/Sort */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+                  {/* Search */}
+                  <div className="lg:col-span-4">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400" />
+                      <Input
+                        placeholder="Buscar SKU o descripción..."
+                        value={filters.searchSku}
+                        onChange={(e) => setFilters((prev) => ({ ...prev, searchSku: e.target.value }))}
+                        className="pl-8 h-8 text-sm"
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Period */}
+                  <div className="lg:col-span-2">
+                    <Select
+                      value={filters.period}
+                      onValueChange={(value) => setFilters((prev) => ({ ...prev, period: value }))}
+                    >
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Periodo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todo el historial</SelectItem>
+                        <SelectItem value="today">Hoy</SelectItem>
+                        <SelectItem value="week">Esta Semana</SelectItem>
+                        <SelectItem value="month">Este Mes</SelectItem>
+                        <SelectItem value="year">Este Año</SelectItem>
+                        <SelectItem value="custom">Personalizado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Custom Dates */}
+                  {filters.period === "custom" ? (
+                    <div className="lg:col-span-4 flex gap-2">
+                       <Input
+                          type="date"
+                          value={filters.dateFrom}
+                          onChange={(e) => setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))}
+                          className="h-8 text-sm"
+                        />
+                        <Input
+                          type="date"
+                          value={filters.dateTo}
+                          onChange={(e) => setFilters((prev) => ({ ...prev, dateTo: e.target.value }))}
+                          className="h-8 text-sm"
+                        />
+                    </div>
+                  ) : (
+                    <div className="hidden lg:block lg:col-span-4"></div>
+                  )}
+
+                  {/* Sort */}
+                  <div className="lg:col-span-2">
+                    <Select
+                      value={filters.sortBy}
+                      onValueChange={(value) => setFilters((prev) => ({ ...prev, sortBy: value }))}
+                    >
+                      <SelectTrigger className="h-8 text-sm">
+                         <span className="truncate">
+                           <span className="text-slate-400 mr-1">Orden:</span>
+                           <SelectValue placeholder="Ordenar" />
+                         </span>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="date_desc">Más recientes</SelectItem>
+                        <SelectItem value="date_asc">Más antiguos</SelectItem>
+                        <SelectItem value="price_asc">Menor precio</SelectItem>
+                        <SelectItem value="price_desc">Mayor precio</SelectItem>
+                        <SelectItem value="sku_duplicates">Duplicados</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
+
+                {/* Row 2: Secondary Filters */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <Select
+                    value={filters.supplier || "all"}
+                    onValueChange={(value) => setFilters((prev) => ({ ...prev, supplier: value }))}
+                  >
+                    <SelectTrigger className="h-8 text-sm">
+                       <span className="truncate">
+                         <span className="text-slate-400 mr-1">Prov:</span>
+                         <SelectValue placeholder="Todos" />
+                       </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los proveedores</SelectItem>
+                      <SelectItem value="none">Sin proveedor</SelectItem>
+                      {suppliers.map((supplier) => (
+                        <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                          {supplier.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    value={filters.brand || "all"}
+                    onValueChange={(value) => setFilters((prev) => ({ ...prev, brand: value }))}
+                  >
+                    <SelectTrigger className="h-8 text-sm">
+                       <span className="truncate">
+                         <span className="text-slate-400 mr-1">Marca:</span>
+                         <SelectValue placeholder="Todas" />
+                       </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas las marcas</SelectItem>
+                      <SelectItem value="none">Sin marca</SelectItem>
+                      {brands.map((brand) => (
+                        <SelectItem key={brand.id} value={brand.id.toString()}>
+                          {brand.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    value={filters.company}
+                    onValueChange={(value) => setFilters((prev) => ({ ...prev, company: value }))}
+                  >
+                    <SelectTrigger className="h-8 text-sm">
+                       <span className="truncate">
+                         <span className="text-slate-400 mr-1">Emp:</span>
+                         <SelectValue placeholder="Todas" />
+                       </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas las empresas</SelectItem>
+                      <SelectItem value="MAYCAM">MAYCAM</SelectItem>
+                      <SelectItem value="BLUE DOGO">BLUE DOGO</SelectItem>
+                      <SelectItem value="GLOBOBAZAAR">GLOBOBAZAAR</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    value={filters.duplicates || "all"}
+                    onValueChange={(value) => setFilters((prev) => ({ ...prev, duplicates: value }))}
+                  >
+                    <SelectTrigger className="h-8 text-sm">
+                       <span className="truncate">
+                         <span className="text-slate-400 mr-1">Dup:</span>
+                         <SelectValue placeholder="Todos" />
+                       </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="duplicated">Solo Duplicados</SelectItem>
+                      <SelectItem value="unique">Solo Únicos</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
 
             {/* Inventory Table */}
             <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm overflow-hidden">
@@ -2996,6 +3007,10 @@ ${csvRows
                       {getFilteredInventory().length} productos
                     </Badge>
                   </div>
+                  <Button onClick={exportToCSV} variant="outline" className="ml-auto shadow-sm bg-white hover:bg-slate-50">
+                    <Download className="w-4 h-4 mr-2" />
+                    Exportar Excel
+                  </Button>
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
