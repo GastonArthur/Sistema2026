@@ -37,8 +37,8 @@ export async function POST(req: NextRequest) {
 
     for (const account of accounts) {
       try {
-        await mlService.syncOrders(account as RT_ML_Account, fullHistory)
-        results.push({ account: account.name, status: "success", mode: fullHistory ? "full" : "partial" })
+        const count = await mlService.syncOrders(account as RT_ML_Account, fullHistory)
+        results.push({ account: account.name, status: "success", mode: fullHistory ? "full" : "partial", count })
       } catch (err: any) {
         console.error(`Error syncing orders for ${account.name}:`, err)
         results.push({ account: account.name, status: "error", error: err.message })

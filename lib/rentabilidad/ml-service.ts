@@ -67,12 +67,35 @@ export class MLService {
     }
     return this.refreshAccessToken(account)
   }
+  
+  // --- User Info ---
+  
+  async getMe(token: string): Promise<any> {
+      const res = await fetch(`${ML_API_URL}/users/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+      })
+      if (!res.ok) throw new Error(`Failed to fetch user info: ${res.statusText}`)
+      return await res.json()
+  }
 
   // --- Sync Logic ---
 
   async syncStock(account: RT_ML_Account) {
     const token = await this.getValidAccessToken(account)
-    const sellerId = account.seller_id
+    
+    // Self-Healing Seller ID Check
+    let sellerId = account.seller_id
+    try {
+        const me = await this.getMe(token)
+        if (me.id !== sellerId) {
+            console.log(`[Sync] Seller ID mismatch! Config: ${sellerId}, Token owner: ${me.id}. Fixing...`)
+            const supabase = this.getSupabase()
+            await supabase.from("rt_ml_accounts").update({ seller_id: me.id }).eq("id", account.id)
+            sellerId = me.id
+        }
+    } catch (err) {
+        console.error("[Sync] Failed to verify token owner:", err)
+    }
 
     // 1. Get all items
     let offset = 0
@@ -192,8 +215,21 @@ export class MLService {
   
   async syncOrders(account: RT_ML_Account, fullHistory: boolean = false) {
       const token = await this.getValidAccessToken(account)
-      const sellerId = account.seller_id
       const supabase = this.getSupabase()
+      
+      // Self-Healing Seller ID Check
+      let sellerId = account.seller_id
+      try {
+          const me = await this.getMe(token)
+          // Compare as strings to be safe or numbers if consistent
+          if (String(me.id) !== String(sellerId)) {
+              console.log(`[Sync] Seller ID mismatch! Config: ${sellerId}, Token owner: ${me.id}. Fixing...`)
+              await supabase.from("rt_ml_accounts").update({ seller_id: me.id }).eq("id", account.id)
+              sellerId = me.id
+          }
+      } catch (err) {
+          console.error("[Sync] Failed to verify token owner:", err)
+      }
 
       // Get last sync date
       const jobName = `orders_${account.id}`
@@ -318,5 +354,7 @@ export class MLService {
       } else {
           console.log(`[Sync] No new orders found. Cursor remains at ${dateFromStr}`)
       }
+      
+      return totalFetched
   }
 }

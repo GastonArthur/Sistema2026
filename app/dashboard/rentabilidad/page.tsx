@@ -60,6 +60,9 @@ export default function RentabilidadPage() {
   const [sales, setSales] = useState<any[]>([])
   const [filteredSales, setFilteredSales] = useState<any[]>([])
   
+  // Stock State
+  const [stock, setStock] = useState<any[]>([])
+
   // Filters
   const [accountFilter, setAccountFilter] = useState("all")
   const [dateFilter, setDateFilter] = useState("month") // today, week, month, custom
@@ -67,6 +70,9 @@ export default function RentabilidadPage() {
     from: new Date(new Date().setDate(new Date().getDate() - 30)),
     to: new Date()
   })
+
+  const [dbStatus, setDbStatus] = useState<Record<string, boolean> | null>(null)
+  const [dbReady, setDbReady] = useState(false)
 
   // Sidebar State (Dummy to satisfy interface)
   const [sidebarActiveTab, setSidebarActiveTab] = useState("")
@@ -626,10 +632,38 @@ export default function RentabilidadPage() {
                       Estado de las tablas del módulo.
                     </p>
                     {/* Schema Check Info */}
-                    <div className="flex items-center gap-2">
-                       <CheckCircle className="h-4 w-4 text-green-500" />
-                       <span className="text-sm">Tablas de Rentabilidad (rt_*) detectadas.</span>
-                    </div>
+                    {dbReady ? (
+                        <div className="flex items-center gap-2">
+                           <CheckCircle className="h-4 w-4 text-green-500" />
+                           <span className="text-sm">Tablas de Rentabilidad (rt_*) detectadas y operativas.</span>
+                        </div>
+                    ) : (
+                        <div className="space-y-4 border border-red-200 bg-red-50 p-4 rounded-md">
+                            <div className="flex items-center gap-2 text-red-700 font-medium">
+                                <AlertTriangle className="h-4 w-4" />
+                                <span>Error: Faltan tablas en la base de datos</span>
+                            </div>
+                            <div className="text-xs text-red-600 space-y-1">
+                                <p>El sistema no puede guardar los datos porque faltan tablas.</p>
+                                {dbStatus && Object.entries(dbStatus).map(([table, exists]) => (
+                                    !exists && <div key={table}>- Falta tabla: {table}</div>
+                                ))}
+                            </div>
+                            <div className="pt-2">
+                                <Label className="text-xs font-semibold">Ejecuta este SQL en Supabase:</Label>
+                                <div className="mt-1 p-2 bg-slate-900 text-slate-50 text-xs font-mono rounded overflow-auto max-h-32 select-all">
+                                    {`-- Copia y pega esto en el SQL Editor de Supabase
+CREATE TABLE IF NOT EXISTS rt_ml_accounts (id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), name TEXT NOT NULL, seller_id BIGINT UNIQUE, refresh_token TEXT NOT NULL, access_token TEXT, access_expires_at TIMESTAMP WITH TIME ZONE, created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(), updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW());
+CREATE TABLE IF NOT EXISTS rt_ml_orders (account_id UUID REFERENCES rt_ml_accounts(id), order_id BIGINT NOT NULL, status TEXT, date_created TIMESTAMP WITH TIME ZONE, total_amount NUMERIC(20, 2), paid_amount NUMERIC(20, 2), buyer_id BIGINT, shipment_id BIGINT, payment_ids JSONB, raw JSONB, updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(), PRIMARY KEY (account_id, order_id));
+CREATE TABLE IF NOT EXISTS rt_ml_order_items (id SERIAL PRIMARY KEY, account_id UUID REFERENCES rt_ml_accounts(id), order_id BIGINT, sku TEXT, item_id TEXT, variation_id BIGINT, title TEXT, quantity INTEGER, unit_price NUMERIC(20, 2), discount NUMERIC(20, 2), raw JSONB, FOREIGN KEY (account_id, order_id) REFERENCES rt_ml_orders(account_id, order_id));
+CREATE TABLE IF NOT EXISTS rt_stock_current (account_id UUID REFERENCES rt_ml_accounts(id), sku TEXT NOT NULL, qty INTEGER, status TEXT, updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(), PRIMARY KEY (account_id, sku));
+CREATE TABLE IF NOT EXISTS rt_ml_sku_map (account_id UUID REFERENCES rt_ml_accounts(id), sku TEXT NOT NULL, item_id TEXT NOT NULL, variation_id BIGINT, last_resolved_at TIMESTAMP WITH TIME ZONE, last_error TEXT, PRIMARY KEY (account_id, sku));
+CREATE TABLE IF NOT EXISTS rt_jobs (name TEXT PRIMARY KEY, cursor JSONB, locked_at TIMESTAMP WITH TIME ZONE, last_error TEXT, updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW());
+`}
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="mt-6 border-t pt-6">
                         <h4 className="text-md font-semibold mb-2 flex items-center gap-2">
@@ -666,9 +700,28 @@ export default function RentabilidadPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                <TableRow>
-                                    <TableCell colSpan={5} className="text-center">No hay datos sincronizados aún.</TableCell>
-                                </TableRow>
+                                {stock.map((item) => (
+                                    <TableRow key={`${item.sku}-${item.account_id}`}>
+                                        <TableCell className="font-medium">{item.sku}</TableCell>
+                                        <TableCell>{item.account_name}</TableCell>
+                                        <TableCell>{item.qty}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={item.qty > 0 ? "default" : "destructive"}>
+                                                {item.status}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>{format(new Date(item.updated_at), 'dd/MM HH:mm')}</TableCell>
+                                    </TableRow>
+                                ))}
+                                {stock.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                                            No hay datos de stock sincronizados.
+                                            <br />
+                                            Asegúrate de ejecutar la sincronización.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
                             </TableBody>
                         </Table>
                     </CardContent>
