@@ -12,6 +12,11 @@ import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
 import { 
   TrendingUp, 
   DollarSign, 
@@ -21,9 +26,13 @@ import {
   RefreshCw, 
   AlertTriangle,
   CheckCircle,
-  BarChart3
+  BarChart3,
+  Calendar as CalendarIcon,
+  Filter,
+  Download
 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
+import { toast } from "@/hooks/use-toast"
 
 // Initialize Supabase Client (Client Side)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -36,6 +45,7 @@ export default function RentabilidadPage() {
   const [activeTab, setActiveTab] = useState("summary")
   const [accounts, setAccounts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [syncing, setSyncing] = useState(false)
   const [setupMode, setSetupMode] = useState(false)
   const [addingAccount, setAddingAccount] = useState(false)
   const [newAccount, setNewAccount] = useState({
@@ -44,6 +54,18 @@ export default function RentabilidadPage() {
     refresh_token: ""
   })
   
+  // Sales State
+  const [sales, setSales] = useState<any[]>([])
+  const [filteredSales, setFilteredSales] = useState<any[]>([])
+  
+  // Filters
+  const [accountFilter, setAccountFilter] = useState("all")
+  const [dateFilter, setDateFilter] = useState("month") // today, week, month, custom
+  const [dateRange, setDateRange] = useState<{from: Date | undefined, to: Date | undefined}>({
+    from: new Date(new Date().setDate(new Date().getDate() - 30)),
+    to: new Date()
+  })
+
   // Sidebar State (Dummy to satisfy interface)
   const [sidebarActiveTab, setSidebarActiveTab] = useState("")
   const [showWholesale, setShowWholesale] = useState(false)
@@ -63,6 +85,16 @@ export default function RentabilidadPage() {
     fetchAccounts()
   }, [])
 
+  useEffect(() => {
+    if (activeTab === "sales" || activeTab === "summary") {
+      fetchSales()
+    }
+  }, [activeTab, accounts]) // Refetch when accounts load or tab changes
+
+  useEffect(() => {
+    applyFilters()
+  }, [sales, accountFilter, dateFilter, dateRange])
+
   const fetchAccounts = async () => {
     if (!supabase) return
     try {
@@ -78,6 +110,94 @@ export default function RentabilidadPage() {
       console.error("Error fetching accounts:", err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchSales = async () => {
+    if (!supabase) return
+    try {
+      // Get orders and join with accounts (manually join or use view if exists, simple fetch for now)
+      // Note: Supabase JS client doesn't support deep joins easily without setup, so we fetch orders and map account names
+      
+      let query = supabase
+        .from("rt_ml_orders")
+        .select(`
+          *,
+          items:rt_ml_order_items(*)
+        `)
+        .order('date_created', { ascending: false })
+        .limit(500) // Limit for performance
+
+      const { data, error } = await query
+
+      if (error) throw error
+      
+      // Enrich with account names
+      const enrichedSales = data?.map(sale => ({
+        ...sale,
+        account_name: accounts.find(a => a.id === sale.account_id)?.name || 'Desconocido'
+      })) || []
+
+      setSales(enrichedSales)
+    } catch (err) {
+      console.error("Error fetching sales:", err)
+    }
+  }
+
+  const applyFilters = () => {
+    let filtered = [...sales]
+
+    // 1. Account Filter
+    if (accountFilter !== "all") {
+      filtered = filtered.filter(s => s.account_name === accountFilter)
+    }
+
+    // 2. Date Filter
+    const now = new Date()
+    let from = new Date()
+    let to = new Date()
+
+    if (dateFilter === "today") {
+      from.setHours(0,0,0,0)
+      to.setHours(23,59,59,999)
+    } else if (dateFilter === "week") {
+      from.setDate(now.getDate() - 7)
+    } else if (dateFilter === "month") {
+      from.setDate(now.getDate() - 30)
+    } else if (dateFilter === "custom" && dateRange.from) {
+      from = dateRange.from
+      if (dateRange.to) to = dateRange.to
+    }
+
+    filtered = filtered.filter(s => {
+      const date = new Date(s.date_created)
+      return date >= from && date <= to
+    })
+
+    setFilteredSales(filtered)
+  }
+
+  const handleSync = async () => {
+    try {
+      setSyncing(true)
+      toast({ title: "Sincronizando...", description: "Descargando órdenes y stock de MercadoLibre." })
+      
+      // 1. Sync Orders
+      await fetch("/api/cron/rt/sync-orders", { method: "POST" })
+      
+      // 2. Sync Stock (Optional but good)
+      await fetch("/api/cron/rt/sync-stock", { method: "POST" })
+
+      toast({ title: "Sincronización completada", description: "Los datos se han actualizado." })
+      
+      // Refresh local data
+      await fetchAccounts()
+      await fetchSales()
+    } catch (err) {
+      console.error("Sync error:", err)
+      toast({ title: "Error", description: "Hubo un problema al sincronizar.", variant: "destructive" })
+    } finally {
+      setSyncing(false)
     }
   }
 
@@ -113,6 +233,12 @@ export default function RentabilidadPage() {
     }
   }
 
+  // Calculate Summary Metrics
+  const totalSales = filteredSales.reduce((sum, s) => sum + (s.total_amount || 0), 0)
+  const totalOrders = filteredSales.length
+  // Placeholder for profit logic (needs cost calculation)
+  const estimatedProfit = totalSales * 0.15 
+
   return (
     <SidebarProvider>
       <AppSidebar 
@@ -122,8 +248,8 @@ export default function RentabilidadPage() {
         setShowRetail={handleSidebarOpen}
         setShowGastos={handleSidebarOpen}
         setShowClients={handleSidebarOpen}
-        onLogout={() => window.location.href = "/"} // TODO: Handle logout
-        userEmail="Usuario" // TODO: Get real user
+        onLogout={() => window.location.href = "/"} 
+        userEmail="Usuario" 
       />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
@@ -135,12 +261,12 @@ export default function RentabilidadPage() {
         </header>
         
         <div className="flex-1 space-y-4 p-8 pt-6">
-          <div className="flex items-center justify-between space-y-2">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <h2 className="text-3xl font-bold tracking-tight">Panel de Rentabilidad</h2>
             <div className="flex items-center space-x-2">
-              <Button onClick={fetchAccounts} variant="outline" size="sm">
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Actualizar
+              <Button onClick={handleSync} disabled={syncing}>
+                <RefreshCw className={`mr-2 h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+                {syncing ? "Sincronizando..." : "Sincronizar Datos"}
               </Button>
             </div>
           </div>
@@ -164,6 +290,7 @@ export default function RentabilidadPage() {
               <TabsTrigger value="config">Configuración</TabsTrigger>
             </TabsList>
             
+            {/* --- SUMMARY TAB --- */}
             <TabsContent value="summary" className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
@@ -172,28 +299,18 @@ export default function RentabilidadPage() {
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">$0.00</div>
-                    <p className="text-xs text-muted-foreground">+0% del mes pasado</p>
+                    <div className="text-2xl font-bold">{formatCurrency(totalSales)}</div>
+                    <p className="text-xs text-muted-foreground">En el periodo seleccionado</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Ganancia Real</CardTitle>
+                    <CardTitle className="text-sm font-medium">Ganancia Estimada</CardTitle>
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">$0.00</div>
-                    <p className="text-xs text-muted-foreground">+0% del mes pasado</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Margen Promedio</CardTitle>
-                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">0%</div>
-                    <p className="text-xs text-muted-foreground">+0% del mes pasado</p>
+                    <div className="text-2xl font-bold">{formatCurrency(estimatedProfit)}</div>
+                    <p className="text-xs text-muted-foreground">~15% (Cálculo preliminar)</p>
                   </CardContent>
                 </Card>
                 <Card>
@@ -202,39 +319,105 @@ export default function RentabilidadPage() {
                     <ShoppingCart className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">0</div>
-                    <p className="text-xs text-muted-foreground">+0% del mes pasado</p>
+                    <div className="text-2xl font-bold">{totalOrders}</div>
+                    <p className="text-xs text-muted-foreground">Órdenes procesadas</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Ticket Promedio</CardTitle>
+                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                        {totalOrders > 0 ? formatCurrency(totalSales / totalOrders) : "$0.00"}
+                    </div>
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Quick Filters for Summary */}
+              <div className="flex gap-2 mb-4">
+                 <Select value={accountFilter} onValueChange={setAccountFilter}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Cuenta" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas las cuentas</SelectItem>
+                      {accounts.map(acc => (
+                        <SelectItem key={acc.id} value={acc.name}>{acc.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                 </Select>
+                 <Select value={dateFilter} onValueChange={setDateFilter}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Periodo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="today">Hoy</SelectItem>
+                      <SelectItem value="week">Esta Semana</SelectItem>
+                      <SelectItem value="month">Este Mes</SelectItem>
+                      <SelectItem value="custom">Personalizado</SelectItem>
+                    </SelectContent>
+                 </Select>
+              </div>
+
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                 <Card className="col-span-4">
                   <CardHeader>
-                    <CardTitle>Evolución de Ganancias</CardTitle>
+                    <CardTitle>Últimas Ventas</CardTitle>
                   </CardHeader>
-                  <CardContent className="pl-2">
-                    {/* Chart placeholder */}
-                    <div className="h-[200px] flex items-center justify-center text-muted-foreground">
-                      Gráfico de Ganancias
-                    </div>
+                  <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Fecha</TableHead>
+                                <TableHead>Cuenta</TableHead>
+                                <TableHead>Producto</TableHead>
+                                <TableHead className="text-right">Total</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {filteredSales.slice(0, 5).map((sale) => (
+                                <TableRow key={sale.order_id}>
+                                    <TableCell>{format(new Date(sale.date_created), 'dd/MM HH:mm')}</TableCell>
+                                    <TableCell>{sale.account_name}</TableCell>
+                                    <TableCell className="max-w-[200px] truncate">
+                                        {sale.items?.[0]?.title || 'Producto'}
+                                        {sale.items && sale.items.length > 1 && ` (+${sale.items.length - 1})`}
+                                    </TableCell>
+                                    <TableCell className="text-right">{formatCurrency(sale.total_amount)}</TableCell>
+                                </TableRow>
+                            ))}
+                            {filteredSales.length === 0 && (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                                        No se encontraron ventas en este periodo.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
                   </CardContent>
                 </Card>
                 <Card className="col-span-3">
                   <CardHeader>
                     <CardTitle>Cuentas Activas</CardTitle>
                     <CardDescription>
-                      Estado de conexión con MercadoLibre
+                      Estado de conexión
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-8">
+                    <div className="space-y-4">
                       {accounts.map(acc => (
-                        <div key={acc.id} className="flex items-center">
-                          <div className="ml-4 space-y-1">
+                        <div key={acc.id} className="flex items-center justify-between border-b pb-2 last:border-0">
+                          <div className="space-y-1">
                             <p className="text-sm font-medium leading-none">{acc.name}</p>
-                            <p className="text-sm text-muted-foreground">Seller ID: {acc.seller_id}</p>
+                            <p className="text-xs text-muted-foreground">ID: {acc.seller_id}</p>
                           </div>
-                          <div className="ml-auto font-medium text-green-600">Conectado</div>
+                          <Badge variant="outline" className="text-green-600 bg-green-50 border-green-200">
+                             Conectado
+                          </Badge>
                         </div>
                       ))}
                       {accounts.length === 0 && (
@@ -244,6 +427,124 @@ export default function RentabilidadPage() {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+
+            {/* --- SALES TAB --- */}
+            <TabsContent value="sales" className="space-y-4">
+               <Card>
+                 <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <CardTitle>Historial de Ventas</CardTitle>
+                            <CardDescription>Detalle de transacciones de MercadoLibre</CardDescription>
+                        </div>
+                        <Button variant="outline" size="sm">
+                            <Download className="mr-2 h-4 w-4" />
+                            Exportar
+                        </Button>
+                    </div>
+                 </CardHeader>
+                 <CardContent>
+                    {/* Filters */}
+                    <div className="flex flex-col md:flex-row gap-4 mb-6 p-4 bg-muted/50 rounded-lg">
+                        <div className="flex-1">
+                            <Label className="mb-2 block">Cuenta</Label>
+                            <Select value={accountFilter} onValueChange={setAccountFilter}>
+                                <SelectTrigger>
+                                <SelectValue placeholder="Cuenta" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                <SelectItem value="all">Todas las cuentas</SelectItem>
+                                {accounts.map(acc => (
+                                    <SelectItem key={acc.id} value={acc.name}>{acc.name}</SelectItem>
+                                ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="flex-1">
+                            <Label className="mb-2 block">Periodo</Label>
+                            <Select value={dateFilter} onValueChange={setDateFilter}>
+                                <SelectTrigger>
+                                <SelectValue placeholder="Periodo" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                <SelectItem value="today">Hoy</SelectItem>
+                                <SelectItem value="week">Esta Semana</SelectItem>
+                                <SelectItem value="month">Este Mes</SelectItem>
+                                <SelectItem value="custom">Personalizado</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        {dateFilter === 'custom' && (
+                             <div className="flex-1">
+                                <Label className="mb-2 block">Desde</Label>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="outline" className="w-full justify-start text-left font-normal">
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {dateRange.from ? format(dateRange.from, "dd/MM/yyyy") : <span>Seleccionar</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                        <Calendar mode="single" selected={dateRange.from} onSelect={d => setDateRange({...dateRange, from: d})} initialFocus />
+                                    </PopoverContent>
+                                </Popover>
+                             </div>
+                        )}
+                    </div>
+
+                    {/* Table */}
+                    <div className="rounded-md border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Orden</TableHead>
+                                    <TableHead>Fecha</TableHead>
+                                    <TableHead>Cuenta</TableHead>
+                                    <TableHead>Items</TableHead>
+                                    <TableHead>Estado</TableHead>
+                                    <TableHead className="text-right">Total</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredSales.map((sale) => (
+                                    <TableRow key={sale.order_id}>
+                                        <TableCell className="font-medium">{sale.order_id}</TableCell>
+                                        <TableCell>{format(new Date(sale.date_created), 'dd/MM/yyyy HH:mm')}</TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline">{sale.account_name}</Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="text-sm">
+                                                {sale.items?.map((item: any, i: number) => (
+                                                    <div key={i} className="mb-1 last:mb-0">
+                                                        {item.quantity}x {item.title}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant={sale.status === 'paid' ? 'default' : 'secondary'}>
+                                                {sale.status}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right font-bold">
+                                            {formatCurrency(sale.total_amount)}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                                {filteredSales.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
+                                            No hay ventas que coincidan con los filtros.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                 </CardContent>
+               </Card>
             </TabsContent>
 
             <TabsContent value="config">
