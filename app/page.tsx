@@ -72,6 +72,8 @@ import {
   Search,
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
+import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/app-sidebar"
 
 // Importar componentes de autenticación
 import { LoginForm } from "@/components/login-form"
@@ -2330,9 +2332,19 @@ ${csvRows
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Zócalo de Anuncios - Solo visible si hay anuncios */}
-      {announcement && (
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <AppSidebar 
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          setShowWholesale={setShowWholesale}
+          setShowGastos={setShowGastos}
+          onLogout={handleLogout}
+          userEmail={getCurrentUser()?.email}
+        />
+        <SidebarInset>
+          {/* Zócalo de Anuncios - Solo visible si hay anuncios */}
+          {announcement && (
         <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg">
           <div className="w-full max-w-[98%] mx-auto px-6 py-3">
             <div className="flex items-center justify-between">
@@ -2357,18 +2369,21 @@ ${csvRows
       <div className="w-full px-4 py-6 space-y-6">
         {/* Header con información del usuario */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              Sistema MAYCAM
-            </h1>
-            <div className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${isOnline ? "bg-green-500" : "bg-red-500"}`}></div>
-              <span className={`text-sm ${isOnline ? "text-green-600" : "text-red-600"}`}>
-                {isOnline ? "En línea" : "Sin conexión"}
-              </span>
-              {lastSync && <span className="text-xs text-slate-500">Última sync: {lastSync.toLocaleTimeString()}</span>}
-            </div>
-            <p className="text-slate-600 mt-2">Gestión Integral de Inventario</p>
+          <div className="flex items-center gap-2">
+             <SidebarTrigger className="md:hidden" />
+             <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  Sistema MAYCAM
+                </h1>
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full ${isOnline ? "bg-green-500" : "bg-red-500"}`}></div>
+                  <span className={`text-sm ${isOnline ? "text-green-600" : "text-red-600"}`}>
+                    {isOnline ? "En línea" : "Sin conexión"}
+                  </span>
+                  {lastSync && <span className="text-xs text-slate-500">Última sync: {lastSync.toLocaleTimeString()}</span>}
+                </div>
+                <p className="text-slate-600 mt-2">Gestión Integral de Inventario</p>
+             </div>
           </div>
           <div className="flex items-center gap-4">
             {/* Botón para gestionar anuncios - Solo administradores */}
@@ -2431,7 +2446,7 @@ ${csvRows
         </div>
 
         {/* Stats Cards - Reorganizado y optimizado para diferentes pantallas */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-9 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {/* 1. Compras Filtradas */}
           <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transform transition-all hover:scale-105">
             <CardContent className="p-3">
@@ -2450,28 +2465,7 @@ ${csvRows
             </CardContent>
           </Card>
 
-          {/* 2. Gastos Filtrados */}
-          <Card
-            className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg cursor-pointer hover:from-teal-600 hover:to-cyan-700 transition-all transform hover:scale-105"
-            onClick={() => setShowGastos(true)}
-          >
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-teal-100 text-xs font-medium">
-                    Gastos {dashboardFilter === "monthly" ? "Mes" : 
-                             dashboardFilter === "weekly" ? "Semana" : 
-                             dashboardFilter === "daily" ? "Hoy" : 
-                             dashboardFilter === "historical" ? "Histórico" : "Personalizado"}
-                  </p>
-                  <p className="text-lg font-bold">{formatCurrency(stats.currentMonthExpenses)}</p>
-                </div>
-                <Receipt className="w-5 h-5 text-teal-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* 4. SKUs Únicos */}
+          {/* 2. SKUs Únicos */}
           <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg transform transition-all hover:scale-105">
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
@@ -2483,118 +2477,29 @@ ${csvRows
               </div>
             </CardContent>
           </Card>
-
-          {/* 5. Marcas */}
-          <Card 
-            className="bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg cursor-pointer hover:from-purple-600 hover:to-purple-700 transition-all transform hover:scale-105"
-            onClick={() => setActiveTab("brands")}
-          >
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-purple-100 text-xs font-medium">Marcas</p>
-                  <p className="text-lg font-bold">{stats.totalBrands}</p>
-                </div>
-                <Tag className="w-5 h-5 text-purple-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* 6. Proveedores */}
-          <Card 
-            className="bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg cursor-pointer hover:from-orange-600 hover:to-orange-700 transition-all transform hover:scale-105"
-            onClick={() => setActiveTab("suppliers")}
-          >
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-orange-100 text-xs font-medium">Proveedores</p>
-                  <p className="text-lg font-bold">{stats.totalSuppliers}</p>
-                </div>
-                <Users className="w-5 h-5 text-orange-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* 7. Precios a Publicar */}
-          <Card
-            className="bg-gradient-to-r from-yellow-500 to-amber-600 text-white shadow-lg cursor-pointer hover:from-yellow-600 hover:to-amber-700 transition-all transform hover:scale-105"
-            onClick={() => setActiveTab("precios")}
-          >
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-yellow-100 text-xs font-medium">Precios a</p>
-                  <p className="text-lg font-bold">Publicar</p>
-                </div>
-                <DollarSign className="w-5 h-5 text-yellow-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* 8. Lista ZENTOR */}
-          <Card
-            className="bg-gradient-to-r from-gray-700 to-slate-800 text-white shadow-lg cursor-pointer hover:from-gray-800 hover:to-slate-900 transition-all transform hover:scale-105"
-            onClick={() => setActiveTab("zentor")}
-          >
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-200 text-xs font-medium">Lista</p>
-                  <p className="text-lg font-bold">ZENTOR</p>
-                </div>
-                <Package className="w-5 h-5 text-gray-300" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* 9. Ventas Mayoristas */}
-          <Card
-            className="bg-gradient-to-r from-purple-500 to-violet-600 text-white shadow-lg cursor-pointer hover:from-purple-600 hover:to-violet-700 transition-all transform hover:scale-105"
-            onClick={() => setShowWholesale(true)}
-          >
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-purple-100 text-xs font-medium">Ventas</p>
-                  <p className="text-lg font-bold">Mayoristas</p>
-                </div>
-                <ShoppingCart className="w-5 h-5 text-purple-200" />
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-white shadow-sm">
-            <TabsTrigger value="inventory" className="flex items-center gap-2 justify-center">
-              <Package className="w-4 h-4" />
-              Inventario
-            </TabsTrigger>
-            <TabsTrigger value="import" className="flex items-center gap-2 justify-center">
-              <FileSpreadsheet className="w-4 h-4" />
-              Importar
-            </TabsTrigger>
-          </TabsList>
+
 
           <TabsContent value="inventory" className="space-y-6">
             {/* IVA Config Section - Moved inside Inventory Tab */}
             {hasPermission("EDIT_CONFIG") && (
-              <div className="mb-4 bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex items-center justify-between">
+              <div className="mb-2 bg-gradient-to-r from-amber-100 to-yellow-100 p-2 rounded-md shadow-sm border border-amber-200 flex items-center gap-4 w-fit">
                  <div className="flex items-center gap-2">
-                    <Settings className="w-5 h-5 text-slate-500" />
-                    <span className="font-medium text-slate-700">Configuración de IVA</span>
+                    <Settings className="w-4 h-4 text-amber-600" />
+                    <span className="font-bold text-sm text-amber-800">Configuración de IVA</span>
                  </div>
                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-slate-600">Porcentaje:</span>
-                    <div className="flex items-center gap-2">
+                    <span className="text-xs text-amber-700 font-medium">Porcentaje:</span>
+                    <div className="flex items-center gap-1">
                       <Input
                         type="number"
                         value={ivaPercentage}
                         onChange={(e) => updateIvaPercentage(Number(e.target.value))}
-                        className="w-20 h-8 text-right"
+                        className="w-16 h-7 text-right text-xs bg-white/80 border-amber-300 focus:border-amber-500 focus:ring-amber-500"
                       />
-                      <span className="text-slate-600">%</span>
+                      <span className="text-xs text-amber-700 font-medium">%</span>
                     </div>
                  </div>
               </div>

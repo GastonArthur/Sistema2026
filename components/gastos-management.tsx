@@ -923,100 +923,92 @@ ${csvRows
           </div>
 
           {/* Filtros */}
-          <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
-              <Filter className="w-3.5 h-3.5 text-slate-500" />
-              <h3 className="text-sm font-semibold text-slate-700">Filtros de Gastos</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() =>
-                  setFilters({
-                    month: new Date().toISOString().slice(0, 7),
-                    category: "all",
-                    paymentMethod: "all",
-                    hasInvoice: "all",
-                  })
-                }
-                className="ml-auto h-6 text-xs text-slate-400 hover:text-red-500 px-2"
+          <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-sm flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 text-slate-500 border-r border-slate-200 pr-3 mr-1">
+              <Filter className="w-4 h-4" />
+              <span className="text-sm font-medium hidden sm:inline-block">Filtros</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-slate-500 whitespace-nowrap">Mes:</span>
+              <Input
+                id="filterMonth"
+                type="month"
+                value={filters.month}
+                onChange={(e) => setFilters((prev) => ({ ...prev, month: e.target.value }))}
+                className="h-8 w-auto text-sm py-0 px-2"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Select
+                value={filters.category}
+                onValueChange={(value) => setFilters((prev) => ({ ...prev, category: value }))}
               >
-                <X className="w-3 h-3 mr-1" />
-                Limpiar
-              </Button>
+                <SelectTrigger className="h-8 text-sm w-[160px]">
+                  <SelectValue placeholder="Categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas las categorías</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id.toString()}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-              <div>
-                <Label htmlFor="filterMonth" className="text-xs text-slate-500 mb-1 block">
-                  Mes
-                </Label>
-                <Input
-                  id="filterMonth"
-                  type="month"
-                  value={filters.month}
-                  onChange={(e) => setFilters((prev) => ({ ...prev, month: e.target.value }))}
-                  className="h-8 text-sm"
-                />
-              </div>
-              <div>
-                <Label htmlFor="filterCategory" className="text-xs text-slate-500 mb-1 block">
-                  Categoría
-                </Label>
-                <Select
-                  value={filters.category}
-                  onValueChange={(value) => setFilters((prev) => ({ ...prev, category: value }))}
-                >
-                  <SelectTrigger className="h-8 text-sm">
-                    <SelectValue placeholder="Todas" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas las categorías</SelectItem>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id.toString()}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="filterPayment" className="text-xs text-slate-500 mb-1 block">
-                  Método de Pago
-                </Label>
-                <Select
-                  value={filters.paymentMethod}
-                  onValueChange={(value) => setFilters((prev) => ({ ...prev, paymentMethod: value }))}
-                >
-                  <SelectTrigger className="h-8 text-sm">
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos los métodos</SelectItem>
-                    <SelectItem value="efectivo">Efectivo</SelectItem>
-                    <SelectItem value="transferencia">Transferencia</SelectItem>
-                    <SelectItem value="cheque">Cheque</SelectItem>
-                    <SelectItem value="tarjeta">Tarjeta</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="filterInvoice" className="text-xs text-slate-500 mb-1 block">
-                  Con Factura
-                </Label>
-                <Select
-                  value={filters.hasInvoice}
-                  onValueChange={(value) => setFilters((prev) => ({ ...prev, hasInvoice: value }))}
-                >
-                  <SelectTrigger className="h-8 text-sm">
-                    <SelectValue placeholder="Todos" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="true">Con factura</SelectItem>
-                    <SelectItem value="false">Sin factura</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+
+            <div className="flex items-center gap-2">
+              <Select
+                value={filters.paymentMethod}
+                onValueChange={(value) => setFilters((prev) => ({ ...prev, paymentMethod: value }))}
+              >
+                <SelectTrigger className="h-8 text-sm w-[140px]">
+                  <SelectValue placeholder="Método de Pago" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los métodos</SelectItem>
+                  <SelectItem value="efectivo">Efectivo</SelectItem>
+                  <SelectItem value="transferencia">Transferencia</SelectItem>
+                  <SelectItem value="cheque">Cheque</SelectItem>
+                  <SelectItem value="tarjeta">Tarjeta</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+
+            <div className="flex items-center gap-2">
+              <Select
+                value={filters.hasInvoice}
+                onValueChange={(value) => setFilters((prev) => ({ ...prev, hasInvoice: value }))}
+              >
+                <SelectTrigger className="h-8 text-sm w-[120px]">
+                  <SelectValue placeholder="Factura" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Factura: Todos</SelectItem>
+                  <SelectItem value="true">Con factura</SelectItem>
+                  <SelectItem value="false">Sin factura</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                setFilters({
+                  month: new Date().toISOString().slice(0, 7),
+                  category: "all",
+                  paymentMethod: "all",
+                  hasInvoice: "all",
+                })
+              }
+              className="ml-auto h-8 w-8 p-0 text-slate-400 hover:text-red-500 rounded-full"
+              title="Limpiar filtros"
+            >
+              <X className="w-4 h-4" />
+            </Button>
           </div>
 
           {/* Tabla de gastos */}

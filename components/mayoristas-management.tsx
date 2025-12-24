@@ -1855,66 +1855,63 @@ Este reporte contiene información confidencial y está destinado únicamente pa
             </Card>
 
             {/* Filtros */}
-            <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm mb-4">
-              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
-                <Filter className="w-3.5 h-3.5 text-slate-500" />
-                <h3 className="text-sm font-semibold text-slate-700">Filtros</h3>
+            <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-sm flex flex-wrap items-center gap-3 mb-4">
+              <div className="flex items-center gap-2 text-slate-500 border-r border-slate-200 pr-3 mr-1">
+                <Filter className="w-4 h-4" />
+                <span className="text-sm font-medium hidden sm:inline-block">Filtros</span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                <div>
-                  <Label className="text-xs text-slate-500 mb-1 block">Buscar</Label>
-                  <Input
-                    placeholder="SKU o descripción..."
-                    value={priceFilters.search}
-                    onChange={(e) =>
-                      setPriceFilters((prev) => ({
-                        ...prev,
-                        search: e.target.value,
-                      }))
-                    }
-                    className="h-8 text-sm"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs text-slate-500 mb-1 block">Marca</Label>
-                  <Select
-                    value={priceFilters.brand}
-                    onValueChange={(value) =>
-                      setPriceFilters((prev) => ({
-                        ...prev,
-                        brand: value,
-                      }))
-                    }
-                  >
-                    <SelectTrigger className="h-8 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas las marcas</SelectItem>
-                      {brands.map((brand) => (
-                        <SelectItem key={brand.id} value={brand.id.toString()}>
-                          {brand.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-end">
-                  <Button
-                    variant={priceFilters.showNewOnly ? "default" : "outline"}
-                    onClick={() =>
-                      setPriceFilters((prev) => ({
-                        ...prev,
-                        showNewOnly: !prev.showNewOnly,
-                      }))
-                    }
-                    className="h-8 text-sm w-full"
-                    size="sm"
-                  >
-                    Solo productos NUEVOS
-                  </Button>
-                </div>
+
+              <div className="flex items-center gap-2 flex-1 min-w-[200px] max-w-sm">
+                <Input
+                  placeholder="Buscar por SKU o descripción..."
+                  value={priceFilters.search}
+                  onChange={(e) =>
+                    setPriceFilters((prev) => ({
+                      ...prev,
+                      search: e.target.value,
+                    }))
+                  }
+                  className="h-8 text-sm"
+                />
               </div>
+
+              <div className="flex items-center gap-2">
+                <Select
+                  value={priceFilters.brand}
+                  onValueChange={(value) =>
+                    setPriceFilters((prev) => ({
+                      ...prev,
+                      brand: value,
+                    }))
+                  }
+                >
+                  <SelectTrigger className="h-8 text-sm w-[180px]">
+                    <SelectValue placeholder="Todas las marcas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas las marcas</SelectItem>
+                    {brands.map((brand) => (
+                      <SelectItem key={brand.id} value={brand.id.toString()}>
+                        {brand.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button
+                variant={priceFilters.showNewOnly ? "default" : "outline"}
+                onClick={() =>
+                  setPriceFilters((prev) => ({
+                    ...prev,
+                    showNewOnly: !prev.showNewOnly,
+                  }))
+                }
+                className="h-8 text-sm whitespace-nowrap"
+                size="sm"
+              >
+                {priceFilters.showNewOnly ? "✓ Solo NUEVOS" : "Solo NUEVOS"}
+              </Button>
             </div>
 
             {/* Estadísticas */}
@@ -2364,59 +2361,59 @@ Este reporte contiene información confidencial y está destinado únicamente pa
 
           <TabsContent value="reportes" className="space-y-4 h-[calc(95vh-200px)] overflow-y-auto">
             {/* Filtros de reportes */}
-            <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm mb-4">
-              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
-                <Filter className="w-3.5 h-3.5 text-slate-500" />
-                <h3 className="text-sm font-semibold text-slate-700">Filtros de Reportes</h3>
+            <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-sm flex flex-wrap items-center gap-3 mb-4">
+              <div className="flex items-center gap-2 text-slate-500 border-r border-slate-200 pr-3 mr-1">
+                <Filter className="w-4 h-4" />
+                <span className="text-sm font-medium hidden sm:inline-block">Reportes</span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                <div>
-                  <Label className="text-xs text-slate-500 mb-1 block">Fecha Desde</Label>
-                  <Input
-                    type="date"
-                    value={reportFilters.dateFrom}
-                    onChange={(e) => setReportFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
-                    className="h-8 text-sm"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs text-slate-500 mb-1 block">Fecha Hasta</Label>
-                  <Input 
-                    type="date" 
-                    value={reportFilters.dateTo} 
-                    onChange={(e) => setReportFilters(prev => ({ ...prev, dateTo: e.target.value }))} 
-                    className="h-8 text-sm"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs text-slate-500 mb-1 block">Cliente</Label>
-                  <Select 
-                    value={reportFilters.clientId} 
-                    onValueChange={(val) => setReportFilters(prev => ({ ...prev, clientId: val }))}
-                  >
-                    <SelectTrigger className="h-8 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos los clientes</SelectItem>
-                      {clients.map((client) => (
-                        <SelectItem key={client.id} value={client.id.toString()}>
-                          {client.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-end">
-                  <Button 
-                    className="bg-purple-600 hover:bg-purple-700 h-8 text-sm w-full"
-                    onClick={calculateStatistics}
-                  >
-                    <TrendingUp className="w-3.5 h-3.5 mr-2" />
-                    Generar Reporte
-                  </Button>
-                </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-slate-500 whitespace-nowrap">Desde:</span>
+                <Input
+                  type="date"
+                  value={reportFilters.dateFrom}
+                  onChange={(e) => setReportFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+                  className="h-8 text-sm w-auto py-0 px-2"
+                />
               </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-slate-500 whitespace-nowrap">Hasta:</span>
+                <Input
+                  type="date"
+                  value={reportFilters.dateTo}
+                  onChange={(e) => setReportFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+                  className="h-8 text-sm w-auto py-0 px-2"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Select
+                  value={reportFilters.clientId}
+                  onValueChange={(val) => setReportFilters(prev => ({ ...prev, clientId: val }))}
+                >
+                  <SelectTrigger className="h-8 text-sm w-[200px]">
+                    <SelectValue placeholder="Seleccionar cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los clientes</SelectItem>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id.toString()}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button
+                className="bg-purple-600 hover:bg-purple-700 h-8 text-sm ml-auto"
+                onClick={calculateStatistics}
+                size="sm"
+              >
+                <TrendingUp className="w-3.5 h-3.5 mr-2" />
+                Generar
+              </Button>
             </div>
 
             {/* Métricas principales */}
