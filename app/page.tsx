@@ -85,6 +85,7 @@ import { PreciosPublicar } from "@/components/precios-publicar"
 import { ZentorList } from "@/components/zentor-list"
 import { GastosManagement } from "@/components/gastos-management"
 import { MayoristasManagement } from "@/components/mayoristas-management"
+import { VentasMinoristas } from "@/components/ventas-minoristas"
 
 type InventoryItem = {
   id: number
@@ -128,6 +129,7 @@ export default function InventoryManagement() {
   const [showWholesale, setShowWholesale] = useState(false)
   const [activeTab, setActiveTab] = useState("inventory")
   const [showGastos, setShowGastos] = useState(false)
+  const [showRetail, setShowRetail] = useState(false)
 
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])

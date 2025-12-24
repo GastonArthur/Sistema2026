@@ -33,6 +33,7 @@ export type SidebarNavigationProps = {
   activeTab: string
   setActiveTab: (tab: string) => void
   setShowWholesale: (show: boolean) => void
+  setShowRetail: (show: boolean) => void
   setShowGastos: (show: boolean) => void
   onLogout: () => void
   userEmail?: string
@@ -42,6 +43,7 @@ export function AppSidebar({
   activeTab,
   setActiveTab,
   setShowWholesale,
+  setShowRetail,
   setShowGastos,
   onLogout,
   userEmail
@@ -50,18 +52,27 @@ export function AppSidebar({
   const handleNavigation = (tab: string) => {
     setActiveTab(tab)
     setShowWholesale(false)
+    setShowRetail(false)
     setShowGastos(false)
   }
 
   const handleOpenWholesale = () => {
     setShowWholesale(true)
+    setShowRetail(false)
     setShowGastos(false)
     // Optionally set active tab to something generic or keep current
+  }
+
+  const handleOpenRetail = () => {
+    setShowRetail(true)
+    setShowWholesale(false)
+    setShowGastos(false)
   }
 
   const handleOpenGastos = () => {
     setShowGastos(true)
     setShowWholesale(false)
+    setShowRetail(false)
   }
 
   return (
