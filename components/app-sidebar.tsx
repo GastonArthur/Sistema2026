@@ -12,7 +12,8 @@ import {
   FileSpreadsheet,
   Settings,
   LogOut,
-  UserCircle
+  UserCircle,
+  TrendingUp
 } from "lucide-react"
 
 import {

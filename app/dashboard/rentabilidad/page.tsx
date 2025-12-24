@@ -37,6 +37,12 @@ export default function RentabilidadPage() {
   const [accounts, setAccounts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [setupMode, setSetupMode] = useState(false)
+  const [addingAccount, setAddingAccount] = useState(false)
+  const [newAccount, setNewAccount] = useState({
+    name: "",
+    seller_id: "",
+    refresh_token: ""
+  })
   
   // Sidebar State (Dummy to satisfy interface)
   const [sidebarActiveTab, setSidebarActiveTab] = useState("")
