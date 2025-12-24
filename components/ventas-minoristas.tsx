@@ -32,7 +32,9 @@ import {
 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
-import { getCurrentUser, hasPermission } from "@/lib/auth"
+import { getCurrentUser, hasPermission, logActivity } from "@/lib/auth"
+import { supabase, isSupabaseConfigured } from "@/lib/supabase"
+import { logError } from "@/lib/logger"
 
 type InventoryItem = {
   id: number
@@ -152,72 +154,93 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
   const pendingStock = sales.filter(s => s.stock_status === "pendiente").length
 
   useEffect(() => {
-    // Load initial mock data
-    setSales([
-      {
-        id: 1,
-        date: "2024-01-14",
-        client_id: 1,
-        client_name: "Juan Pérez",
-        items: [
-          { id: 1, sku: "SKU123", description: "Producto A", quantity: 2, unit_price: 2750, total_price: 5500 }
-        ],
-        subtotal: 5500,
-        discount_percentage: 10,
-        shipping_cost: 500,
-        total: 5450,
-        stock_status: "restado",
-        payment_status: "pagado",
-        delivery_status: "entregado",
-        tracking_number: "CA123456789AR",
-        bultos: 1
-      },
-      {
-        id: 2,
-        date: "2024-01-15",
-        client_id: 2,
-        client_name: "María García",
-        items: [
-          { id: 2, sku: "SKU456", description: "Producto B", quantity: 1, unit_price: 3000, total_price: 3000 }
-        ],
-        subtotal: 3000,
-        discount_percentage: 0,
-        shipping_cost: 0,
-        total: 3000,
-        stock_status: "pendiente",
-        payment_status: "pendiente",
-        delivery_status: "pendiente",
-        bultos: 0
-      }
-    ])
-    
-    setClients([
-      { 
-        id: 1, 
-        name: "Juan Pérez", 
-        dni_cuit: "20123456789",
-        email: "juan@example.com", 
-        phone: "123456789", 
-        province: "Buenos Aires",
-        city: "La Plata",
-        zip_code: "1900",
-        address: "Calle 123", 
-        created_at: "2024-01-01" 
-      },
-      { 
-        id: 2, 
-        name: "María García", 
-        dni_cuit: "27987654321",
-        email: "maria@example.com", 
-        phone: "987654321", 
-        province: "CABA",
-        city: "Buenos Aires",
-        zip_code: "1000",
-        address: "Av. Siempre Viva 742", 
-        created_at: "2024-01-02" 
-      }
-    ])
+    loadData()
   }, [])
+
+  const loadData = async () => {
+    if (isSupabaseConfigured) {
+      try {
+        const { data: clientsData, error } = await supabase
+          .from("retail_clients")
+          .select("*")
+          .order("created_at", { ascending: false })
+        
+        if (error) throw error
+        if (clientsData) setClients(clientsData)
+        
+        // TODO: Load retail sales if table exists
+      } catch (error) {
+        logError("Error loading retail clients", error)
+        toast({ title: "Error", description: "No se pudieron cargar los clientes", variant: "destructive" })
+      }
+    } else {
+      // Load initial mock data
+      setSales([
+        {
+          id: 1,
+          date: "2024-01-14",
+          client_id: 1,
+          client_name: "Juan Pérez",
+          items: [
+            { id: 1, sku: "SKU123", description: "Producto A", quantity: 2, unit_price: 2750, total_price: 5500 }
+          ],
+          subtotal: 5500,
+          discount_percentage: 10,
+          shipping_cost: 500,
+          total: 5450,
+          stock_status: "restado",
+          payment_status: "pagado",
+          delivery_status: "entregado",
+          tracking_number: "CA123456789AR",
+          bultos: 1
+        },
+        {
+          id: 2,
+          date: "2024-01-15",
+          client_id: 2,
+          client_name: "María García",
+          items: [
+            { id: 2, sku: "SKU456", description: "Producto B", quantity: 1, unit_price: 3000, total_price: 3000 }
+          ],
+          subtotal: 3000,
+          discount_percentage: 0,
+          shipping_cost: 0,
+          total: 3000,
+          stock_status: "pendiente",
+          payment_status: "pendiente",
+          delivery_status: "pendiente",
+          bultos: 0
+        }
+      ])
+      
+      setClients([
+        { 
+          id: 1, 
+          name: "Juan Pérez", 
+          dni_cuit: "20123456789",
+          email: "juan@example.com", 
+          phone: "123456789", 
+          province: "Buenos Aires",
+          city: "La Plata",
+          zip_code: "1900",
+          address: "Calle 123", 
+          created_at: "2024-01-01" 
+        },
+        { 
+          id: 2, 
+          name: "María García", 
+          dni_cuit: "27987654321",
+          email: "maria@example.com", 
+          phone: "987654321", 
+          province: "CABA",
+          city: "Buenos Aires",
+          zip_code: "1000",
+          address: "Av. Siempre Viva 742", 
+          created_at: "2024-01-02" 
+        }
+      ])
+    }
+  }
 
   // Auto-fill details when SKU exists in inventory
   useEffect(() => {
@@ -367,32 +390,62 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
     }
   }
 
-  const handleCreateClient = () => {
+  const handleCreateClient = async () => {
     if (!newClientData.name) {
       toast({ title: "Error", description: "El nombre es obligatorio", variant: "destructive" })
       return
     }
 
-    const newClient: RetailClient = {
-      id: Date.now(),
-      ...newClientData,
-      created_at: new Date().toISOString().split("T")[0]
-    }
+    try {
+      if (isSupabaseConfigured) {
+        const { data, error } = await supabase
+          .from("retail_clients")
+          .insert([{
+             name: newClientData.name,
+             dni_cuit: newClientData.dni_cuit,
+             email: newClientData.email,
+             phone: newClientData.phone,
+             province: newClientData.province,
+             city: newClientData.city,
+             zip_code: newClientData.zip_code,
+             address: newClientData.address
+          }])
+          .select()
+          .single()
+          
+        if (error) throw error
+        
+        setClients([data, ...clients])
+        setNewSaleClient(data.name)
+        
+        await logActivity("CREATE_RETAIL_CLIENT", "retail_clients", data.id, null, data, "Cliente minorista creado")
+      } else {
+        const newClient: RetailClient = {
+          id: Date.now(),
+          ...newClientData,
+          created_at: new Date().toISOString().split("T")[0]
+        }
 
-    setClients([...clients, newClient])
-    setNewSaleClient(newClient.name)
-    setShowClientForm(false)
-    setNewClientData({ 
-      name: "", 
-      dni_cuit: "", 
-      email: "", 
-      phone: "", 
-      province: "", 
-      city: "", 
-      zip_code: "", 
-      address: "" 
-    })
-    toast({ title: "Cliente creado", description: "El cliente se ha creado correctamente" })
+        setClients([newClient, ...clients])
+        setNewSaleClient(newClient.name)
+      }
+      
+      setShowClientForm(false)
+      setNewClientData({ 
+        name: "", 
+        dni_cuit: "", 
+        email: "", 
+        phone: "", 
+        province: "", 
+        city: "", 
+        zip_code: "", 
+        address: "" 
+      })
+      toast({ title: "Cliente creado", description: "El cliente se ha creado correctamente" })
+    } catch (error) {
+      logError("Error creating client", error)
+      toast({ title: "Error", description: "No se pudo crear el cliente", variant: "destructive" })
+    }
   }
 
   return (
