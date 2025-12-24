@@ -7,6 +7,17 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { formatCurrency } from "@/lib/utils"
 import { logError } from "@/lib/logger"
 import { read, utils, writeFile } from "xlsx"
+import { 
+  startOfMonth, 
+  endOfMonth, 
+  startOfWeek, 
+  endOfWeek, 
+  startOfDay, 
+  endOfDay, 
+  isWithinInterval, 
+  parseISO,
+  subMonths 
+} from "date-fns"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -190,6 +201,10 @@ export default function InventoryManagement() {
   })
 
   const [currentMonthExpenses, setCurrentMonthExpenses] = useState(0)
+  const [allExpenses, setAllExpenses] = useState<any[]>([])
+  const [dashboardFilter, setDashboardFilter] = useState("monthly") // monthly, weekly, daily, historical, custom
+  const [customDateRange, setCustomDateRange] = useState({ from: "", to: "" })
+
   const [isOnline, setIsOnline] = useState(true)
   const [lastSync, setLastSync] = useState<Date | null>(null)
   const [autoRefreshInterval, setAutoRefreshInterval] = useState<NodeJS.Timeout | null>(null)
@@ -247,6 +262,7 @@ export default function InventoryManagement() {
         .reduce((sum, e) => sum + e.amount, 0)
         
       setCurrentMonthExpenses(currentMonthExpensesTotal)
+      setAllExpenses(offlineExpenses)
 
       // Mostrar mensaje sobre datos de prueba en modo offline
       toast({
@@ -320,6 +336,7 @@ export default function InventoryManagement() {
 
       // Configurar gastos del mes
       if (!expensesResult.error && expensesResult.data) {
+        setAllExpenses(expensesResult.data)
         const currentMonth = new Date().toISOString().slice(0, 7)
         const currentMonthExpenses = expensesResult.data.filter((expense) =>
           expense.expense_date.startsWith(currentMonth)
@@ -1682,16 +1699,70 @@ ${csvRows
 
     const totalHistoricalValue = inventory.reduce((sum, item) => sum + item.cost_without_tax * item.quantity, 0)
 
-    const currentDate = new Date()
-    const currentMonth = currentDate.getMonth()
-    const currentYear = currentDate.getFullYear()
+    const now = new Date()
+    let startDate: Date | null = null
+    let endDate: Date | null = null
+
+    switch (dashboardFilter) {
+      case "monthly":
+        startDate = startOfMonth(now)
+        endDate = endOfMonth(now)
+        break
+      case "weekly":
+        startDate = startOfWeek(now, { weekStartsOn: 1 })
+        endDate = endOfWeek(now, { weekStartsOn: 1 })
+        break
+      case "daily":
+        startDate = startOfDay(now)
+        endDate = endOfDay(now)
+        break
+      case "historical":
+        startDate = null
+        endDate = null
+        break
+      case "custom":
+        if (customDateRange.from && customDateRange.to) {
+          startDate = startOfDay(parseISO(customDateRange.from))
+          endDate = endOfDay(parseISO(customDateRange.to))
+        }
+        break
+    }
+
+    const filterDate = (dateStr: string) => {
+      if (!startDate || !endDate) return true
+      // dateStr can be YYYY-MM-DD or ISO string
+      // If it's just YYYY-MM-DD, parseISO treats it as midnight UTC, which might cause issues with local time if not careful.
+      // But startOfDay/endOfDay are local time.
+      // Let's ensure consistent parsing.
+      // If dateStr is YYYY-MM-DD, we can append T00:00:00 or just parse.
+      // parseISO handles YYYY-MM-DD.
+      // However, to be safe with timezone offsets, let's treat date_entered as local date.
+      // Actually, Input type="date" values are YYYY-MM-DD.
+      // When we use new Date(dateStr), it might use UTC.
+      // Let's use parseISO which is robust.
+      // BUT, startOfMonth(now) uses local time.
+      
+      const date = parseISO(dateStr)
+      // Check if date is valid
+      if (isNaN(date.getTime())) return false
+      
+      return isWithinInterval(date, { start: startDate, end: endDate })
+    }
 
     const currentMonthValue = inventory
       .filter((item) => {
-        const itemDate = new Date(item.date_entered)
-        return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear
+         // Some items might not have date_entered, or it might be invalid.
+         if (!item.date_entered) return false
+         return filterDate(item.date_entered)
       })
       .reduce((sum, item) => sum + item.cost_without_tax * item.quantity, 0)
+
+    const filteredExpenses = allExpenses
+      .filter((expense) => {
+        if (!expense.expense_date) return false
+        return filterDate(expense.expense_date)
+      })
+      .reduce((sum, expense) => sum + expense.amount, 0)
 
     return {
       totalProducts,
@@ -1700,7 +1771,7 @@ ${csvRows
       totalBrands,
       totalSuppliers,
       uniqueSKUs,
-      currentMonthExpenses,
+      currentMonthExpenses: filteredExpenses,
     }
   }
 
@@ -2321,14 +2392,57 @@ ${csvRows
           </div>
         </div>
 
+        {/* Filtros de Dashboard */}
+        <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-6">
+          <div className="flex items-center gap-2">
+             <Filter className="w-5 h-5 text-slate-500" />
+             <span className="font-medium text-slate-700">Filtro de Período:</span>
+          </div>
+          <Select value={dashboardFilter} onValueChange={setDashboardFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Seleccionar período" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="monthly">Mensual</SelectItem>
+              <SelectItem value="weekly">Semanal</SelectItem>
+              <SelectItem value="daily">Diario</SelectItem>
+              <SelectItem value="historical">Histórico</SelectItem>
+              <SelectItem value="custom">Personalizado</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          {dashboardFilter === "custom" && (
+            <div className="flex items-center gap-2">
+              <Input 
+                type="date" 
+                value={customDateRange.from} 
+                onChange={(e) => setCustomDateRange(prev => ({ ...prev, from: e.target.value }))}
+                className="w-auto"
+              />
+              <span className="text-slate-400">-</span>
+              <Input 
+                type="date" 
+                value={customDateRange.to} 
+                onChange={(e) => setCustomDateRange(prev => ({ ...prev, to: e.target.value }))}
+                className="w-auto"
+              />
+            </div>
+          )}
+        </div>
+
         {/* Stats Cards - Reorganizado y optimizado para diferentes pantallas */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-9 gap-3">
-          {/* 1. Compras Mes */}
+          {/* 1. Compras Filtradas */}
           <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transform transition-all hover:scale-105">
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-blue-100 text-xs font-medium">Compras Mes</p>
+                  <p className="text-blue-100 text-xs font-medium">
+                    Compras {dashboardFilter === "monthly" ? "Mes" : 
+                             dashboardFilter === "weekly" ? "Semana" : 
+                             dashboardFilter === "daily" ? "Hoy" : 
+                             dashboardFilter === "historical" ? "Histórico" : "Personalizado"}
+                  </p>
                   <p className="text-lg font-bold">{formatCurrency(stats.currentMonthValue)}</p>
                 </div>
                 <TrendingUp className="w-5 h-5 text-blue-200" />
@@ -2336,20 +2450,7 @@ ${csvRows
             </CardContent>
           </Card>
 
-          {/* 2. Total Histórico */}
-          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg transform transition-all hover:scale-105">
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-100 text-xs font-medium">Total Histórico</p>
-                  <p className="text-lg font-bold">{formatCurrency(stats.totalHistoricalValue)}</p>
-                </div>
-                <TrendingUp className="w-5 h-5 text-green-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* 3. Gastos (Movido aquí para agrupar financieros) */}
+          {/* 2. Gastos Filtrados */}
           <Card
             className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg cursor-pointer hover:from-teal-600 hover:to-cyan-700 transition-all transform hover:scale-105"
             onClick={() => setShowGastos(true)}
@@ -2357,7 +2458,12 @@ ${csvRows
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-teal-100 text-xs font-medium">Gastos</p>
+                  <p className="text-teal-100 text-xs font-medium">
+                    Gastos {dashboardFilter === "monthly" ? "Mes" : 
+                             dashboardFilter === "weekly" ? "Semana" : 
+                             dashboardFilter === "daily" ? "Hoy" : 
+                             dashboardFilter === "historical" ? "Histórico" : "Personalizado"}
+                  </p>
                   <p className="text-lg font-bold">{formatCurrency(stats.currentMonthExpenses)}</p>
                 </div>
                 <Receipt className="w-5 h-5 text-teal-200" />
@@ -3588,7 +3694,10 @@ ${csvRows
         <UserManagement isOpen={showUsers} onClose={() => setShowUsers(false)} />
         <GastosManagement
           isOpen={showGastos}
-          onClose={() => setShowGastos(false)}
+          onClose={() => {
+            setShowGastos(false)
+            loadData()
+          }}
           onUpdateExpenses={updateCurrentMonthExpenses}
         />
         {hasPermission("VIEW_WHOLESALE") && (

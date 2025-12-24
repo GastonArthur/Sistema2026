@@ -183,6 +183,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
   const [currentUnitPrice, setCurrentUnitPrice] = useState(0)
   const [currentQuantity, setCurrentQuantity] = useState(1)
   const [orderNotes, setOrderNotes] = useState("")
+  const [editingOrder, setEditingOrder] = useState<WholesaleOrder | null>(null)
   const [viewingClient, setViewingClient] = useState<WholesaleClient | null>(null)
 
   // Filtros para precios
@@ -719,7 +720,6 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
 
   const createOrder = async (e?: React.MouseEvent) => {
     if (e) e.preventDefault()
-    console.log("Creating order...", { selectedClient, itemsCount: orderItems.length })
     
     if (!selectedClient) {
       toast({
@@ -744,67 +744,120 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
 
     try {
       if (isSupabaseConfigured) {
-        console.log("Using Supabase for order")
         const user = getCurrentUser()
         const userId = user?.id || null
 
-        // Create order
-        const { data: orderData, error: orderError } = await supabase
-          .from("wholesale_orders")
-          .insert([
-            {
+        if (editingOrder) {
+          // Update order
+          const { error: orderError } = await supabase
+            .from("wholesale_orders")
+            .update({
               client_id: clientId,
-              order_date: new Date().toISOString(),
-              status: "pending",
               total_amount: totalAmount,
               notes: orderNotes,
-              created_by: userId,
-            },
-          ])
-          .select()
-          .single()
+            })
+            .eq("id", editingOrder.id)
 
-        if (orderError) throw orderError
+          if (orderError) throw orderError
 
-        // Create order items
-        const itemsToInsert = orderItems.map((item) => ({
-          order_id: orderData.id,
-          sku: item.sku,
-          description: item.description,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          total_price: item.total_price,
-        }))
+          // Delete existing items
+          const { error: deleteError } = await supabase
+            .from("wholesale_order_items")
+            .delete()
+            .eq("order_id", editingOrder.id)
 
-        const { error: itemsError } = await supabase.from("wholesale_order_items").insert(itemsToInsert)
+          if (deleteError) throw deleteError
 
-        if (itemsError) throw itemsError
+          // Insert new items
+          const itemsToInsert = orderItems.map((item) => ({
+            order_id: editingOrder.id,
+            sku: item.sku,
+            description: item.description,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            total_price: item.total_price,
+          }))
 
-        toast({
-          title: "Pedido creado",
-          description: "El pedido se ha guardado correctamente",
-        })
+          const { error: itemsError } = await supabase.from("wholesale_order_items").insert(itemsToInsert)
+
+          if (itemsError) throw itemsError
+
+          toast({
+            title: "Pedido actualizado",
+            description: "El pedido se ha actualizado correctamente",
+          })
+        } else {
+          // Create order
+          const { data: orderData, error: orderError } = await supabase
+            .from("wholesale_orders")
+            .insert([
+              {
+                client_id: clientId,
+                order_date: new Date().toISOString(),
+                status: "pending",
+                total_amount: totalAmount,
+                notes: orderNotes,
+                created_by: userId,
+              },
+            ])
+            .select()
+            .single()
+
+          if (orderError) throw orderError
+
+          const itemsToInsert = orderItems.map((item) => ({
+            order_id: orderData.id,
+            sku: item.sku,
+            description: item.description,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            total_price: item.total_price,
+          }))
+
+          const { error: itemsError } = await supabase.from("wholesale_order_items").insert(itemsToInsert)
+
+          if (itemsError) throw itemsError
+
+          toast({
+            title: "Pedido creado",
+            description: "El pedido se ha guardado correctamente",
+          })
+        }
 
         // Refresh orders
         loadWholesaleData()
       } else {
-        console.log("Offline mode for order")
         // Offline mode
-        const newOrder: WholesaleOrder = {
-          id: Date.now(),
-          client_id: clientId,
-          order_date: new Date().toISOString(),
-          status: "pending",
-          total_amount: totalAmount,
-          items: orderItems,
-          notes: orderNotes,
-          created_at: new Date().toISOString(),
+        if (editingOrder) {
+            const updatedOrder: WholesaleOrder = {
+                ...editingOrder,
+                client_id: clientId,
+                total_amount: totalAmount,
+                items: orderItems,
+                notes: orderNotes,
+            }
+            setOrders((prev) => prev.map((o) => (o.id === editingOrder.id ? updatedOrder : o)))
+            toast({
+                title: "Pedido actualizado (Offline)",
+                description: "El pedido se ha actualizado localmente",
+            })
+        } else {
+            const newOrder: WholesaleOrder = {
+              id: Date.now(),
+              client_id: clientId,
+              order_date: new Date().toISOString(),
+              status: "pending",
+              total_amount: totalAmount,
+              items: orderItems,
+              notes: orderNotes,
+              created_at: new Date().toISOString(),
+            }
+            setOrders((prev) => [newOrder, ...prev])
+            toast({
+              title: "Pedido creado (Offline)",
+              description: "El pedido se ha guardado localmente",
+            })
         }
-        setOrders((prev) => [newOrder, ...prev])
-        toast({
-          title: "Pedido creado (Offline)",
-          description: "El pedido se ha guardado localmente",
-        })
       }
 
       // Reset form
@@ -812,11 +865,12 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
       setOrderItems([])
       setSelectedClient("")
       setOrderNotes("")
+      setEditingOrder(null)
     } catch (error) {
-      logError("Error creating order:", error)
+      logError("Error saving order:", error)
       toast({
         title: "Error",
-        description: "No se pudo crear el pedido. Revise la consola.",
+        description: "No se pudo guardar el pedido. Revise la consola.",
         variant: "destructive",
       })
     }
@@ -850,6 +904,56 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
         description: `El pedido #${orderId} ha cambiado a ${newStatus}`,
       })
     }
+  }
+
+  const editOrder = (order: WholesaleOrder) => {
+    setEditingOrder(order)
+    setSelectedClient(order.client_id.toString())
+    setOrderNotes(order.notes || "")
+    setOrderItems(order.items || [])
+    setShowOrderForm(true)
+  }
+
+  const deleteOrder = async (order: WholesaleOrder) => {
+    if (!confirm(`¿Está seguro de eliminar el pedido #${order.id}?`)) {
+      return
+    }
+
+    if (isSupabaseConfigured) {
+      try {
+        // First delete items
+        const { error: itemsError } = await supabase.from("wholesale_order_items").delete().eq("order_id", order.id)
+        if (itemsError) throw itemsError
+
+        // Then delete order
+        const { error: orderError } = await supabase.from("wholesale_orders").delete().eq("id", order.id)
+        if (orderError) throw orderError
+      } catch (error) {
+        logError("Error deleting order:", error)
+        toast({
+          title: "Error",
+          description: "No se pudo eliminar el pedido",
+          variant: "destructive",
+        })
+        return
+      }
+    }
+
+    setOrders((prev) => prev.filter((o) => o.id !== order.id))
+    
+    await logActivity(
+      "DELETE_WHOLESALE_ORDER",
+      "wholesale_orders",
+      order.id,
+      order,
+      null,
+      `Pedido mayorista #${order.id} eliminado`
+    )
+
+    toast({
+      title: "Pedido eliminado",
+      description: `El pedido #${order.id} ha sido eliminado`,
+    })
   }
 
   const exportWholesalePrices = () => {
@@ -1806,91 +1910,6 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                 </Table>
               </CardContent>
             </Card>
-
-            {/* Modal para agregar cliente */}
-            {showClientForm && (
-              <Dialog open={showClientForm} onOpenChange={closeClientForm}>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>{editingClient ? "Editar Cliente Mayorista" : "Nuevo Cliente Mayorista"}</DialogTitle>
-                  </DialogHeader>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Nombre *</Label>
-                      <Input
-                        value={newClient.name}
-                        onChange={(e) => setNewClient((prev) => ({ ...prev, name: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <Label>Razón Social *</Label>
-                      <Input
-                        value={newClient.business_name}
-                        onChange={(e) => setNewClient((prev) => ({ ...prev, business_name: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <Label>CUIT *</Label>
-                      <Input
-                        value={newClient.cuit}
-                        onChange={(e) => setNewClient((prev) => ({ ...prev, cuit: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <Label>Provincia</Label>
-                      <Input
-                        value={newClient.province}
-                        onChange={(e) => setNewClient((prev) => ({ ...prev, province: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <Label>Dirección</Label>
-                      <Input
-                        value={newClient.address}
-                        onChange={(e) => setNewClient((prev) => ({ ...prev, address: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <Label>Ciudad</Label>
-                      <Input
-                        value={newClient.city || ""}
-                        onChange={(e) => setNewClient((prev) => ({ ...prev, city: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <Label>Persona de Contacto</Label>
-                      <Input
-                        value={newClient.contact_person}
-                        onChange={(e) => setNewClient((prev) => ({ ...prev, contact_person: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <Label>Email</Label>
-                      <Input
-                        type="email"
-                        value={newClient.email}
-                        onChange={(e) => setNewClient((prev) => ({ ...prev, email: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <Label>WhatsApp</Label>
-                      <Input
-                        value={newClient.whatsapp}
-                        onChange={(e) => setNewClient((prev) => ({ ...prev, whatsapp: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-2 mt-4">
-                    <Button variant="secondary" onClick={closeClientForm}>
-                      Cancelar
-                    </Button>
-                    <Button type="button" onClick={addClient} className="bg-purple-600 hover:bg-purple-700">
-                      {editingClient ? "Actualizar Cliente" : "Agregar Cliente"}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            )}
           </TabsContent>
 
           <TabsContent value="pedidos" className="space-y-4 h-[calc(95vh-200px)] overflow-y-auto">
@@ -1916,6 +1935,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                       <TableHead className="text-right">Total</TableHead>
                       <TableHead>Notas</TableHead>
                       <TableHead>Items</TableHead>
+                      <TableHead>Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1955,12 +1975,30 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                           <TableCell className="text-right">${order.total_amount.toFixed(2)}</TableCell>
                           <TableCell className="max-w-[200px] truncate">{order.notes}</TableCell>
                           <TableCell>{order.items?.length || 0} items</TableCell>
+                          <TableCell>
+                            {!isReadOnly && (
+                              <div className="flex gap-2">
+                                <Button variant="ghost" size="sm" onClick={() => editOrder(order)} title="Editar pedido">
+                                  <Edit className="w-3 h-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => deleteOrder(order)}
+                                  title="Eliminar pedido"
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            )}
+                          </TableCell>
                         </TableRow>
                       )
                     })}
                     {orders.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                        <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                           No hay pedidos registrados
                         </TableCell>
                       </TableRow>
@@ -1972,10 +2010,18 @@ Este reporte contiene información confidencial y está destinado únicamente pa
 
             {/* Modal para nuevo pedido */}
             {showOrderForm && (
-              <Dialog open={showOrderForm} onOpenChange={setShowOrderForm}>
+              <Dialog open={showOrderForm} onOpenChange={(open) => {
+                if (!open) {
+                  setShowOrderForm(false)
+                  setEditingOrder(null)
+                  setOrderItems([])
+                  setSelectedClient("")
+                  setOrderNotes("")
+                }
+              }}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Nuevo Pedido Mayorista</DialogTitle>
+                    <DialogTitle>{editingOrder ? "Editar Pedido Mayorista" : "Nuevo Pedido Mayorista"}</DialogTitle>
                   </DialogHeader>
 
                   <div className="grid grid-cols-2 gap-6">
@@ -2122,11 +2168,17 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                       </div>
 
                       <div className="flex gap-2 justify-end">
-                        <Button type="button" variant="outline" onClick={() => setShowOrderForm(false)}>
+                        <Button type="button" variant="outline" onClick={() => {
+                          setShowOrderForm(false)
+                          setEditingOrder(null)
+                          setOrderItems([])
+                          setSelectedClient("")
+                          setOrderNotes("")
+                        }}>
                           Cancelar
                         </Button>
                         <Button type="button" onClick={createOrder} className="bg-purple-600 hover:bg-purple-700">
-                          Confirmar Pedido
+                          {editingOrder ? "Actualizar Pedido" : "Confirmar Pedido"}
                         </Button>
                       </div>
                     </div>
@@ -2398,6 +2450,91 @@ Este reporte contiene información confidencial y está destinado únicamente pa
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Modal para agregar cliente */}
+        {showClientForm && (
+          <Dialog open={showClientForm} onOpenChange={closeClientForm}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>{editingClient ? "Editar Cliente Mayorista" : "Nuevo Cliente Mayorista"}</DialogTitle>
+              </DialogHeader>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Nombre *</Label>
+                  <Input
+                    value={newClient.name}
+                    onChange={(e) => setNewClient((prev) => ({ ...prev, name: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>Razón Social *</Label>
+                  <Input
+                    value={newClient.business_name}
+                    onChange={(e) => setNewClient((prev) => ({ ...prev, business_name: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>CUIT *</Label>
+                  <Input
+                    value={newClient.cuit}
+                    onChange={(e) => setNewClient((prev) => ({ ...prev, cuit: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>Provincia</Label>
+                  <Input
+                    value={newClient.province}
+                    onChange={(e) => setNewClient((prev) => ({ ...prev, province: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>Dirección</Label>
+                  <Input
+                    value={newClient.address}
+                    onChange={(e) => setNewClient((prev) => ({ ...prev, address: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>Ciudad</Label>
+                  <Input
+                    value={newClient.city || ""}
+                    onChange={(e) => setNewClient((prev) => ({ ...prev, city: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>Persona de Contacto</Label>
+                  <Input
+                    value={newClient.contact_person}
+                    onChange={(e) => setNewClient((prev) => ({ ...prev, contact_person: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>Email</Label>
+                  <Input
+                    type="email"
+                    value={newClient.email}
+                    onChange={(e) => setNewClient((prev) => ({ ...prev, email: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>WhatsApp</Label>
+                  <Input
+                    value={newClient.whatsapp}
+                    onChange={(e) => setNewClient((prev) => ({ ...prev, whatsapp: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="secondary" onClick={closeClientForm}>
+                  Cancelar
+                </Button>
+                <Button type="button" onClick={addClient} className="bg-purple-600 hover:bg-purple-700">
+                  {editingClient ? "Actualizar Cliente" : "Agregar Cliente"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </DialogContent>
 
       {viewingClient && (
