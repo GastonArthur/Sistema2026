@@ -16,6 +16,7 @@ import {
   ShoppingBag,
   Users,
   Plus,
+  Edit,
   Search,
   Download,
   Filter,
@@ -31,6 +32,7 @@ import {
 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
+import { getCurrentUser, hasPermission } from "@/lib/auth"
 
 type InventoryItem = {
   id: number
@@ -86,6 +88,9 @@ interface VentasMinoristasProps {
 }
 
 export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinoristasProps) {
+  const currentUser = getCurrentUser()
+  const isReadOnly = currentUser?.role === "viewer"
+
   const [activeTab, setActiveTab] = useState("ventas")
   const [sales, setSales] = useState<RetailSale[]>([])
   const [clients, setClients] = useState<RetailClient[]>([])
