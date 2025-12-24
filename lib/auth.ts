@@ -499,6 +499,10 @@ export const updateUser = async (
 
     OFFLINE_USERS[userIndex] = updatedUser
 
+    if (currentUser && currentUser.id === userId) {
+      currentUser = updatedUser
+    }
+
     await logActivity(
       "UPDATE_USER",
       "users",
@@ -536,6 +540,10 @@ export const updateUser = async (
     if (error) throw error
 
     const newUser = await supabase.from("users").select("*").eq("id", userId).single()
+
+    if (currentUser && currentUser.id === userId && newUser.data) {
+      currentUser = newUser.data
+    }
 
     await logActivity(
       "UPDATE_USER",

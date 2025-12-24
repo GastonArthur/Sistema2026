@@ -103,6 +103,39 @@ export function UserHeader({ onLogout, onShowLogs, onShowUsers, onShowWholesale 
     }
   }
 
+  const handleSaveProfile = async () => {
+    if (!user) return
+
+    try {
+      const result = await updateUser(user.id, {
+        name: profileData.name,
+        email: profileData.email,
+        password: profileData.password || undefined,
+      })
+
+      if (result.success) {
+        toast({
+          title: "Perfil actualizado",
+          description: "Los cambios se han guardado correctamente.",
+        })
+        setIsProfileOpen(false)
+        setProfileData((prev) => ({ ...prev, password: "" }))
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "No se pudo actualizar el perfil",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Ocurrió un error inesperado",
+        variant: "destructive",
+      })
+    }
+  }
+
   return (
     <div className="flex items-center gap-4">
       <div className="flex items-center gap-3">
