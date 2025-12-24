@@ -127,12 +127,12 @@ export function PreciosPublicar({
     return basePrice * (1 + installmentPercentage / 100)
   }
 
-  const handlePromocionChange = (sku: string, value: string) => {
+  const handlePromocionChange = (id: number, sku: string, value: string) => {
     const percentage = Number.parseFloat(value) || 0
-    const previousPercentage = promociones[sku] || 0
+    const previousPercentage = promociones[id] || 0
     const newPromociones = {
       ...promociones,
-      [sku]: percentage,
+      [id]: percentage,
     }
     setPromociones(newPromociones)
 
@@ -144,8 +144,8 @@ export function PreciosPublicar({
       const action = percentage > 0 ? "PROMOCION_APLICADA" : "PROMOCION_REMOVIDA"
       const description =
         percentage > 0
-          ? `Promoción aplicada: ${percentage}% de descuento en SKU ${sku}`
-          : `Promoción removida del SKU ${sku}`
+          ? `Promoción aplicada: ${percentage}% de descuento en SKU ${sku} (ID: ${id})`
+          : `Promoción removida del SKU ${sku} (ID: ${id})`
 
       logActivity(
         action,
@@ -154,6 +154,7 @@ export function PreciosPublicar({
         null,
         {
           sku: sku,
+          product_id: id,
           previous_percentage: previousPercentage,
           new_percentage: percentage,
           module: "precios_publicar",
@@ -204,7 +205,7 @@ export function PreciosPublicar({
     ]
 
     const csvRows = filtered.map((item) => {
-      const promocion = promociones[item.sku] || 0
+      const promocion = promociones[item.id] || 0
       const basePrice = item.pvp_with_tax
       const priceWithPromo = calculatePriceWithPromotion(basePrice, promocion)
 
@@ -291,7 +292,7 @@ ${csvRows
     <td class="data-number">${row[8]}</td>
     <td class="data-number">${row[9]}</td>
     <td class="data-number">${row[10]}</td>
-    <td class="data-center ${promociones[item.sku] > 0 ? "promocion" : ""}">${row[11]}</td>
+    <td class="data-center ${promociones[item.id] > 0 ? "promocion" : ""}">${row[11]}</td>
   </tr>`
   })
   .join("")}
@@ -512,7 +513,7 @@ ${csvRows
               </TableHeader>
               <TableBody>
                 {getFilteredInventory().map((item) => {
-                  const promocion = promociones[item.sku] || 0
+                  const promocion = promociones[item.id] || 0
                   const basePrice = item.pvp_with_tax
                   const priceWithPromo = calculatePriceWithPromotion(basePrice, promocion)
 
@@ -559,8 +560,8 @@ ${csvRows
                           max="100"
                           step="0.1"
                           placeholder="0"
-                          value={promociones[item.sku] || ""}
-                          onChange={(e) => handlePromocionChange(item.sku, e.target.value)}
+                          value={promociones[item.id] || ""}
+                          onChange={(e) => handlePromocionChange(item.id, item.sku, e.target.value)}
                           className="w-20 text-center"
                           disabled={isReadOnly}
                         />

@@ -47,8 +47,12 @@ type InventoryItem = {
 type RetailClient = {
   id: number
   name: string
+  dni_cuit: string
   email: string
   phone: string
+  province: string
+  city: string
+  zip_code: string
   address: string
   created_at: string
 }
@@ -126,8 +130,12 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
   const [showClientForm, setShowClientForm] = useState(false)
   const [newClientData, setNewClientData] = useState({
     name: "",
+    dni_cuit: "",
     email: "",
     phone: "",
+    province: "",
+    city: "",
+    zip_code: "",
     address: ""
   })
 
@@ -184,8 +192,30 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
     ])
     
     setClients([
-      { id: 1, name: "Juan Pérez", email: "juan@example.com", phone: "123456789", address: "Calle 123", created_at: "2024-01-01" },
-      { id: 2, name: "María García", email: "maria@example.com", phone: "987654321", address: "Av. Siempre Viva 742", created_at: "2024-01-02" }
+      { 
+        id: 1, 
+        name: "Juan Pérez", 
+        dni_cuit: "20123456789",
+        email: "juan@example.com", 
+        phone: "123456789", 
+        province: "Buenos Aires",
+        city: "La Plata",
+        zip_code: "1900",
+        address: "Calle 123", 
+        created_at: "2024-01-01" 
+      },
+      { 
+        id: 2, 
+        name: "María García", 
+        dni_cuit: "27987654321",
+        email: "maria@example.com", 
+        phone: "987654321", 
+        province: "CABA",
+        city: "Buenos Aires",
+        zip_code: "1000",
+        address: "Av. Siempre Viva 742", 
+        created_at: "2024-01-02" 
+      }
     ])
   }, [])
 
@@ -352,7 +382,16 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
     setClients([...clients, newClient])
     setNewSaleClient(newClient.name)
     setShowClientForm(false)
-    setNewClientData({ name: "", email: "", phone: "", address: "" })
+    setNewClientData({ 
+      name: "", 
+      dni_cuit: "", 
+      email: "", 
+      phone: "", 
+      province: "", 
+      city: "", 
+      zip_code: "", 
+      address: "" 
+    })
     toast({ title: "Cliente creado", description: "El cliente se ha creado correctamente" })
   }
 
@@ -602,7 +641,16 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
                   {!isReadOnly && (
                     <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => {
                       setEditingClient(null)
-                      setNewClientData({ name: "", email: "", phone: "", address: "" })
+                      setNewClientData({ 
+                        name: "", 
+                        dni_cuit: "", 
+                        email: "", 
+                        phone: "", 
+                        province: "", 
+                        city: "", 
+                        zip_code: "", 
+                        address: "" 
+                      })
                       setShowClientForm(true)
                     }}>
                       <Plus className="w-4 h-4 mr-2" /> Nuevo Cliente
@@ -614,10 +662,11 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
                     <TableHeader>
                       <TableRow>
                         <TableHead>Nombre</TableHead>
+                        <TableHead>DNI/CUIT</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Teléfono</TableHead>
+                        <TableHead>Ubicación</TableHead>
                         <TableHead>Dirección</TableHead>
-                        <TableHead>Fecha Registro</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -632,10 +681,21 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
                               {client.name}
                             </Button>
                           </TableCell>
+                          <TableCell>{client.dni_cuit || "-"}</TableCell>
                           <TableCell>{client.email}</TableCell>
                           <TableCell>{client.phone}</TableCell>
-                          <TableCell>{client.address}</TableCell>
-                          <TableCell>{client.created_at}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-col text-xs">
+                              <span>{client.province || "-"}</span>
+                              <span className="text-gray-500">{client.city || "-"}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col text-xs">
+                              <span>{client.address}</span>
+                              <span className="text-gray-500">CP: {client.zip_code || "-"}</span>
+                            </div>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -903,30 +963,71 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
                 <DialogTitle>Nuevo Cliente Minorista</DialogTitle>
               </DialogHeader>
               <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <Label>Nombre *</Label>
-                  <Input 
-                    value={newClientData.name} 
-                    onChange={(e) => setNewClientData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Nombre completo"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Nombre *</Label>
+                    <Input 
+                      value={newClientData.name} 
+                      onChange={(e) => setNewClientData(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Nombre completo"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>DNI o CUIT</Label>
+                    <Input 
+                      value={newClientData.dni_cuit} 
+                      onChange={(e) => setNewClientData(prev => ({ ...prev, dni_cuit: e.target.value }))}
+                      placeholder="DNI o CUIT"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input 
-                    value={newClientData.email} 
-                    onChange={(e) => setNewClientData(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="ejemplo@email.com"
-                  />
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Email</Label>
+                    <Input 
+                      value={newClientData.email} 
+                      onChange={(e) => setNewClientData(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="ejemplo@email.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Teléfono</Label>
+                    <Input 
+                      value={newClientData.phone} 
+                      onChange={(e) => setNewClientData(prev => ({ ...prev, phone: e.target.value }))}
+                      placeholder="Número de teléfono"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Teléfono</Label>
-                  <Input 
-                    value={newClientData.phone} 
-                    onChange={(e) => setNewClientData(prev => ({ ...prev, phone: e.target.value }))}
-                    placeholder="Número de teléfono"
-                  />
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Provincia</Label>
+                    <Input 
+                      value={newClientData.province} 
+                      onChange={(e) => setNewClientData(prev => ({ ...prev, province: e.target.value }))}
+                      placeholder="Provincia"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Localidad</Label>
+                    <Input 
+                      value={newClientData.city} 
+                      onChange={(e) => setNewClientData(prev => ({ ...prev, city: e.target.value }))}
+                      placeholder="Localidad"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>C. Postal</Label>
+                    <Input 
+                      value={newClientData.zip_code} 
+                      onChange={(e) => setNewClientData(prev => ({ ...prev, zip_code: e.target.value }))}
+                      placeholder="CP"
+                    />
+                  </div>
                 </div>
+
                 <div className="space-y-2">
                   <Label>Dirección</Label>
                   <Input 
@@ -935,6 +1036,7 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
                     placeholder="Dirección completa"
                   />
                 </div>
+
                 <div className="flex justify-end gap-2 pt-4">
                   <Button variant="outline" onClick={() => setShowClientForm(false)}>Cancelar</Button>
                   <Button onClick={handleCreateClient} className="bg-emerald-600 hover:bg-emerald-700">

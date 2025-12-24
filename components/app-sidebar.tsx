@@ -36,6 +36,7 @@ export type SidebarNavigationProps = {
   setShowWholesale: (show: boolean) => void
   setShowRetail: (show: boolean) => void
   setShowGastos: (show: boolean) => void
+  setShowClients: (show: boolean) => void
   onLogout: () => void
   userEmail?: string
   isOnline?: boolean
@@ -48,6 +49,7 @@ export function AppSidebar({
   setShowWholesale,
   setShowRetail,
   setShowGastos,
+  setShowClients,
   onLogout,
   userEmail,
   isOnline = true,
@@ -59,12 +61,14 @@ export function AppSidebar({
     setShowWholesale(false)
     setShowRetail(false)
     setShowGastos(false)
+    setShowClients(false)
   }
 
   const handleOpenWholesale = () => {
     setShowWholesale(true)
     setShowRetail(false)
     setShowGastos(false)
+    setShowClients(false)
     // Optionally set active tab to something generic or keep current
   }
 
@@ -72,12 +76,21 @@ export function AppSidebar({
     setShowRetail(true)
     setShowWholesale(false)
     setShowGastos(false)
+    setShowClients(false)
   }
 
   const handleOpenGastos = () => {
     setShowGastos(true)
     setShowWholesale(false)
     setShowRetail(false)
+    setShowClients(false)
+  }
+
+  const handleOpenClients = () => {
+    setShowClients(true)
+    setShowWholesale(false)
+    setShowRetail(false)
+    setShowGastos(false)
   }
 
   return (
@@ -136,6 +149,12 @@ export function AppSidebar({
           <SidebarGroupLabel>Gestión</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton onClick={handleOpenClients}>
+                  <Users />
+                  <span>Clientes</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton 
                   onClick={() => handleNavigation("brands")}

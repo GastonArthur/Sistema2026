@@ -86,6 +86,7 @@ import { ZentorList } from "@/components/zentor-list"
 import { GastosManagement } from "@/components/gastos-management"
 import { MayoristasManagement } from "@/components/mayoristas-management"
 import { VentasMinoristas } from "@/components/ventas-minoristas"
+import { ClientesManagement } from "@/components/clientes-management"
 
 type InventoryItem = {
   id: number
@@ -130,6 +131,7 @@ export default function InventoryManagement() {
   const [activeTab, setActiveTab] = useState("inventory")
   const [showGastos, setShowGastos] = useState(false)
   const [showRetail, setShowRetail] = useState(false)
+  const [showClients, setShowClients] = useState(false)
 
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
@@ -2321,14 +2323,15 @@ ${csvRows
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <AppSidebar 
-            activeTab={activeTab} 
-            setActiveTab={setActiveTab} 
+        <AppSidebar
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
             setShowWholesale={setShowWholesale}
             setShowRetail={setShowRetail}
             setShowGastos={setShowGastos}
+            setShowClients={setShowClients}
             onLogout={handleLogout}
-            userEmail={getCurrentUser()?.email}
+            userEmail={currentUser?.email}
             isOnline={isOnline}
             lastSync={lastSync}
           />
@@ -3618,6 +3621,11 @@ ${csvRows
           isOpen={showRetail}
           onClose={() => setShowRetail(false)}
           inventory={inventory}
+        />
+        
+        <ClientesManagement
+          isOpen={showClients}
+          onClose={() => setShowClients(false)}
         />
 
         {/* Modal de confirmación de eliminación */}
