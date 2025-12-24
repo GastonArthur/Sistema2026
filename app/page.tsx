@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from "react"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { formatCurrency } from "@/lib/utils"
 import { logError } from "@/lib/logger"
+import { read, utils } from "xlsx"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -57,6 +58,7 @@ import {
   Trash2,
   Receipt,
   ShoppingCart,
+  Search,
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
@@ -147,11 +149,12 @@ export default function InventoryManagement() {
 
   // Filters
   const [filters, setFilters] = useState({
+    period: "all",
     dateFrom: "",
     dateTo: "",
-    supplier: "",
-    brand: "",
-    company: "",
+    supplier: "all",
+    brand: "all",
+    company: "all",
     duplicates: "all",
     sortBy: "date_desc",
     searchSku: "",
@@ -472,23 +475,20 @@ export default function InventoryManagement() {
       if (file.name.toLowerCase().endsWith(".csv")) {
         text = await file.text()
       } else if (file.name.toLowerCase().endsWith(".xls") || file.name.toLowerCase().endsWith(".xlsx")) {
-        text = await file.text()
-
-        if (text.includes("<table>")) {
-          const parser = new DOMParser()
-          const doc = parser.parseFromString(text, "text/html")
-          const rows = doc.querySelectorAll("tr")
-
-          const csvLines: string[] = []
-          rows.forEach((row) => {
-            const cells = row.querySelectorAll("td, th")
-            const rowData = Array.from(cells).map((cell) => cell.textContent?.trim() || "")
-            if (rowData.length > 0) {
-              csvLines.push(rowData.join(";"))
-            }
+        try {
+          const arrayBuffer = await file.arrayBuffer()
+          const workbook = read(arrayBuffer)
+          const sheetName = workbook.SheetNames[0]
+          const worksheet = workbook.Sheets[sheetName]
+          text = utils.sheet_to_csv(worksheet)
+        } catch (error) {
+          console.error("Error parsing Excel file:", error)
+          toast({
+            title: "Error al leer Excel",
+            description: "No se pudo procesar el archivo Excel. Asegúrese de que no esté corrupto.",
+            variant: "destructive",
           })
-
-          text = csvLines.join("\n")
+          return
         }
       } else {
         toast({
@@ -599,6 +599,11 @@ export default function InventoryManagement() {
           } else if (isNaN(Number.parseFloat(cost)) || isNaN(Number.parseFloat(pvp))) {
             errors.push(`Fila ${i + 1}: Precios inválidos (COSTO: ${cost}, PVP: ${pvp})`)
           } else {
+            // Calcular precios con IVA para la vista previa
+            const costVal = Number.parseFloat(cost)
+            const pvpVal = Number.parseFloat(pvp)
+            row.COSTO_CON_IVA = calculateWithTax(costVal).toFixed(2)
+            row.PVP_CON_IVA = calculateWithTax(pvpVal).toFixed(2)
             validCount++
           }
         } else {
@@ -1422,17 +1427,53 @@ export default function InventoryManagement() {
       filtered = filtered.filter((item) => item.sku.toLowerCase().includes(filters.searchSku.toLowerCase().trim()))
     }
 
-    if (filters.dateFrom) {
-      filtered = filtered.filter((item) => item.date_entered >= filters.dateFrom)
+    // Filtro por fecha/periodo
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    if (filters.period !== "all") {
+      if (filters.period === "today") {
+        filtered = filtered.filter((item) => {
+          const itemDate = new Date(item.date_entered + "T00:00:00")
+          return itemDate.getTime() === today.getTime()
+        })
+      } else if (filters.period === "week") {
+        const startOfWeek = new Date(today)
+        startOfWeek.setDate(today.getDate() - today.getDay()) // Domingo como inicio
+        filtered = filtered.filter((item) => new Date(item.date_entered + "T00:00:00") >= startOfWeek)
+      } else if (filters.period === "month") {
+        filtered = filtered.filter((item) => {
+          const itemDate = new Date(item.date_entered + "T00:00:00")
+          return itemDate.getMonth() === today.getMonth() && itemDate.getFullYear() === today.getFullYear()
+        })
+      } else if (filters.period === "year") {
+        filtered = filtered.filter((item) => {
+          const itemDate = new Date(item.date_entered + "T00:00:00")
+          return itemDate.getFullYear() === today.getFullYear()
+        })
+      } else if (filters.period === "custom") {
+        if (filters.dateFrom) {
+          filtered = filtered.filter((item) => item.date_entered >= filters.dateFrom)
+        }
+        if (filters.dateTo) {
+          filtered = filtered.filter((item) => item.date_entered <= filters.dateTo)
+        }
+      }
     }
-    if (filters.dateTo) {
-      filtered = filtered.filter((item) => item.date_entered <= filters.dateTo)
-    }
+
     if (filters.supplier && filters.supplier !== "all") {
-      filtered = filtered.filter((item) => item.supplier_id?.toString() === filters.supplier)
+      if (filters.supplier === "none") {
+        filtered = filtered.filter((item) => !item.supplier_id)
+      } else {
+        filtered = filtered.filter((item) => item.supplier_id?.toString() === filters.supplier)
+      }
     }
     if (filters.brand && filters.brand !== "all") {
-      filtered = filtered.filter((item) => item.brand_id?.toString() === filters.brand)
+      if (filters.brand === "none") {
+        filtered = filtered.filter((item) => !item.brand_id)
+      } else {
+        filtered = filtered.filter((item) => item.brand_id?.toString() === filters.brand)
+      }
     }
     if (filters.company && filters.company !== "all") {
       filtered = filtered.filter((item) => item.company === filters.company)
@@ -2421,36 +2462,39 @@ ${csvRows
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6 bg-white shadow-sm">
-            <TabsTrigger value="inventory" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-2 bg-white shadow-sm">
+            <TabsTrigger value="inventory" className="flex items-center gap-2 justify-center">
               <Package className="w-4 h-4" />
               Inventario
             </TabsTrigger>
-            <TabsTrigger value="import" className="flex items-center gap-2">
+            <TabsTrigger value="import" className="flex items-center gap-2 justify-center">
               <FileSpreadsheet className="w-4 h-4" />
               Importar
-            </TabsTrigger>
-            <TabsTrigger value="suppliers" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Proveedores
-            </TabsTrigger>
-            <TabsTrigger value="brands" className="flex items-center gap-2">
-              <Tag className="w-4 h-4" />
-              Marcas
-            </TabsTrigger>
-            {hasPermission("EDIT_CONFIG") && (
-              <TabsTrigger value="config" className="flex items-center gap-2">
-                <Settings className="w-4 h-4" />
-                Configuración
-              </TabsTrigger>
-            )}
-            <TabsTrigger value="zentor" className="flex items-center gap-2">
-              <Package className="w-4 h-4" />
-              ZENTOR
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="inventory" className="space-y-6">
+            {/* IVA Config Section - Moved inside Inventory Tab */}
+            {hasPermission("EDIT_CONFIG") && (
+              <div className="mb-4 bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex items-center justify-between">
+                 <div className="flex items-center gap-2">
+                    <Settings className="w-5 h-5 text-slate-500" />
+                    <span className="font-medium text-slate-700">Configuración de IVA</span>
+                 </div>
+                 <div className="flex items-center gap-2">
+                    <span className="text-sm text-slate-600">Porcentaje:</span>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={ivaPercentage}
+                        onChange={(e) => updateIvaPercentage(Number(e.target.value))}
+                        className="w-20 h-8 text-right"
+                      />
+                      <span className="text-slate-600">%</span>
+                    </div>
+                 </div>
+              </div>
+            )}
             {/* Form */}
             {hasPermission("CREATE_ITEM") && (
               <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
@@ -2763,156 +2807,185 @@ ${csvRows
 
             {/* Filters */}
             <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 rounded-t-lg">
-                <CardTitle className="flex items-center gap-2 text-slate-800">
-                  <Filter className="w-5 h-5" />
-                  Filtros
+              <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 rounded-t-lg py-3">
+                <CardTitle className="flex items-center gap-2 text-slate-800 text-base">
+                  <Filter className="w-4 h-4" />
+                  Filtros de Búsqueda
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-8 gap-4">
-                  <div>
-                    <Label htmlFor="searchSku" className="text-slate-700 font-medium">
-                      Buscar SKU
-                    </Label>
-                    <Input
-                      id="searchSku"
-                      type="text"
-                      placeholder="Buscar por SKU..."
-                      value={filters.searchSku}
-                      onChange={(e) => setFilters((prev) => ({ ...prev, searchSku: e.target.value }))}
-                      className="mt-1"
-                    />
+              <CardContent className="p-4">
+                <div className="flex flex-col gap-4">
+                  {/* Top Row: Search + Period + Sort */}
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1">
+                      <Label htmlFor="searchSku" className="text-xs font-medium text-slate-500 mb-1 block">
+                        Buscar SKU / Descripción
+                      </Label>
+                      <div className="relative">
+                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
+                        <Input
+                          id="searchSku"
+                          placeholder="Buscar..."
+                          value={filters.searchSku}
+                          onChange={(e) => setFilters((prev) => ({ ...prev, searchSku: e.target.value }))}
+                          className="pl-8"
+                        />
+                      </div>
+                    </div>
+                    <div className="w-full md:w-48">
+                      <Label className="text-xs font-medium text-slate-500 mb-1 block">Periodo</Label>
+                      <Select
+                        value={filters.period}
+                        onValueChange={(value) => setFilters((prev) => ({ ...prev, period: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Periodo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todo el historial</SelectItem>
+                          <SelectItem value="today">Hoy</SelectItem>
+                          <SelectItem value="week">Esta Semana</SelectItem>
+                          <SelectItem value="month">Este Mes</SelectItem>
+                          <SelectItem value="year">Este Año</SelectItem>
+                          <SelectItem value="custom">Personalizado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="w-full md:w-48">
+                      <Label className="text-xs font-medium text-slate-500 mb-1 block">Ordenar por</Label>
+                      <Select
+                        value={filters.sortBy}
+                        onValueChange={(value) => setFilters((prev) => ({ ...prev, sortBy: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Ordenar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="date_desc">Más recientes primero</SelectItem>
+                          <SelectItem value="date_asc">Más antiguos primero</SelectItem>
+                          <SelectItem value="price_asc">Menor precio</SelectItem>
+                          <SelectItem value="price_desc">Mayor precio</SelectItem>
+                          <SelectItem value="sku_duplicates">Duplicados</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="dateFrom" className="text-slate-700 font-medium">
-                      Fecha desde
-                    </Label>
-                    <Input
-                      id="dateFrom"
-                      type="date"
-                      value={filters.dateFrom}
-                      onChange={(e) => setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="dateTo" className="text-slate-700 font-medium">
-                      Fecha hasta
-                    </Label>
-                    <Input
-                      id="dateTo"
-                      type="date"
-                      value={filters.dateTo}
-                      onChange={(e) => setFilters((prev) => ({ ...prev, dateTo: e.target.value }))}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="filterSupplier" className="text-slate-700 font-medium">
-                      Proveedor
-                    </Label>
-                    <Select
-                      value={filters.supplier || "all"}
-                      onChange={(value) => setFilters((prev) => ({ ...prev, supplier: value }))}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Todos" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todos</SelectItem>
-                        {suppliers.map((supplier) => (
-                          <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                            {supplier.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="filterBrand" className="text-slate-700 font-medium">
-                      Marca
-                    </Label>
-                    <Select
-                      value={filters.brand || "all"}
-                      onChange={(value) => setFilters((prev) => ({ ...prev, brand: value }))}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Todas" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todas</SelectItem>
-                        {brands.map((brand) => (
-                          <SelectItem key={brand.id} value={brand.id.toString()}>
-                            {brand.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="filterCompany" className="text-slate-700 font-medium">
-                      Empresa
-                    </Label>
-                    <Select
-                      value={filters.company}
-                      onChange={(value) => setFilters((prev) => ({ ...prev, company: value }))}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Todas" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todas</SelectItem>
-                        <SelectItem value="MAYCAM">MAYCAM</SelectItem>
-                        <SelectItem value="BLUE DOGO">BLUE DOGO</SelectItem>
-                        <SelectItem value="GLOBOBAZAAR">GLOBOBAZAAR</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="filterDuplicates" className="text-slate-700 font-medium">
-                      SKUs Duplicados
-                    </Label>
-                    <Select
-                      value={filters.duplicates || "all"}
-                      onChange={(value) => setFilters((prev) => ({ ...prev, duplicates: value }))}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Todos" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todos</SelectItem>
-                        <SelectItem value="duplicated">Solo Duplicados</SelectItem>
-                        <SelectItem value="unique">Solo Únicos</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="sortBy" className="text-slate-700 font-medium">
-                      Ordenar por
-                    </Label>
-                    <Select
-                      value={filters.sortBy}
-                      onChange={(value) => setFilters((prev) => ({ ...prev, sortBy: value }))}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder={filters.sortBy} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="date_desc">Fecha (más reciente)</SelectItem>
-                        <SelectItem value="date_asc">Fecha (más antigua)</SelectItem>
-                        <SelectItem value="price_asc">Precio (menor a mayor)</SelectItem>
-                        <SelectItem value="price_desc">Precio (mayor a menor)</SelectItem>
-                        <SelectItem value="sku_duplicates">SKUs más repetidos</SelectItem>
-                      </SelectContent>
-                    </Select>
+
+                  {/* Custom Date Range - Only if custom */}
+                  {filters.period === "custom" && (
+                    <div className="flex gap-4 items-end bg-slate-50 p-3 rounded-md border border-slate-100">
+                      <div className="w-full md:w-auto">
+                        <Label htmlFor="dateFrom" className="text-xs font-medium text-slate-500 mb-1 block">
+                          Desde
+                        </Label>
+                        <Input
+                          id="dateFrom"
+                          type="date"
+                          value={filters.dateFrom}
+                          onChange={(e) => setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))}
+                          className="bg-white"
+                        />
+                      </div>
+                      <div className="w-full md:w-auto">
+                        <Label htmlFor="dateTo" className="text-xs font-medium text-slate-500 mb-1 block">
+                          Hasta
+                        </Label>
+                        <Input
+                          id="dateTo"
+                          type="date"
+                          value={filters.dateTo}
+                          onChange={(e) => setFilters((prev) => ({ ...prev, dateTo: e.target.value }))}
+                          className="bg-white"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Secondary Filters Row */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <Label className="text-xs font-medium text-slate-500 mb-1 block">Proveedor</Label>
+                      <Select
+                        value={filters.supplier || "all"}
+                        onChange={(value) => setFilters((prev) => ({ ...prev, supplier: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Todos" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos</SelectItem>
+                          <SelectItem value="none">Sin proveedor</SelectItem>
+                          {suppliers.map((supplier) => (
+                            <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                              {supplier.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs font-medium text-slate-500 mb-1 block">Marca</Label>
+                      <Select
+                        value={filters.brand || "all"}
+                        onChange={(value) => setFilters((prev) => ({ ...prev, brand: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Todas" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todas</SelectItem>
+                          <SelectItem value="none">Sin marca</SelectItem>
+                          {brands.map((brand) => (
+                            <SelectItem key={brand.id} value={brand.id.toString()}>
+                              {brand.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs font-medium text-slate-500 mb-1 block">Empresa</Label>
+                      <Select
+                        value={filters.company}
+                        onChange={(value) => setFilters((prev) => ({ ...prev, company: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Todas" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todas</SelectItem>
+                          <SelectItem value="MAYCAM">MAYCAM</SelectItem>
+                          <SelectItem value="BLUE DOGO">BLUE DOGO</SelectItem>
+                          <SelectItem value="GLOBOBAZAAR">GLOBOBAZAAR</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs font-medium text-slate-500 mb-1 block">Duplicados</Label>
+                      <Select
+                        value={filters.duplicates || "all"}
+                        onChange={(value) => setFilters((prev) => ({ ...prev, duplicates: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Todos" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos</SelectItem>
+                          <SelectItem value="duplicated">Solo Duplicados</SelectItem>
+                          <SelectItem value="unique">Solo Únicos</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-2 mt-4">
+
+                <div className="flex gap-2 mt-4 justify-end">
                   <Button
-                    variant="outline"
+                    variant="ghost"
+                    size="sm"
                     onClick={() =>
                       setFilters({
+                        period: "all",
                         dateFrom: "",
                         dateTo: "",
                         supplier: "all",
@@ -2923,7 +2996,7 @@ ${csvRows
                         searchSku: "",
                       })
                     }
-                    className="shadow-sm"
+                    className="text-slate-500 hover:text-slate-700"
                   >
                     <X className="w-4 h-4 mr-2" />
                     Limpiar Filtros
@@ -3209,10 +3282,10 @@ ${csvRows
                         <strong>D: CANTIDAD</strong> (Opcional, default 0)
                       </div>
                       <div className="bg-yellow-100 p-2 rounded border border-yellow-300">
-                        <strong>E: COSTO</strong> (Obligatorio)
+                        <strong>E: COSTO</strong> (Sin IVA) (Obligatorio)
                       </div>
                       <div className="bg-yellow-100 p-2 rounded border border-yellow-300">
-                        <strong>F: PVP</strong> (Obligatorio)
+                        <strong>F: PVP</strong> (Sin IVA) (Obligatorio)
                       </div>
                       <div className="bg-green-100 p-2 rounded border border-green-300">
                         <strong>G: FACTURA</strong> (Opcional)
@@ -3988,7 +4061,9 @@ ${csvRows
                             <td className="px-3 py-2 max-w-xs truncate">{row.DESCRIPCION || "-"}</td>
                             <td className="px-3 py-2">{row.CANTIDAD || "0"}</td>
                             <td className="px-3 py-2">${row.COSTO || "0"}</td>
+                            <td className="px-3 py-2 text-blue-600 font-medium">${row.COSTO_CON_IVA || "-"}</td>
                             <td className="px-3 py-2">${row.PVP || "0"}</td>
+                            <td className="px-3 py-2 text-blue-600 font-medium">${row.PVP_CON_IVA || "-"}</td>
                             <td className="px-3 py-2">{row.FACTURA || "-"}</td>
                             <td className="px-3 py-2">{row.PROVEEDOR || "-"}</td>
                             <td className="px-3 py-2">{row.MARCA || "-"}</td>
@@ -4031,6 +4106,27 @@ ${csvRows
                         data: [],
                         fileName: "",
                         summary: { total: 0, valid: 0, errors: [] },
+                      })
+                    }
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={confirmImport}
+                    disabled={importPreview.summary.valid === 0}
+                    className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700"
+                  >
+                    Confirmar Importación ({importPreview.summary.valid} productos)
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
                       })
                     }
                   >

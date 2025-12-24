@@ -309,14 +309,23 @@ ${csvRows
     <div className="space-y-6">
       {/* Header con zócalo amarillo */}
       <Card className="shadow-lg border-0 bg-gradient-to-r from-yellow-400 to-amber-500 text-white">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-3 text-2xl font-bold">
-            <DollarSign className="w-8 h-8" />
-            Precios a Publicar
-          </CardTitle>
-          <p className="text-yellow-100 text-lg">
-            Gestione los precios de venta con cuotas y promociones para publicación
-          </p>
+        <CardHeader className="pb-4 flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-3 text-2xl font-bold">
+              <DollarSign className="w-8 h-8" />
+              Precios a Publicar
+            </CardTitle>
+            <p className="text-yellow-100 text-lg mt-1">
+              Gestione los precios de venta con cuotas y promociones para publicación
+            </p>
+          </div>
+          <Button
+            onClick={exportPreciosToExcel}
+            className="bg-white text-amber-600 hover:bg-yellow-50 font-bold shadow-md"
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Exportar precios
+          </Button>
         </CardHeader>
       </Card>
 
@@ -420,10 +429,6 @@ ${csvRows
             >
               <X className="w-4 h-4 mr-2" />
               Limpiar Filtros
-            </Button>
-            <Button onClick={exportPreciosToExcel} className="bg-yellow-500 hover:bg-yellow-600 text-white shadow-sm">
-              <Download className="w-4 h-4 mr-2" />
-              Exportar Precios
             </Button>
             {!isReadOnly && (
               <Button

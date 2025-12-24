@@ -283,6 +283,12 @@ export function ActivityLogs({ isOpen, onClose }: ActivityLogsProps) {
                 <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} />
                 Actualizar
               </Button>
+              {hasPermission("ADMIN") && (
+                <Button onClick={handleClearLogs} variant="destructive" size="sm" disabled={loading}>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Limpiar LOGS
+                </Button>
+              )}
             </div>
 
             {/* Tabla de logs */}

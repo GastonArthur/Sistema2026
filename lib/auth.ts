@@ -358,6 +358,34 @@ export const getActivityLogs = async (limit = 100): Promise<ActivityLog[]> => {
   }
 }
 
+export const clearAllLogs = async (): Promise<{ success: boolean; error?: string }> => {
+  const user = getCurrentUser()
+  if (user?.role !== "admin") {
+    return { success: false, error: "No tiene permisos para realizar esta acción" }
+  }
+
+  if (!isSupabaseConfigured) {
+    OFFLINE_LOGS = []
+    await logActivity("CLEAR_LOGS", null, null, null, null, "Todos los logs han sido eliminados")
+    return { success: true }
+  }
+
+  try {
+    // Eliminar todos los logs (usando una condición que siempre sea verdadera)
+    const { error } = await supabase.from("activity_logs").delete().gt("id", -1)
+    
+    if (error) throw error
+    
+    // Registrar esta acción (será el primer nuevo log)
+    await logActivity("CLEAR_LOGS", null, null, null, null, "Todos los logs han sido eliminados")
+    
+    return { success: true }
+  } catch (error) {
+    logError("Error eliminando logs:", error)
+    return { success: false, error: "Error interno del servidor" }
+  }
+}
+
 export const getUsers = async (): Promise<User[]> => {
   if (!isSupabaseConfigured) {
     return [...OFFLINE_USERS]

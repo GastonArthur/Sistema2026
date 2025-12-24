@@ -145,6 +145,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
   const [currentUnitPrice, setCurrentUnitPrice] = useState(0)
   const [currentQuantity, setCurrentQuantity] = useState(1)
   const [orderNotes, setOrderNotes] = useState("")
+  const [viewingClient, setViewingClient] = useState<WholesaleClient | null>(null)
 
   // Filtros para precios
   const [priceFilters, setPriceFilters] = useState({
@@ -779,6 +780,36 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
     }
   }
 
+  const updateOrderStatus = async (orderId: number, newStatus: WholesaleOrder["status"]) => {
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)))
+
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase.from("wholesale_orders").update({ status: newStatus }).eq("id", orderId)
+
+        if (error) throw error
+
+        toast({
+          title: "Estado actualizado",
+          description: `El pedido #${orderId} ha cambiado a ${newStatus}`,
+        })
+      } catch (error) {
+        logError("Error updating order status:", error)
+        toast({
+          title: "Error",
+          description: "No se pudo actualizar el estado en la base de datos",
+          variant: "destructive",
+        })
+        loadWholesaleData()
+      }
+    } else {
+      toast({
+        title: "Estado actualizado (Offline)",
+        description: `El pedido #${orderId} ha cambiado a ${newStatus}`,
+      })
+    }
+  }
+
   const exportWholesalePrices = () => {
     if (!hasPermission("EXPORT")) {
       toast({
@@ -800,7 +831,6 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
       `Precio ${wholesaleConfig.percentage_1}%`,
       `Precio ${wholesaleConfig.percentage_2}%`,
       `Precio ${wholesaleConfig.percentage_3}%`,
-      "Estado",
     ]
 
     const csvRows = allPrices.map((item) => [
@@ -811,7 +841,6 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
       `$${item.wholesale_price_1.toFixed(2)}`,
       `$${item.wholesale_price_2.toFixed(2)}`,
       `$${item.wholesale_price_3.toFixed(2)}`,
-      item.is_new ? "NUEVO" : "Existente",
     ])
 
     const excelContent = `
@@ -867,7 +896,7 @@ ${csvRows
     <td class="data-number">${row[4]}</td>
     <td class="data-number">${row[5]}</td>
     <td class="data-number">${row[6]}</td>
-    <td class="data ${item.is_new ? "new-item" : ""}">${row[7]}</td>
+
   </tr>`
   })
   .join("")}
@@ -1564,12 +1593,6 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                       Solo productos NUEVOS
                     </Button>
                   </div>
-                  <div className="flex items-end">
-                    <Button onClick={exportWholesalePrices} className="bg-purple-600 hover:bg-purple-700">
-                      <Download className="w-4 h-4 mr-2" />
-                      Exportar
-                    </Button>
-                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -1612,8 +1635,12 @@ Este reporte contiene información confidencial y está destinado únicamente pa
 
             {/* Lista de precios agrupada por marca */}
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Lista de Precios Mayoristas</CardTitle>
+                <Button onClick={exportWholesalePrices} className="bg-purple-600 hover:bg-purple-700 h-8">
+                  <Download className="w-4 h-4 mr-2" />
+                  Exportar
+                </Button>
               </CardHeader>
               <CardContent className="p-0">
                 <ScrollArea className="h-[400px]">
@@ -1631,7 +1658,6 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                             <TableHead>Precio {wholesaleConfig.percentage_1}%</TableHead>
                             <TableHead>Precio {wholesaleConfig.percentage_2}%</TableHead>
                             <TableHead>Precio {wholesaleConfig.percentage_3}%</TableHead>
-                            <TableHead>Estado</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1647,12 +1673,9 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                                 {formatCurrency(item.wholesale_price_2)}
                               </TableCell>
                               <TableCell className="font-medium text-purple-600">
-                                {formatCurrency(item.wholesale_price_3)}
-                              </TableCell>
-                              <TableCell>
-                                {item.is_new && <Badge className="bg-yellow-500 text-white">NEW!</Badge>}
-                              </TableCell>
-                            </TableRow>
+                              {formatCurrency(item.wholesale_price_3)}
+                            </TableCell>
+                          </TableRow>
                           ))}
                         </TableBody>
                       </Table>
@@ -1692,7 +1715,15 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                   <TableBody>
                     {clients.map((client) => (
                       <TableRow key={client.id}>
-                        <TableCell className="font-medium">{client.name}</TableCell>
+                        <TableCell className="font-medium">
+                          <Button 
+                            variant="link" 
+                            className="p-0 h-auto font-medium text-purple-700 hover:text-purple-900" 
+                            onClick={() => setViewingClient(client)}
+                          >
+                            {client.name}
+                          </Button>
+                        </TableCell>
                         <TableCell>{client.business_name}</TableCell>
                         <TableCell>{client.cuit}</TableCell>
                         <TableCell>{client.province}</TableCell>
@@ -1854,22 +1885,30 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                           <TableCell>{new Date(order.order_date).toLocaleDateString()}</TableCell>
                           <TableCell>{clientName}</TableCell>
                           <TableCell>
-                          <Select
-                            value={order.status}
-                            onValueChange={(value) => updateOrderStatus(order.id, value as WholesaleOrder["status"])}
-                            disabled={isReadOnly}
-                          >
-                            <SelectTrigger className="w-[130px] h-8">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pending">Pendiente</SelectItem>
-                              <SelectItem value="confirmed">Confirmado</SelectItem>
-                              <SelectItem value="shipped">Enviado</SelectItem>
-                              <SelectItem value="delivered">Entregado</SelectItem>
-                              <SelectItem value="cancelled">Cancelado</SelectItem>
-                            </SelectContent>
-                          </Select>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger disabled={isReadOnly} className="focus:outline-none">
+                                <Badge className={`cursor-pointer ${getStatusColor(order.status)} border-0`}>
+                                  {getStatusLabel(order.status)}
+                                </Badge>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent>
+                                <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "pending")}>
+                                  Pendiente
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "confirmed")}>
+                                  Confirmado
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "shipped")}>
+                                  Enviado
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "delivered")}>
+                                  Entregado
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "cancelled")}>
+                                  Cancelado
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                         </TableCell>
                           <TableCell className="text-right">${order.total_amount.toFixed(2)}</TableCell>
                           <TableCell className="max-w-[200px] truncate">{order.notes}</TableCell>
@@ -2316,6 +2355,55 @@ Este reporte contiene información confidencial y está destinado únicamente pa
           </TabsContent>
         </Tabs>
       </DialogContent>
+
+      {viewingClient && (
+        <Dialog open={!!viewingClient} onOpenChange={(open) => !open && setViewingClient(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Detalles del Cliente</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-gray-500">Nombre</Label>
+                  <p className="font-medium">{viewingClient.name}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-500">Razón Social</Label>
+                  <p className="font-medium">{viewingClient.business_name}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-500">CUIT</Label>
+                  <p className="font-medium">{viewingClient.cuit}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-500">Provincia</Label>
+                  <p className="font-medium">{viewingClient.province}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-500">Dirección</Label>
+                  <p className="font-medium">{viewingClient.address}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-500">Contacto</Label>
+                  <p className="font-medium">{viewingClient.contact_person}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-500">Email</Label>
+                  <p className="font-medium">{viewingClient.email}</p>
+                </div>
+                <div>
+                  <Label className="text-gray-500">WhatsApp</Label>
+                  <p className="font-medium">{viewingClient.whatsapp}</p>
+                </div>
+              </div>
+              <div className="pt-4 flex justify-end">
+                <Button onClick={() => setViewingClient(null)}>Cerrar</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </Dialog>
   )
 }

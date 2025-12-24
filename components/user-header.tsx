@@ -4,8 +4,13 @@ import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { User, LogOut, Activity, ChevronDown, ShoppingCart } from "lucide-react"
-import { getCurrentUser, logout, hasPermission } from "@/lib/auth"
+import { User, LogOut, Activity, ChevronDown, ShoppingCart, Settings } from "lucide-react"
+import { getCurrentUser, logout, hasPermission, updateUser } from "@/lib/auth"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { toast } from "@/hooks/use-toast"
+
 
 interface UserHeaderProps {
   onLogout: () => void
@@ -16,8 +21,24 @@ interface UserHeaderProps {
 
 export function UserHeader({ onLogout, onShowLogs, onShowUsers, onShowWholesale }: UserHeaderProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [profileData, setProfileData] = useState({
+    name: "",
+    email: "",
+    password: "",
+  })
   const dropdownRef = useRef<HTMLDivElement>(null)
   const user = getCurrentUser()
+
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        name: user.name,
+        email: user.email,
+        password: "",
+      })
+    }
+  }, [user, isProfileOpen])
 
   // Cerrar dropdown al hacer clic fuera
   useEffect(() => {
@@ -163,6 +184,17 @@ export function UserHeader({ onLogout, onShowLogs, onShowUsers, onShowWholesale 
                   <span>Gestionar Usuarios</span>
                 </button>
               )}
+
+              <button
+                onClick={() => {
+                  setIsOpen(false)
+                  setIsProfileOpen(true)
+                }}
+                className="w-full px-3 py-2 text-left hover:bg-slate-50 flex items-center text-slate-700 transition-colors"
+              >
+                <Settings className="mr-2 h-4 w-4 text-slate-600" />
+                <span>Editar Perfil</span>
+              </button>
 
               <div className="border-t border-slate-200 my-1"></div>
 
