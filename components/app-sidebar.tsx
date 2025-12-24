@@ -90,11 +90,18 @@ export function AppSidebar({
             </div>
             <div className="font-semibold text-lg">Sistema Maycam</div>
           </div>
-          <div className="flex items-center gap-2 pl-10">
-            <div className={`w-2 h-2 rounded-full ${isOnline ? "bg-green-500" : "bg-red-500"}`}></div>
-            <span className={`text-xs ${isOnline ? "text-green-600" : "text-red-600"}`}>
-              {isOnline ? "En línea" : "Sin conexión"}
-            </span>
+          <div className="flex flex-col pl-10 gap-0.5">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${isOnline ? "bg-green-500" : "bg-red-500"}`}></div>
+              <span className={`text-xs ${isOnline ? "text-green-600" : "text-red-600"}`}>
+                {isOnline ? "En línea" : "Sin conexión"}
+              </span>
+            </div>
+            {lastSync && (
+               <span className="text-[10px] text-muted-foreground pl-4">
+                 Última sync: {lastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+               </span>
+             )}
           </div>
         </div>
       </SidebarHeader>

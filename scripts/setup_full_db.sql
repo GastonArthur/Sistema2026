@@ -148,6 +148,7 @@ CREATE TABLE IF NOT EXISTS wholesale_orders (
   client_id INTEGER REFERENCES wholesale_clients(id) ON DELETE CASCADE,
   order_date DATE NOT NULL,
   status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'shipped', 'delivered', 'cancelled')),
+  is_paid BOOLEAN DEFAULT FALSE,
   total_amount DECIMAL(10,2) DEFAULT 0,
   notes TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -155,6 +156,9 @@ CREATE TABLE IF NOT EXISTS wholesale_orders (
   created_by INTEGER REFERENCES users(id),
   updated_by INTEGER REFERENCES users(id)
 );
+
+-- Ensure is_paid column exists
+ALTER TABLE wholesale_orders ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE;
 
 CREATE TABLE IF NOT EXISTS wholesale_order_items (
   id SERIAL PRIMARY KEY,

@@ -209,12 +209,16 @@ CREATE TABLE IF NOT EXISTS wholesale_orders (
     client_id INTEGER REFERENCES wholesale_clients(id) ON DELETE CASCADE,
     order_date TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     status TEXT CHECK (status IN ('pending', 'confirmed', 'shipped', 'delivered', 'cancelled')) DEFAULT 'pending',
+    is_paid BOOLEAN DEFAULT FALSE,
     total_amount NUMERIC(10, 2) NOT NULL DEFAULT 0,
     notes TEXT,
     created_by INTEGER REFERENCES users(id),
     updated_by INTEGER REFERENCES users(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Ensure is_paid column exists (for updates)
+ALTER TABLE wholesale_orders ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE;
 
 CREATE TABLE IF NOT EXISTS wholesale_order_items (
     id SERIAL PRIMARY KEY,

@@ -1066,12 +1066,21 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
           title: "Estado de pago actualizado",
           description: `El pedido #${orderId} ha sido marcado como ${isPaid ? "Pagado" : "No Pagado"}`,
         })
-      } catch (error) {
+      } catch (error: any) {
         logError("Error updating order payment status:", error)
+        
+        const errorMessage = error?.message || ""
+        let description = "No se pudo actualizar el estado de pago en la base de datos"
+
+        if (errorMessage.includes("Could not find the 'is_paid' column")) {
+          description = "Falta la columna 'is_paid' en la base de datos. Por favor ejecute el script 'scripts/add_payment_status_to_wholesale_orders.sql' en Supabase."
+        }
+
         toast({
           title: "Error",
-          description: "No se pudo actualizar el estado de pago en la base de datos",
+          description,
           variant: "destructive",
+          duration: 10000,
         })
         loadWholesaleData()
       }

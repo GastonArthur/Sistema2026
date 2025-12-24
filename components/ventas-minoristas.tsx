@@ -882,7 +882,56 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
                   <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={handleRegisterSale}>Registrar Venta</Button>
                 </div>
               </div>
+              {showClientForm && (
+          <Dialog open={showClientForm} onOpenChange={setShowClientForm}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Nuevo Cliente Minorista</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label>Nombre *</Label>
+                  <Input 
+                    value={newClientData.name} 
+                    onChange={(e) => setNewClientData(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Nombre completo"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input 
+                    value={newClientData.email} 
+                    onChange={(e) => setNewClientData(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="ejemplo@email.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Teléfono</Label>
+                  <Input 
+                    value={newClientData.phone} 
+                    onChange={(e) => setNewClientData(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="Número de teléfono"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Dirección</Label>
+                  <Input 
+                    value={newClientData.address} 
+                    onChange={(e) => setNewClientData(prev => ({ ...prev, address: e.target.value }))}
+                    placeholder="Dirección completa"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button variant="outline" onClick={() => setShowClientForm(false)}>Cancelar</Button>
+                  <Button onClick={handleCreateClient} className="bg-emerald-600 hover:bg-emerald-700">
+                    {editingClient ? "Guardar Cambios" : "Crear Cliente"}
+                  </Button>
+                </div>
+              </div>
             </DialogContent>
+          </Dialog>
+        )}
+      </DialogContent>
           </Dialog>
         )}
       </DialogContent>

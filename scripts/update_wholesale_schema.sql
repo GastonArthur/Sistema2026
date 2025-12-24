@@ -30,12 +30,16 @@ CREATE TABLE IF NOT EXISTS public.wholesale_orders (
     client_id BIGINT REFERENCES public.wholesale_clients(id) ON DELETE CASCADE,
     order_date TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     status TEXT CHECK (status IN ('pending', 'confirmed', 'shipped', 'delivered', 'cancelled')) DEFAULT 'pending',
+    is_paid BOOLEAN DEFAULT FALSE,
     total_amount NUMERIC(10, 2) NOT NULL DEFAULT 0,
     notes TEXT,
     created_by UUID REFERENCES auth.users(id),
     updated_by UUID REFERENCES auth.users(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Add is_paid column if it doesn't exist (idempotent)
+ALTER TABLE public.wholesale_orders ADD COLUMN IF NOT EXISTS is_paid BOOLEAN DEFAULT FALSE;
 
 -- 3. Create or update wholesale_order_items table
 CREATE TABLE IF NOT EXISTS public.wholesale_order_items (
