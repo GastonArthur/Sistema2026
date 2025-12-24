@@ -971,7 +971,7 @@ export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, br
 
     const headers = [
       "SKU",
-      "Descripción",
+      "Nombre",
       "Marca",
       "Costo Base",
       `Precio ${wholesaleConfig.percentage_1}%`,
@@ -1241,7 +1241,7 @@ ${clientSales
 <table>
 <tr>
 <th class="header">SKU</th>
-<th class="header">Descripción</th>
+<th class="header">Nombre</th>
 <th class="header">Cantidad Vendida</th>
 <th class="header">Revenue</th>
 </tr>
@@ -1799,11 +1799,11 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                         <TableHeader>
                           <TableRow>
                             <TableHead>SKU</TableHead>
-                            <TableHead>Descripción</TableHead>
-                            <TableHead>Costo Base</TableHead>
+                            <TableHead>Nombre</TableHead>
+                            <TableHead className="hidden md:table-cell">Costo Base</TableHead>
                             <TableHead>Precio {wholesaleConfig.percentage_1}%</TableHead>
-                            <TableHead>Precio {wholesaleConfig.percentage_2}%</TableHead>
-                            <TableHead>Precio {wholesaleConfig.percentage_3}%</TableHead>
+                            <TableHead className="hidden md:table-cell">Precio {wholesaleConfig.percentage_2}%</TableHead>
+                            <TableHead className="hidden md:table-cell">Precio {wholesaleConfig.percentage_3}%</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1811,14 +1811,14 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                             <TableRow key={item.id}>
                               <TableCell className="font-medium">{item.sku}</TableCell>
                               <TableCell>{item.description}</TableCell>
-                              <TableCell>{formatCurrency(item.cost_without_tax)}</TableCell>
+                              <TableCell className="hidden md:table-cell">{formatCurrency(item.cost_without_tax)}</TableCell>
                               <TableCell className="font-medium text-green-600">
                                 {formatCurrency(item.wholesale_price_1)}
                               </TableCell>
-                              <TableCell className="font-medium text-blue-600">
+                              <TableCell className="font-medium text-blue-600 hidden md:table-cell">
                                 {formatCurrency(item.wholesale_price_2)}
                               </TableCell>
-                              <TableCell className="font-medium text-purple-600">
+                              <TableCell className="font-medium text-purple-600 hidden md:table-cell">
                               {formatCurrency(item.wholesale_price_3)}
                             </TableCell>
                           </TableRow>
@@ -1849,12 +1849,12 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                   <TableHeader>
                     <TableRow>
                       <TableHead>Nombre</TableHead>
-                      <TableHead>Razón Social</TableHead>
-                      <TableHead>CUIT</TableHead>
-                      <TableHead>Provincia</TableHead>
+                      <TableHead className="hidden md:table-cell">Razón Social</TableHead>
+                      <TableHead className="hidden md:table-cell">CUIT</TableHead>
+                      <TableHead className="hidden md:table-cell">Provincia</TableHead>
                       <TableHead>Contacto</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>WhatsApp</TableHead>
+                      <TableHead className="hidden md:table-cell">Email</TableHead>
+                      <TableHead className="hidden md:table-cell">WhatsApp</TableHead>
                       <TableHead>Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1870,17 +1870,17 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                             {client.name}
                           </Button>
                         </TableCell>
-                        <TableCell>{client.business_name}</TableCell>
-                        <TableCell>{client.cuit}</TableCell>
-                        <TableCell>{client.province}</TableCell>
+                        <TableCell className="hidden md:table-cell">{client.business_name}</TableCell>
+                        <TableCell className="hidden md:table-cell">{client.cuit}</TableCell>
+                        <TableCell className="hidden md:table-cell">{client.province}</TableCell>
                         <TableCell>{client.contact_person}</TableCell>
-                        <TableCell>
+                        <TableCell className="hidden md:table-cell">
                           <div className="flex items-center gap-2">
                             <Mail className="w-4 h-4 text-gray-500" />
                             {client.email}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden md:table-cell">
                           <div className="flex items-center gap-2">
                             <Phone className="w-4 h-4 text-gray-500" />
                             {client.whatsapp}
@@ -1929,12 +1929,12 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                   <TableHeader>
                     <TableRow>
                       <TableHead>ID</TableHead>
-                      <TableHead>Fecha</TableHead>
+                      <TableHead className="hidden md:table-cell">Fecha</TableHead>
                       <TableHead>Cliente</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead className="text-right">Total</TableHead>
-                      <TableHead>Notas</TableHead>
-                      <TableHead>Items</TableHead>
+                      <TableHead className="hidden md:table-cell">Notas</TableHead>
+                      <TableHead className="hidden md:table-cell">Items</TableHead>
                       <TableHead>Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1944,7 +1944,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                       return (
                         <TableRow key={order.id}>
                           <TableCell className="font-medium">#{order.id}</TableCell>
-                          <TableCell>{new Date(order.order_date).toLocaleDateString()}</TableCell>
+                          <TableCell className="hidden md:table-cell">{new Date(order.order_date).toLocaleDateString()}</TableCell>
                           <TableCell>{clientName}</TableCell>
                           <TableCell>
                             <DropdownMenu>
@@ -1973,8 +1973,8 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                             </DropdownMenu>
                         </TableCell>
                           <TableCell className="text-right">${order.total_amount.toFixed(2)}</TableCell>
-                          <TableCell className="max-w-[200px] truncate">{order.notes}</TableCell>
-                          <TableCell>{order.items?.length || 0} items</TableCell>
+                          <TableCell className="max-w-[200px] truncate hidden md:table-cell">{order.notes}</TableCell>
+                          <TableCell className="hidden md:table-cell">{order.items?.length || 0} items</TableCell>
                           <TableCell>
                             {!isReadOnly && (
                               <div className="flex gap-2">
@@ -2087,11 +2087,11 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                           </div>
                           
                           <div>
-                            <Label>Descripción</Label>
+                            <Label>Nombre</Label>
                             <Input
                               value={currentDescription}
                               onChange={(e) => setCurrentDescription(e.target.value)}
-                              placeholder="Descripción del producto"
+                              placeholder="Nombre del producto"
                             />
                           </div>
                           
@@ -2494,13 +2494,13 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                     onChange={(e) => setNewClient((prev) => ({ ...prev, address: e.target.value }))}
                   />
                 </div>
-                <div>
+                {/* <div>
                   <Label>Ciudad</Label>
                   <Input
                     value={newClient.city || ""}
                     onChange={(e) => setNewClient((prev) => ({ ...prev, city: e.target.value }))}
                   />
-                </div>
+                </div> */}
                 <div>
                   <Label>Persona de Contacto</Label>
                   <Input

@@ -238,12 +238,12 @@ export function UserManagement({ isOpen, onClose }: UserManagementProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nombre</TableHead>
-                  <TableHead>Email</TableHead>
+                  <TableHead className="hidden md:table-cell">Email</TableHead>
                   <TableHead>Rol</TableHead>
                   <TableHead>Estado</TableHead>
-                  <TableHead>Ver Logs</TableHead>
-                  <TableHead>Ver Mayoristas</TableHead>
-                  <TableHead>Fecha Creación</TableHead>
+                  <TableHead className="hidden md:table-cell">Ver Logs</TableHead>
+                  <TableHead className="hidden md:table-cell">Ver Mayoristas</TableHead>
+                  <TableHead className="hidden md:table-cell">Fecha Creación</TableHead>
                   <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -261,7 +261,7 @@ export function UserManagement({ isOpen, onClose }: UserManagementProps) {
                         user.name
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       {editingUser?.id === user.id ? (
                         <Input
                           type="email"
@@ -332,7 +332,7 @@ export function UserManagement({ isOpen, onClose }: UserManagementProps) {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       {editingUser?.id === user.id ? (
                         <div className="flex items-center space-x-2">
                           <Switch
@@ -370,7 +370,7 @@ export function UserManagement({ isOpen, onClose }: UserManagementProps) {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       {editingUser?.id === user.id ? (
                         <div className="flex items-center space-x-2">
                           <Switch
@@ -410,7 +410,7 @@ export function UserManagement({ isOpen, onClose }: UserManagementProps) {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       {new Date(user.created_at).toLocaleDateString("es-ES", {
                         year: "numeric",
                         month: "short",

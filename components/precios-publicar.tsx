@@ -191,7 +191,7 @@ export function PreciosPublicar({
     const headers = [
       "SKU",
       "EAN",
-      "Descripción",
+      "Nombre",
       "Costo c/IVA",
       "PVP c/IVA",
       "Cantidad",
@@ -483,26 +483,26 @@ ${csvRows
               <TableHeader>
                 <TableRow className="bg-gradient-to-r from-yellow-500 to-amber-600">
                   <TableHead className="font-bold text-white text-center border border-slate-300">SKU</TableHead>
-                  <TableHead className="font-bold text-white text-center border border-slate-300">EAN</TableHead>
+                  <TableHead className="font-bold text-white text-center border border-slate-300 hidden md:table-cell">EAN</TableHead>
                   <TableHead className="font-bold text-white text-center border border-slate-300">
-                    Descripción
+                    Nombre
                   </TableHead>
-                  <TableHead className="font-bold text-white text-center border border-slate-300">
+                  <TableHead className="font-bold text-white text-center border border-slate-300 hidden md:table-cell">
                     Costo c/IVA
                   </TableHead>
                   <TableHead className="font-bold text-white text-center border border-slate-300">PVP c/IVA</TableHead>
                   <TableHead className="font-bold text-white text-center border border-slate-300">Cantidad</TableHead>
-                  <TableHead className="font-bold text-white text-center border border-slate-300">Empresa</TableHead>
+                  <TableHead className="font-bold text-white text-center border border-slate-300 hidden md:table-cell">Empresa</TableHead>
                   <TableHead className="font-bold text-white text-center border border-slate-300">
                     3 Cuotas (+{cuotasConfig.cuotas_3_percentage}%)
                   </TableHead>
-                  <TableHead className="font-bold text-white text-center border border-slate-300">
+                  <TableHead className="font-bold text-white text-center border border-slate-300 hidden md:table-cell">
                     6 Cuotas (+{cuotasConfig.cuotas_6_percentage}%)
                   </TableHead>
-                  <TableHead className="font-bold text-white text-center border border-slate-300">
+                  <TableHead className="font-bold text-white text-center border border-slate-300 hidden md:table-cell">
                     9 Cuotas (+{cuotasConfig.cuotas_9_percentage}%)
                   </TableHead>
-                  <TableHead className="font-bold text-white text-center border border-slate-300">
+                  <TableHead className="font-bold text-white text-center border border-slate-300 hidden md:table-cell">
                     12 Cuotas (+{cuotasConfig.cuotas_12_percentage}%)
                   </TableHead>
                   <TableHead className="font-bold text-white text-center border border-slate-300">
@@ -519,9 +519,9 @@ ${csvRows
                   return (
                     <TableRow key={item.id} className="hover:bg-slate-50/50">
                       <TableCell className="font-medium border border-slate-200">{item.sku}</TableCell>
-                      <TableCell className="border border-slate-200">{item.ean || "-"}</TableCell>
+                      <TableCell className="border border-slate-200 hidden md:table-cell">{item.ean || "-"}</TableCell>
                       <TableCell className="border border-slate-200 max-w-xs">{item.description}</TableCell>
-                      <TableCell className="border border-slate-200 text-center">
+                      <TableCell className="border border-slate-200 text-center hidden md:table-cell">
                         {formatCurrency(item.cost_with_tax)}
                       </TableCell>
                       <TableCell className="border border-slate-200 text-center">
@@ -535,7 +535,7 @@ ${csvRows
                         )}
                       </TableCell>
                       <TableCell className="border border-slate-200 text-center">{item.quantity}</TableCell>
-                      <TableCell className="border border-slate-200 text-center">
+                      <TableCell className="border border-slate-200 text-center hidden md:table-cell">
                         <Badge variant="outline" className={getCompanyBadgeColor(item.company)}>
                           {item.company}
                         </Badge>
@@ -543,13 +543,13 @@ ${csvRows
                       <TableCell className="border border-slate-200 text-center font-medium text-blue-600">
                         {formatCurrency(calculateInstallmentPrice(priceWithPromo, cuotasConfig.cuotas_3_percentage))}
                       </TableCell>
-                      <TableCell className="border border-slate-200 text-center font-medium text-blue-600">
+                      <TableCell className="border border-slate-200 text-center font-medium text-blue-600 hidden md:table-cell">
                         {formatCurrency(calculateInstallmentPrice(priceWithPromo, cuotasConfig.cuotas_6_percentage))}
                       </TableCell>
-                      <TableCell className="border border-slate-200 text-center font-medium text-blue-600">
+                      <TableCell className="border border-slate-200 text-center font-medium text-blue-600 hidden md:table-cell">
                         {formatCurrency(calculateInstallmentPrice(priceWithPromo, cuotasConfig.cuotas_9_percentage))}
                       </TableCell>
-                      <TableCell className="border border-slate-200 text-center font-medium text-blue-600">
+                      <TableCell className="border border-slate-200 text-center font-medium text-blue-600 hidden md:table-cell">
                         {formatCurrency(calculateInstallmentPrice(priceWithPromo, cuotasConfig.cuotas_12_percentage))}
                       </TableCell>
                       <TableCell className="border border-slate-200">

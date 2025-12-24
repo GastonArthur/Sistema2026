@@ -139,7 +139,7 @@ export function UserHeader({ onLogout, onShowLogs, onShowUsers, onShowWholesale 
   return (
     <div className="flex items-center gap-4">
       <div className="flex items-center gap-3">
-        <div className="text-right">
+        <div className="text-right hidden md:block">
           <p className="text-sm font-medium text-slate-900">{user.name}</p>
           <p className="text-xs text-slate-500">{user.email}</p>
         </div>

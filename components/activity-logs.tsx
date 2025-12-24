@@ -132,7 +132,7 @@ export function ActivityLogs({ isOpen, onClose }: ActivityLogsProps) {
     const fieldLabels: { [key: string]: string } = {
       sku: "SKU",
       ean: "EAN",
-      description: "Descripción",
+      description: "Nombre",
       cost_without_tax: "Costo sin IVA",
       cost_with_tax: "Costo con IVA",
       pvp_without_tax: "PVP sin IVA",
@@ -346,7 +346,7 @@ export function ActivityLogs({ isOpen, onClose }: ActivityLogsProps) {
                       <TableCell>
                         <div>
                           <div className="font-medium">{log.user_name}</div>
-                          <div className="text-sm text-gray-500">{log.user_email}</div>
+                          <div className="text-sm text-gray-500 hidden md:block">{log.user_email}</div>
                         </div>
                       </TableCell>
                       <TableCell>

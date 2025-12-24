@@ -410,7 +410,7 @@ ${csvRows
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           <div>
             <Label htmlFor="searchSku" className="text-xs text-slate-500 mb-1 block">
-              Buscar SKU/Descripción
+              Buscar SKU/Nombre
             </Label>
             <Input
               id="searchSku"
@@ -552,20 +552,20 @@ ${csvRows
                 <TableRow className="bg-gradient-to-r from-gray-700 to-slate-800">
                   <TableHead className="font-bold text-white text-center border border-slate-300">SKU</TableHead>
                   <TableHead className="font-bold text-white text-center border border-slate-300">
-                    Descripción
+                    Nombre
                   </TableHead>
-                  <TableHead className="font-bold text-white text-center border border-slate-300">
+                  <TableHead className="font-bold text-white text-center border border-slate-300 hidden md:table-cell">
                     Costo s/IVA
                   </TableHead>
                   <TableHead className="font-bold text-white text-center border border-slate-300">PVP c/IVA</TableHead>
-                  <TableHead className="font-bold text-white text-center border border-slate-300">Empresa</TableHead>
-                  <TableHead className="font-bold text-white text-center border border-slate-300">Marca</TableHead>
-                  <TableHead className="font-bold text-white text-center border border-slate-300">Proveedor</TableHead>
-                  <TableHead className="font-bold text-white text-center border border-slate-300">
+                  <TableHead className="font-bold text-white text-center border border-slate-300 hidden md:table-cell">Empresa</TableHead>
+                  <TableHead className="font-bold text-white text-center border border-slate-300 hidden md:table-cell">Marca</TableHead>
+                  <TableHead className="font-bold text-white text-center border border-slate-300 hidden md:table-cell">Proveedor</TableHead>
+                  <TableHead className="font-bold text-white text-center border border-slate-300 hidden md:table-cell">
                     Cambio Costo
                   </TableHead>
-                  <TableHead className="font-bold text-white text-center border border-slate-300">Cambio PVP</TableHead>
-                  <TableHead className="font-bold text-white text-center border border-slate-300">
+                  <TableHead className="font-bold text-white text-center border border-slate-300 hidden md:table-cell">Cambio PVP</TableHead>
+                  <TableHead className="font-bold text-white text-center border border-slate-300 hidden md:table-cell">
                     Última Actualización
                   </TableHead>
                 </TableRow>
@@ -575,20 +575,20 @@ ${csvRows
                   <TableRow key={item.sku} className="hover:bg-slate-50/50">
                     <TableCell className="font-medium border border-slate-200">{item.sku}</TableCell>
                     <TableCell className="border border-slate-200 max-w-xs">{item.description}</TableCell>
-                    <TableCell className="border border-slate-200 text-center font-medium">
+                    <TableCell className="border border-slate-200 text-center font-medium hidden md:table-cell">
                       {formatCurrency(item.cost_without_tax)}
                     </TableCell>
                     <TableCell className="border border-slate-200 text-center font-medium">
                       {formatCurrency(item.pvp_with_tax)}
                     </TableCell>
-                    <TableCell className="border border-slate-200 text-center">
+                    <TableCell className="border border-slate-200 text-center hidden md:table-cell">
                       <Badge variant="outline" className={getCompanyBadgeColor(item.company)}>
                         {item.company}
                       </Badge>
                     </TableCell>
-                    <TableCell className="border border-slate-200">{item.brand_name}</TableCell>
-                    <TableCell className="border border-slate-200">{item.supplier_name}</TableCell>
-                    <TableCell className="border border-slate-200 text-center">
+                    <TableCell className="border border-slate-200 hidden md:table-cell">{item.brand_name}</TableCell>
+                    <TableCell className="border border-slate-200 hidden md:table-cell">{item.supplier_name}</TableCell>
+                    <TableCell className="border border-slate-200 text-center hidden md:table-cell">
                       {item.price_change.cost_changed ? (
                         <div className="flex items-center justify-center gap-1">
                           {item.price_change.cost_percentage > 0 ? (
@@ -611,7 +611,7 @@ ${csvRows
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell className="border border-slate-200 text-center">
+                    <TableCell className="border border-slate-200 text-center hidden md:table-cell">
                       {item.price_change.pvp_changed ? (
                         <div className="flex items-center justify-center gap-1">
                           {item.price_change.pvp_percentage > 0 ? (
@@ -634,7 +634,7 @@ ${csvRows
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell className="border border-slate-200 text-center">
+                    <TableCell className="border border-slate-200 text-center hidden md:table-cell">
                       {new Date(item.latest_date).toLocaleDateString("es-ES")}
                     </TableCell>
                   </TableRow>

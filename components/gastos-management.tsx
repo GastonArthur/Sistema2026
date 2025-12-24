@@ -663,7 +663,7 @@ export function GastosManagement({ isOpen, onClose, onUpdateExpenses }: GastosMa
 
     const headers = [
       "Fecha",
-      "Descripción",
+      "Discripciónpción",
       "Categoría",
       "Monto",
       "Método Pago",
@@ -1031,22 +1031,22 @@ ${csvRows
                     <TableRow className="bg-gradient-to-r from-teal-500 to-cyan-600">
                       <TableHead className="font-bold text-white text-center border border-slate-300">Fecha</TableHead>
                       <TableHead className="font-bold text-white text-center border border-slate-300">
-                        Descripción
+                        Nombre
                       </TableHead>
-                      <TableHead className="font-bold text-white text-center border border-slate-300">
+                      <TableHead className="font-bold text-white text-center border border-slate-300 hidden md:table-cell">
                         Categoría
                       </TableHead>
                       <TableHead className="font-bold text-white text-center border border-slate-300">Monto</TableHead>
-                      <TableHead className="font-bold text-white text-center border border-slate-300">
+                      <TableHead className="font-bold text-white text-center border border-slate-300 hidden md:table-cell">
                         Método Pago
                       </TableHead>
-                      <TableHead className="font-bold text-white text-center border border-slate-300">
+                      <TableHead className="font-bold text-white text-center border border-slate-300 hidden md:table-cell">
                         Factura
                       </TableHead>
-                      <TableHead className="font-bold text-white text-center border border-slate-300">
+                      <TableHead className="font-bold text-white text-center border border-slate-300 hidden md:table-cell">
                         Cargado por
                       </TableHead>
-                      <TableHead className="font-bold text-white text-center border border-slate-300">
+                      <TableHead className="font-bold text-white text-center border border-slate-300 hidden md:table-cell">
                         Pagado por
                       </TableHead>
                       <TableHead className="font-bold text-white text-center border border-slate-300">
@@ -1071,7 +1071,7 @@ ${csvRows
                             {new Date(expense.expense_date).toLocaleDateString("es-ES")}
                           </TableCell>
                           <TableCell className="border border-slate-200 max-w-xs">{expense.description}</TableCell>
-                          <TableCell className="border border-slate-200 text-center">
+                          <TableCell className="border border-slate-200 text-center hidden md:table-cell">
                             <Badge variant="outline" className="bg-teal-50 text-teal-700 border-teal-200">
                               {expense.expense_categories?.name || "Sin categoría"}
                             </Badge>
@@ -1079,12 +1079,12 @@ ${csvRows
                           <TableCell className="border border-slate-200 text-right font-medium">
                             {formatCurrency(expense.amount)}
                           </TableCell>
-                          <TableCell className="border border-slate-200 text-center">
+                          <TableCell className="border border-slate-200 text-center hidden md:table-cell">
                             <Badge variant="outline" className={getPaymentMethodColor(expense.payment_method)}>
                               {getPaymentMethodLabel(expense.payment_method)}
                             </Badge>
                           </TableCell>
-                          <TableCell className="border border-slate-200 text-center">
+                          <TableCell className="border border-slate-200 text-center hidden md:table-cell">
                             <div className="space-y-1">
                               <Badge variant={expense.has_invoice ? "default" : "secondary"}>
                                 {expense.has_invoice ? "Sí" : "No"}
@@ -1094,10 +1094,10 @@ ${csvRows
                               )}
                             </div>
                           </TableCell>
-                          <TableCell className="border border-slate-200">
+                          <TableCell className="border border-slate-200 hidden md:table-cell">
                             {expense.created_user?.name || "N/A"}
                           </TableCell>
-                          <TableCell className="border border-slate-200">
+                          <TableCell className="border border-slate-200 hidden md:table-cell">
                             <div className="space-y-1">
                               <div>{expense.paid_user?.name || "N/A"}</div>
                               {expense.paid_date && (
@@ -1164,12 +1164,12 @@ ${csvRows
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="description">Descripción *</Label>
+                <Label htmlFor="description">Nombre *</Label>
                 <Input
                   id="description"
                   value={formData.description}
                   onChange={(e) => handleInputChange("description", e.target.value)}
-                  placeholder="Descripción del gasto"
+                  placeholder="Nombre del gasto"
                 />
               </div>
               <div>
