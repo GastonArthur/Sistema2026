@@ -171,32 +171,33 @@ export default function RentabilidadPage() {
         let hasInvalidCost = false
 
         sale.items?.forEach((item: any) => {
+           // Attempt to get cost, default to 0 if not found
            const cost = costMap.get(item.sku) || 0
-           // Si el costo es 0 o no existe, marcamos para excluir
+           
+           // We no longer filter out sales with invalid costs, we just warn or handle them in UI
            if (cost <= 0) {
              hasInvalidCost = true
            }
            totalCost += cost * (item.quantity || 1)
         })
 
-        // Si hay costos inválidos (0), no tomamos esta venta para la rentabilidad
-        if (hasInvalidCost) return null
-
+        // We calculate profit even if cost is 0 (it will just be equal to total_amount)
+        // This ensures the sale is visible.
         const profit = (sale.total_amount || 0) - totalCost
 
         return {
           ...sale,
           account_name: accountName,
           total_cost: totalCost,
-          profit: profit
+          profit: profit,
+          has_warning: hasInvalidCost // Flag for UI
         }
-      }).filter(item => item !== null) || []
+      }) || []
 
       console.log(`[Sales] Fetched ${data?.length} raw orders. Displaying ${enrichedSales.length} after processing.`)
 
       if (data && data.length > 0 && enrichedSales.length === 0) {
-          console.warn("[Sales] All sales filtered out! Check inventory costs.")
-          // Optional: You could show a toast here, but be careful of loops
+          console.warn("[Sales] All sales filtered out! This should not happen now.")
       }
 
       setSales(enrichedSales)
@@ -618,6 +619,9 @@ export default function RentabilidadPage() {
                                         </TableCell>
                                         <TableCell className={`text-right font-medium ${sale.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                             {formatCurrency(sale.profit)}
+                                            {sale.has_warning && (
+                                                <span title="Costo de inventario faltante o cero" className="ml-2 text-yellow-500 cursor-help">⚠️</span>
+                                            )}
                                         </TableCell>
                                         <TableCell className="text-right font-bold">
                                             {formatCurrency(sale.total_amount)}
