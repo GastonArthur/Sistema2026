@@ -20,6 +20,7 @@ import {
 } from "date-fns"
 
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -233,6 +234,19 @@ export default function InventoryManagement() {
     data: [],
     fileName: "",
     summary: { total: 0, valid: 0, errors: [] },
+  })
+
+  // Bulk Edit State
+  const [selectedItems, setSelectedItems] = useState<number[]>([])
+  const [bulkEditModal, setBulkEditModal] = useState({
+    show: false,
+    updates: {
+      stock_status: "",
+      supplier_id: "",
+      brand_id: "",
+      company: "",
+      channel: ""
+    }
   })
 
   const loadData = async () => {
@@ -543,19 +557,26 @@ export default function InventoryManagement() {
       const firstRow = jsonData[0] as any
       const availableKeys = Object.keys(firstRow)
       
-      const findKey = (target: string) => 
-        availableKeys.find(k => k.toUpperCase().trim() === target) || target
+      const findKey = (targets: string[]) => {
+        for (const target of targets) {
+           const found = availableKeys.find(k => k.toUpperCase().trim() === target)
+           if (found) return found
+        }
+        return targets[0]
+      }
 
+      // Orden solicitado: FECHA, SKU, EAN, DESCRIPCION / NOMBRE, CANTIDAD, COSTO, PVP, FACTURA, PROVEDOR, MARCA
       const keyMap = {
-        SKU: findKey("SKU"),
-        DESCRIPCION: findKey("DESCRIPCION"),
-        COSTO: findKey("COSTO"),
-        PVP: findKey("PVP"),
-        MARCA: findKey("MARCA"),
-        EAN: findKey("EAN"),
-        CANTIDAD: findKey("CANTIDAD"),
-        FACTURA: findKey("FACTURA"),
-        PROVEEDOR: findKey("PROVEEDOR")
+        FECHA: findKey(["FECHA", "DATE"]),
+        SKU: findKey(["SKU"]),
+        EAN: findKey(["EAN"]),
+        DESCRIPCION: findKey(["DESCRIPCION", "NOMBRE", "PRODUCTO"]),
+        CANTIDAD: findKey(["CANTIDAD", "QTY"]),
+        COSTO: findKey(["COSTO", "COST"]),
+        PVP: findKey(["PVP", "PRICE", "PRECIO"]),
+        FACTURA: findKey(["FACTURA", "INVOICE"]),
+        PROVEEDOR: findKey(["PROVEEDOR", "PROVEDOR", "SUPPLIER"]),
+        MARCA: findKey(["MARCA", "BRAND"])
       }
 
       jsonData.forEach((row: any, index) => {
@@ -661,7 +682,8 @@ export default function InventoryManagement() {
 
     // Mapear columnas exactas
     const columnMapping: { [key: string]: string } = {}
-    const expectedColumns = ["SKU", "EAN", "DESCRIPCION", "CANTIDAD", "COSTO", "PVP", "FACTURA", "PROVEEDOR", "MARCA"]
+    // Orden solicitado: FECHA, SKU, EAN, DESCRIPCION / NOMBRE, CANTIDAD, COSTO, PVP, FACTURA, PROVEDOR, MARCA
+    const expectedColumns = ["FECHA", "SKU", "EAN", "DESCRIPCION", "CANTIDAD", "COSTO", "PVP", "FACTURA", "PROVEEDOR", "MARCA"]
     const firstRow = jsonData[0]
     const availableColumns = Object.keys(firstRow)
 
@@ -673,6 +695,19 @@ export default function InventoryManagement() {
         columnMapping[expectedCol] = foundColumn
       }
     })
+
+    const parseImportDate = (val: any) => {
+      if (!val) return new Date().toISOString().split("T")[0]
+      try {
+        // Excel serial date
+        if (typeof val === 'number' && val > 20000) {
+           return new Date(Math.round((val - 25569) * 86400 * 1000)).toISOString().split("T")[0]
+        }
+        const d = new Date(val)
+        if (!isNaN(d.getTime())) return d.toISOString().split("T")[0]
+      } catch (e) {}
+      return new Date().toISOString().split("T")[0]
+    }
 
     // Simular importación en modo offline o real
     if (!isSupabaseConfigured) {
@@ -700,7 +735,7 @@ export default function InventoryManagement() {
             quantity: Number.parseInt(row[columnMapping["CANTIDAD"]]?.toString()) || 0,
             company: "MAYCAM",
             channel: "A",
-            date_entered: new Date().toISOString().split("T")[0],
+            date_entered: parseImportDate(row[columnMapping["FECHA"]]),
             stock_status: "normal",
             supplier_id: null,
             brand_id: null,
@@ -822,11 +857,39 @@ export default function InventoryManagement() {
         }
 
         // Verificar si el SKU ya existe
-        const { data: existingProduct } = await supabase.from("inventory").select("id").eq("sku", sku).single()
+        const { data: existingProduct } = await supabase.from("inventory").select("*").eq("sku", sku).single()
 
         if (existingProduct) {
-          errors.push(`Fila ${i + 1}: SKU ${sku} ya existe`)
-          errorCount++
+          // Actualizar producto existente (Manejo de Variantes de Precio)
+          const updates: any = {
+             description: description,
+             quantity: quantity, // Reemplazar cantidad con la del archivo
+             date_entered: parseImportDate(row[columnMapping["FECHA"]]) || new Date().toISOString().split("T")[0],
+             stock_status: "normal", // Forzar estado normal en esta importación
+             ean: ean || existingProduct.ean,
+             invoice_number: invoiceNumber || existingProduct.invoice_number,
+             // Actualizar precios (calculando IVA)
+             cost_without_tax: cost,
+             cost_with_tax: calculateWithTax(cost),
+             pvp_without_tax: pvp,
+             pvp_with_tax: calculateWithTax(pvp)
+          }
+
+          if (supplierId) updates.supplier_id = supplierId
+          if (brandId) updates.brand_id = brandId
+
+          const { error: updateError } = await supabase
+            .from("inventory")
+            .update(updates)
+            .eq("id", existingProduct.id)
+            
+          if (updateError) {
+             logError(`❌ Error actualizando producto ${sku}:`, updateError)
+             errors.push(`Fila ${i + 1}: Error actualizando ${sku}`)
+             errorCount++
+          } else {
+             successCount++
+          }
           continue
         }
 
@@ -842,7 +905,7 @@ export default function InventoryManagement() {
           quantity: quantity,
           company: "MAYCAM" as const,
           channel: "A" as const,
-          date_entered: new Date().toISOString().split("T")[0],
+          date_entered: parseImportDate(row[columnMapping["FECHA"]]),
           stock_status: "normal" as const,
           supplier_id: supplierId,
           brand_id: brandId,
@@ -1513,6 +1576,62 @@ export default function InventoryManagement() {
     }
 
     return filtered
+  }
+
+  // Funciones de Selección Masiva
+  const toggleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allIds = getFilteredInventory().map(item => item.id)
+      setSelectedItems(allIds)
+    } else {
+      setSelectedItems([])
+    }
+  }
+
+  const toggleSelectItem = (id: number, checked: boolean) => {
+    if (checked) {
+      setSelectedItems(prev => [...prev, id])
+    } else {
+      setSelectedItems(prev => prev.filter(itemId => itemId !== id))
+    }
+  }
+
+  const handleBulkUpdate = async () => {
+    if (!hasPermission("EDIT_ITEM")) return
+
+    const { updates } = bulkEditModal
+    const updatesToApply: any = {}
+    
+    if (updates.stock_status) updatesToApply.stock_status = updates.stock_status
+    if (updates.company) updatesToApply.company = updates.company
+    if (updates.channel) updatesToApply.channel = updates.channel
+    if (updates.supplier_id && updates.supplier_id !== "none") updatesToApply.supplier_id = Number(updates.supplier_id)
+    if (updates.brand_id && updates.brand_id !== "none") updatesToApply.brand_id = Number(updates.brand_id)
+
+    if (Object.keys(updatesToApply).length === 0) {
+      toast({ title: "Sin cambios", description: "No se seleccionaron campos para actualizar" })
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from("inventory")
+        .update(updatesToApply)
+        .in("id", selectedItems)
+
+      if (error) throw error
+
+      toast({ title: "Actualización completada", description: `${selectedItems.length} items actualizados.` })
+      setBulkEditModal({ 
+        show: false, 
+        updates: { stock_status: "", supplier_id: "", brand_id: "", company: "", channel: "" } 
+      })
+      setSelectedItems([])
+      loadData()
+    } catch (error) {
+       logError("Bulk update error", error)
+       toast({ title: "Error", description: "Falló la actualización masiva", variant: "destructive" })
+    }
   }
 
   const exportToCSV = () => {
@@ -3026,10 +3145,43 @@ ${csvRows
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
+                {/* Bulk Actions Bar */}
+                {selectedItems.length > 0 && (
+                  <div className="sticky top-0 z-30 bg-blue-50 border-b border-blue-200 p-2 flex items-center justify-between shadow-sm animate-in slide-in-from-top duration-200">
+                     <div className="flex items-center gap-2">
+                        <span className="font-semibold text-blue-800 text-sm">{selectedItems.length} seleccionados</span>
+                        <Button 
+                           variant="outline" 
+                           size="sm" 
+                           onClick={() => setSelectedItems([])}
+                           className="h-7 text-xs bg-white"
+                        >
+                           Cancelar
+                        </Button>
+                     </div>
+                     <div className="flex items-center gap-2">
+                        <Button 
+                           size="sm" 
+                           onClick={() => setBulkEditModal({ ...bulkEditModal, show: true })}
+                           className="h-7 text-xs bg-blue-600 hover:bg-blue-700"
+                        >
+                           <Edit className="w-3 h-3 mr-1" />
+                           Edición Masiva
+                        </Button>
+                     </div>
+                  </div>
+                )}
                 <div className="overflow-auto max-h-[65vh] relative">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-gradient-to-r from-blue-600 to-indigo-700 border-b border-blue-800 sticky top-0 z-20 shadow-md">
+                        <TableHead className="w-[40px] px-2 h-8 border-r border-blue-400/30 text-center align-middle">
+                           <Checkbox 
+                              checked={selectedItems.length > 0 && selectedItems.length === getFilteredInventory().length}
+                              onCheckedChange={toggleSelectAll}
+                              className="border-white data-[state=checked]:bg-white data-[state=checked]:text-blue-600 translate-y-[2px]"
+                           />
+                        </TableHead>
                         <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
                           Fecha
                         </TableHead>
@@ -3086,6 +3238,12 @@ ${csvRows
                       {getFilteredInventory().length > 0 ? (
                         getFilteredInventory().map((item) => (
                           <TableRow key={item.id} className="hover:bg-blue-100/40 transition-colors border-b border-slate-100 group h-8 even:bg-blue-50/10">
+                          <TableCell className="w-[40px] px-2 py-1 border-r border-slate-100 text-center align-middle">
+                              <Checkbox 
+                                checked={selectedItems.includes(item.id)}
+                                onCheckedChange={(checked) => toggleSelectItem(item.id, !!checked)}
+                              />
+                          </TableCell>
                           <TableCell className="border-r border-slate-100 text-center text-slate-500 py-1 px-2 text-[10px] whitespace-nowrap hidden md:table-cell">{item.date_entered}</TableCell>
                           <TableCell className="font-medium min-w-[100px] max-w-[150px] border-r border-slate-100 py-1 px-2 text-xs">
                             <div
@@ -4032,6 +4190,7 @@ ${csvRows
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50">
                       <tr>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Fecha</th>
                         <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">SKU</th>
                         <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">EAN</th>
                         <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Nombre</th>
@@ -4066,6 +4225,7 @@ ${csvRows
                             key={index}
                             className={`${isValid ? "bg-green-50" : "bg-red-50"} border-b hover:bg-opacity-75`}
                           >
+                            <td className="px-3 py-2">{row.FECHA || "-"}</td>
                             <td className="px-3 py-2 font-medium min-w-[150px]">
                               <div
                                 className="font-mono whitespace-nowrap overflow-hidden text-ellipsis"
@@ -4078,12 +4238,11 @@ ${csvRows
                             <td className="px-3 py-2 max-w-xs truncate">{row.DESCRIPCION || "-"}</td>
                             <td className="px-3 py-2">{row.CANTIDAD || "0"}</td>
                             <td className="px-3 py-2">${row.COSTO || "0"}</td>
-                            <td className="px-3 py-2 text-blue-600 font-medium">${row.COSTO_CON_IVA || "-"}</td>
                             <td className="px-3 py-2">${row.PVP || "0"}</td>
-                            <td className="px-3 py-2 text-blue-600 font-medium">${row.PVP_CON_IVA || "-"}</td>
                             <td className="px-3 py-2">{row.FACTURA || "-"}</td>
                             <td className="px-3 py-2">{row.PROVEEDOR || "-"}</td>
                             <td className="px-3 py-2">{row.MARCA || "-"}</td>
+
                             <td className="px-3 py-2">
                               {isValid ? (
                                 <span className="text-green-600 font-medium">✓ Válido</span>
@@ -4143,6 +4302,99 @@ ${csvRows
         </div>
       </div>
       </div>
+
+      {/* Bulk Edit Modal */}
+      <Dialog open={bulkEditModal.show} onOpenChange={(open) => !open && setBulkEditModal({ ...bulkEditModal, show: false })}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edición Masiva ({selectedItems.length} items)</DialogTitle>
+            <DialogDescription>
+              Los cambios realizados afectarán a todos los elementos seleccionados.
+              Deje los campos en blanco o sin selección para no modificarlos.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+             <div className="grid grid-cols-2 gap-4">
+               <div>
+                  <Label>Estado Stock</Label>
+                  <Select
+                    value={bulkEditModal.updates.stock_status}
+                    onValueChange={(val) => setBulkEditModal(prev => ({ ...prev, updates: { ...prev.updates, stock_status: val } }))}
+                  >
+                    <SelectTrigger><SelectValue placeholder="No cambiar" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="missing">Faltó mercadería</SelectItem>
+                      <SelectItem value="excess">Sobró mercadería</SelectItem>
+                    </SelectContent>
+                  </Select>
+               </div>
+               <div>
+                  <Label>Empresa</Label>
+                  <Select
+                    value={bulkEditModal.updates.company}
+                    onValueChange={(val) => setBulkEditModal(prev => ({ ...prev, updates: { ...prev.updates, company: val } }))}
+                  >
+                    <SelectTrigger><SelectValue placeholder="No cambiar" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="MAYCAM">MAYCAM</SelectItem>
+                      <SelectItem value="BLUE DOGO">BLUE DOGO</SelectItem>
+                      <SelectItem value="GLOBOBAZAAR">GLOBOBAZAAR</SelectItem>
+                    </SelectContent>
+                  </Select>
+               </div>
+             </div>
+             
+             <div className="grid grid-cols-2 gap-4">
+               <div>
+                  <Label>Canal</Label>
+                  <Select
+                    value={bulkEditModal.updates.channel}
+                    onValueChange={(val) => setBulkEditModal(prev => ({ ...prev, updates: { ...prev.updates, channel: val } }))}
+                  >
+                    <SelectTrigger><SelectValue placeholder="No cambiar" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="A">Canal A</SelectItem>
+                      <SelectItem value="B">Canal B</SelectItem>
+                    </SelectContent>
+                  </Select>
+               </div>
+               <div>
+                  <Label>Proveedor</Label>
+                  <Select
+                    value={bulkEditModal.updates.supplier_id}
+                    onValueChange={(val) => setBulkEditModal(prev => ({ ...prev, updates: { ...prev.updates, supplier_id: val } }))}
+                  >
+                    <SelectTrigger><SelectValue placeholder="No cambiar" /></SelectTrigger>
+                    <SelectContent>
+                       <SelectItem value="none">Sin proveedor</SelectItem>
+                       {suppliers.map(s => <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+               </div>
+             </div>
+
+             <div>
+                <Label>Marca</Label>
+                <Select
+                  value={bulkEditModal.updates.brand_id}
+                  onValueChange={(val) => setBulkEditModal(prev => ({ ...prev, updates: { ...prev.updates, brand_id: val } }))}
+                >
+                  <SelectTrigger><SelectValue placeholder="No cambiar" /></SelectTrigger>
+                  <SelectContent>
+                     <SelectItem value="none">Sin marca</SelectItem>
+                     {brands.map(b => <SelectItem key={b.id} value={b.id.toString()}>{b.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+             </div>
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setBulkEditModal({ ...bulkEditModal, show: false })}>Cancelar</Button>
+            <Button onClick={handleBulkUpdate}>Aplicar Cambios</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </SidebarProvider>
   )
 }
