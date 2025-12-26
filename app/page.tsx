@@ -523,6 +523,52 @@ export default function InventoryManagement() {
     })
   }
 
+  // Helper function to parse import dates
+  const parseImportDate = (val: any) => {
+    if (!val) return new Date().toISOString().split("T")[0]
+    
+    // Si ya es una fecha válida ISO/Date object
+    if (val instanceof Date) return val.toISOString().split("T")[0]
+
+    // Excel serial date (número > 20000 para fechas modernas)
+    // Excel base date is 1899-12-30. 
+    // 25569 is offset to 1970-01-01
+    if (typeof val === 'number' && val > 20000) {
+        return new Date(Math.round((val - 25569) * 86400 * 1000)).toISOString().split("T")[0]
+    }
+
+    const strVal = String(val).trim()
+    if (!strVal) return new Date().toISOString().split("T")[0]
+
+    // Formato DD/MM/YYYY o D/M/YYYY
+    if (strVal.includes("/")) {
+        const parts = strVal.split("/")
+        if (parts.length === 3) {
+            const day = parseInt(parts[0], 10)
+            const month = parseInt(parts[1], 10) - 1 // JS months are 0-based
+            const year = parseInt(parts[2], 10)
+            
+            // Validar fecha
+            const d = new Date(year, month, day)
+            if (!isNaN(d.getTime()) && d.getDate() === day) {
+                // Ajustar zona horaria local a UTC para evitar desfases si es necesario, 
+                // pero split("T")[0] de ISO usa UTC. 
+                // Mejor construir string YYYY-MM-DD directo para evitar problemas de zona horaria
+                const pad = (n: number) => n < 10 ? '0' + n : n
+                return `${year}-${pad(month + 1)}-${pad(day)}`
+            }
+        }
+    }
+
+    // Try standard parsing as fallback
+    try {
+        const d = new Date(strVal)
+        if (!isNaN(d.getTime())) return d.toISOString().split("T")[0]
+    } catch (e) {}
+
+    return new Date().toISOString().split("T")[0]
+  }
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -613,6 +659,13 @@ export default function InventoryManagement() {
           const pvpStr = String(normalizedRow.PVP || "").trim()
           const brand = String(normalizedRow.MARCA || "").trim()
 
+          // Aplicar formato de fecha a la columna FECHA para la vista previa
+          if (normalizedRow.FECHA) {
+            normalizedRow.FECHA = parseImportDate(normalizedRow.FECHA)
+          } else {
+            normalizedRow.FECHA = new Date().toISOString().split("T")[0]
+          }
+
           const cost = costStr ? Number.parseFloat(costStr) : 0
           const pvp = pvpStr ? Number.parseFloat(pvpStr) : 0
 
@@ -695,19 +748,6 @@ export default function InventoryManagement() {
         columnMapping[expectedCol] = foundColumn
       }
     })
-
-    const parseImportDate = (val: any) => {
-      if (!val) return new Date().toISOString().split("T")[0]
-      try {
-        // Excel serial date
-        if (typeof val === 'number' && val > 20000) {
-           return new Date(Math.round((val - 25569) * 86400 * 1000)).toISOString().split("T")[0]
-        }
-        const d = new Date(val)
-        if (!isNaN(d.getTime())) return d.toISOString().split("T")[0]
-      } catch (e) {}
-      return new Date().toISOString().split("T")[0]
-    }
 
     // Simular importación en modo offline o real
     if (!isSupabaseConfigured) {
