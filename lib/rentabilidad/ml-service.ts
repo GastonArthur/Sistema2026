@@ -229,7 +229,7 @@ export class MLService {
     const supabase = this.getSupabase()
     
     // Upsert Order
-    await supabase.from("rt_ml_orders").upsert({
+    const { error: orderError } = await supabase.from("rt_ml_orders").upsert({
         account_id: account.id,
         order_id: order.id,
         status: order.status,
@@ -242,24 +242,40 @@ export class MLService {
         updated_at: new Date().toISOString()
     })
 
-    // Upsert Items
-    await supabase.from("rt_ml_order_items").delete().match({ account_id: account.id, order_id: order.id })
+    if (orderError) {
+        console.error(`[Sync] Error saving order ${order.id}:`, orderError)
+        throw new Error(`Failed to save order ${order.id}: ${orderError.message}`)
+    }
 
-    for (const item of order.order_items) {
-        const sku = item.item.seller_sku || item.item.id 
-        
-        await supabase.from("rt_ml_order_items").insert({
-            account_id: account.id,
-            order_id: order.id,
-            sku: sku,
-            item_id: item.item.id,
-            variation_id: item.item.variation_id,
-            title: item.item.title,
-            quantity: item.quantity,
-            unit_price: item.unit_price,
-            discount: 0,
-            raw: item
-        })
+    // Upsert Items
+    // Delete existing items first
+    const { error: deleteError } = await supabase.from("rt_ml_order_items").delete().match({ account_id: account.id, order_id: order.id })
+    
+    if (deleteError) {
+         console.error(`[Sync] Error clearing items for order ${order.id}:`, deleteError)
+    }
+
+    if (order.order_items && Array.isArray(order.order_items)) {
+        for (const item of order.order_items) {
+            const sku = item.item.seller_sku || item.item.id 
+            
+            const { error: itemError } = await supabase.from("rt_ml_order_items").insert({
+                account_id: account.id,
+                order_id: order.id,
+                sku: sku,
+                item_id: item.item.id,
+                variation_id: item.item.variation_id,
+                title: item.item.title,
+                quantity: item.quantity,
+                unit_price: item.unit_price,
+                discount: 0,
+                raw: item
+            })
+
+            if (itemError) {
+                console.error(`[Sync] Error inserting item for order ${order.id}:`, itemError)
+            }
+        }
     }
   }
 
@@ -367,7 +383,11 @@ export class MLService {
               if (orderDate > maxDate) maxDate = orderDate
 
               // Upsert Order
-              await this.saveOrder(account, order)
+              try {
+                  await this.saveOrder(account, order)
+              } catch (err) {
+                  console.error(`[Sync] Failed to process order ${order.id}:`, err)
+              }
           }
           
           totalFetched += orders.length

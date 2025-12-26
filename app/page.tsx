@@ -592,14 +592,14 @@ export default function InventoryManagement() {
           const pvpStr = String(normalizedRow.PVP || "").trim()
           const brand = String(normalizedRow.MARCA || "").trim()
 
-          const cost = Number.parseFloat(costStr)
-          const pvp = Number.parseFloat(pvpStr)
+          const cost = costStr ? Number.parseFloat(costStr) : 0
+          const pvp = pvpStr ? Number.parseFloat(pvpStr) : 0
 
-          if (!sku || !description || !costStr || !pvpStr || !brand) {
+          if (!sku || !description) {
             errors.push(
-              `Fila ${i}: Faltan datos obligatorios (SKU: ${sku}, DESC: ${description ? "OK" : "FALTA"}, COSTO: ${costStr ? "OK" : "FALTA"}, PVP: ${pvpStr ? "OK" : "FALTA"}, MARCA: ${brand ? "OK" : "FALTA"})`,
+              `Fila ${i}: Faltan datos obligatorios (SKU: ${sku}, DESC: ${description ? "OK" : "FALTA"})`,
             )
-          } else if (isNaN(cost) || isNaN(pvp)) {
+          } else if ((costStr && isNaN(cost)) || (pvpStr && isNaN(pvp))) {
             errors.push(`Fila ${i}: Precios inválidos (COSTO: ${costStr}, PVP: ${pvpStr})`)
           } else {
             // Calcular precios con IVA para la vista previa
@@ -687,23 +687,15 @@ export default function InventoryManagement() {
         const brand = row[columnMapping["MARCA"]]?.toString().trim()
 
         // Validar que todos los campos obligatorios estén presentes
-        if (
-          sku &&
-          description &&
-          cost &&
-          pvp &&
-          brand &&
-          !isNaN(Number.parseFloat(cost)) &&
-          !isNaN(Number.parseFloat(pvp))
-        ) {
+        if (sku && description) {
           const newItem: InventoryItem = {
             id: Date.now() + i,
             sku: sku,
             ean: row[columnMapping["EAN"]]?.toString().trim() || null,
             description: description,
-            cost_without_tax: Number.parseFloat(cost),
+            cost_without_tax: cost ? Number.parseFloat(cost) : 0,
             cost_with_tax: 0,
-            pvp_without_tax: Number.parseFloat(pvp),
+            pvp_without_tax: pvp ? Number.parseFloat(pvp) : 0,
             pvp_with_tax: 0,
             quantity: Number.parseInt(row[columnMapping["CANTIDAD"]]?.toString()) || 0,
             company: "MAYCAM",
@@ -769,17 +761,17 @@ export default function InventoryManagement() {
         const supplierName = row[columnMapping["PROVEEDOR"]]?.toString().trim() || null
         const brandName = row[columnMapping["MARCA"]]?.toString().trim()
 
-        if (!sku || !description || !costStr || !pvpStr || !brandName) {
-          errors.push(`Fila ${i + 1}: Datos obligatorios faltantes`)
+        if (!sku || !description) {
+          errors.push(`Fila ${i + 1}: Datos obligatorios faltantes (SKU o Descripción)`)
           errorCount++
           continue
         }
 
         const quantity = Number.parseInt(quantityStr) || 0
-        const cost = Number.parseFloat(costStr)
-        const pvp = Number.parseFloat(pvpStr)
+        const cost = costStr ? Number.parseFloat(costStr) : 0
+        const pvp = pvpStr ? Number.parseFloat(pvpStr) : 0
 
-        if (isNaN(cost) || isNaN(pvp)) {
+        if ((costStr && isNaN(cost)) || (pvpStr && isNaN(pvp))) {
           errors.push(`Fila ${i + 1}: Precios inválidos`)
           errorCount++
           continue

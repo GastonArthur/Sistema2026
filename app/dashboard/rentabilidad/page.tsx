@@ -192,6 +192,13 @@ export default function RentabilidadPage() {
         }
       }).filter(item => item !== null) || []
 
+      console.log(`[Sales] Fetched ${data?.length} raw orders. Displaying ${enrichedSales.length} after processing.`)
+
+      if (data && data.length > 0 && enrichedSales.length === 0) {
+          console.warn("[Sales] All sales filtered out! Check inventory costs.")
+          // Optional: You could show a toast here, but be careful of loops
+      }
+
       setSales(enrichedSales)
     } catch (err) {
       console.error("Error fetching sales:", err)
