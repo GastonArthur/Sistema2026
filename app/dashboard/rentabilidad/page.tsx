@@ -97,11 +97,66 @@ export default function RentabilidadPage() {
     if (activeTab === "sales" || activeTab === "summary") {
       fetchSales()
     }
+    if (activeTab === "stock") {
+      fetchStock()
+    }
   }, [activeTab, accounts]) // Refetch when accounts load or tab changes
 
   useEffect(() => {
     applyFilters()
   }, [sales, accountFilter, dateFilter, dateRange])
+
+  const fetchStock = async () => {
+    if (!supabase) return
+    try {
+      const { data, error } = await supabase.from("rt_stock_current").select("*")
+      if (error) throw error
+
+      // Group by SKU
+      const grouped = new Map<string, any>()
+      
+      data?.forEach(row => {
+        if (!grouped.has(row.sku)) {
+            grouped.set(row.sku, {
+                sku: row.sku,
+                qty: 0,
+                accounts: [],
+                updated_at: row.updated_at,
+                status: row.status
+            })
+        }
+        const item = grouped.get(row.sku)
+        item.qty += (row.qty || 0)
+        
+        const accName = accounts.find(a => a.id === row.account_id)?.name || 'Unknown'
+        if (!item.accounts.includes(accName)) {
+            item.accounts.push(accName)
+        }
+      })
+
+      const stockItems = Array.from(grouped.values())
+
+      // Fetch costs
+      if (stockItems.length > 0) {
+        const skus = stockItems.map(i => i.sku)
+        const { data: inventoryData } = await supabase
+            .from("inventory")
+            .select("sku, cost_without_tax")
+            .in("sku", skus)
+        
+        const costMap = new Map()
+        inventoryData?.forEach((i: any) => costMap.set(i.sku, Number(i.cost_without_tax) || 0))
+        
+        stockItems.forEach(item => {
+            item.cost = costMap.get(item.sku) || 0
+        })
+      }
+
+      setStock(stockItems)
+    } catch (err) {
+      console.error("Error fetching stock:", err)
+    }
+  }
 
   const fetchAccounts = async () => {
     if (!supabase) return
@@ -174,6 +229,9 @@ export default function RentabilidadPage() {
            // Attempt to get cost, default to 0 if not found
            const cost = costMap.get(item.sku) || 0
            
+           // Store cost in item for display
+           item.unit_cost = cost
+
            // We no longer filter out sales with invalid costs, we just warn or handle them in UI
            if (cost <= 0) {
              hasInvalidCost = true
@@ -606,8 +664,11 @@ export default function RentabilidadPage() {
                                         <TableCell>
                                             <div className="text-sm">
                                                 {sale.items?.map((item: any, i: number) => (
-                                                    <div key={i} className="mb-1 last:mb-0">
-                                                        {item.quantity}x {item.title}
+                                                    <div key={i} className="mb-2 last:mb-0">
+                                                        <div>{item.quantity}x {item.title}</div>
+                                                        <div className="text-xs text-muted-foreground">
+                                                            Costo unitario: {formatCurrency(item.unit_cost || 0)}
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>
@@ -760,6 +821,7 @@ CREATE TABLE IF NOT EXISTS rt_jobs (name TEXT PRIMARY KEY, cursor JSONB, locked_
                                     <TableHead>SKU</TableHead>
                                     <TableHead>Cuentas</TableHead>
                                     <TableHead>Cantidad</TableHead>
+                                    <TableHead>Costo</TableHead>
                                     <TableHead>Estado</TableHead>
                                     <TableHead>Actualizado</TableHead>
                                 </TableRow>
@@ -778,6 +840,7 @@ CREATE TABLE IF NOT EXISTS rt_jobs (name TEXT PRIMARY KEY, cursor JSONB, locked_
                                             </div>
                                         </TableCell>
                                         <TableCell className="font-bold text-lg">{item.qty}</TableCell>
+                                        <TableCell>{formatCurrency(item.cost || 0)}</TableCell>
                                         <TableCell>
                                             <Badge variant={item.qty > 0 ? "default" : "destructive"}>
                                                 {item.status}

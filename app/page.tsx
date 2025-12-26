@@ -749,6 +749,14 @@ export default function InventoryManagement() {
       }
     })
 
+    // Cerrar modal y mostrar mensaje de inicio
+    setImportPreview({ show: false, data: [], fileName: "", summary: { total: 0, valid: 0, errors: [] } })
+    toast({
+      title: "Importando productos",
+      description: "Por favor espere mientras se procesan los datos...",
+      duration: 3000,
+    })
+
     // Simular importación en modo offline o real
     if (!isSupabaseConfigured) {
       let successCount = 0
@@ -808,7 +816,6 @@ export default function InventoryManagement() {
         description: `${successCount} productos importados localmente de ${jsonData.length} filas procesadas`,
       })
 
-      setImportPreview({ show: false, data: [], fileName: "", summary: { total: 0, valid: 0, errors: [] } })
       return
     }
 
@@ -990,7 +997,6 @@ export default function InventoryManagement() {
     })
 
     setImportProgress({ show: false, current: 0, total: 0 })
-    setImportPreview({ show: false, data: [], fileName: "", summary: { total: 0, valid: 0, errors: [] } })
 
     if (successCount > 0) {
       loadData()
@@ -1671,6 +1677,70 @@ export default function InventoryManagement() {
     } catch (error) {
        logError("Bulk update error", error)
        toast({ title: "Error", description: "Falló la actualización masiva", variant: "destructive" })
+    }
+  }
+
+  const handleRemoveDuplicates = async () => {
+    if (!hasPermission("DELETE_ITEM")) return
+
+    const skuGroups: { [key: string]: InventoryItem[] } = {}
+    
+    // Agrupar por SKU
+    inventory.forEach(item => {
+      if (!skuGroups[item.sku]) {
+        skuGroups[item.sku] = []
+      }
+      skuGroups[item.sku].push(item)
+    })
+
+    const duplicates = Object.values(skuGroups).filter(group => group.length > 1)
+    
+    if (duplicates.length === 0) {
+      toast({ title: "Sin duplicados", description: "No se encontraron SKUs duplicados." })
+      return
+    }
+
+    let deletedCount = 0
+    const idsToDelete: number[] = []
+
+    duplicates.forEach(group => {
+      // Encontrar el mejor item para conservar (Mayor precio Costo+PVP)
+      // Ordenar descendente por (Costo + PVP)
+      group.sort((a, b) => {
+        const priceA = (a.cost_without_tax || 0) + (a.pvp_without_tax || 0)
+        const priceB = (b.cost_without_tax || 0) + (b.pvp_without_tax || 0)
+        return priceB - priceA
+      })
+      
+      // El primero es el que conservamos, el resto se borra
+      const toDelete = group.slice(1)
+      toDelete.forEach(item => idsToDelete.push(item.id))
+    })
+
+    if (idsToDelete.length === 0) return
+
+    // Confirmar eliminación
+    if (!confirm(`Se encontraron ${duplicates.length} grupos de duplicados. Se eliminarán ${idsToDelete.length} registros duplicados (conservando el de mayor precio). ¿Continuar?`)) {
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from("inventory")
+        .delete()
+        .in("id", idsToDelete)
+
+      if (error) throw error
+
+      toast({ 
+        title: "Limpieza completada", 
+        description: `Se eliminaron ${idsToDelete.length} registros duplicados.`,
+        variant: "default"
+      })
+      loadData()
+    } catch (error) {
+      logError("Error removing duplicates", error)
+      toast({ title: "Error", description: "Falló la eliminación de duplicados", variant: "destructive" })
     }
   }
 
@@ -3166,22 +3236,32 @@ ${csvRows
             {/* Inventory Table */}
             <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-slate-50 via-blue-50 to-indigo-50 border-b border-blue-100">
-                <CardTitle className="flex items-center gap-3 text-slate-800">
-                  <div className="p-2 bg-white rounded-lg shadow-sm border border-blue-100">
-                    <Package className="w-5 h-5 text-blue-600" />
+                <CardTitle className="flex items-center justify-between gap-3 text-slate-800">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white rounded-lg shadow-sm border border-blue-100">
+                      <Package className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <span className="bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent font-bold text-xl">
+                        Lista de Inventario
+                      </span>
+                      <Badge variant="outline" className="ml-3 bg-blue-50 text-blue-700 border-blue-200">
+                        {getFilteredInventory().length} productos
+                      </Badge>
+                    </div>
                   </div>
-                  <div>
-                    <span className="bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent font-bold text-xl">
-                      Lista de Inventario
-                    </span>
-                    <Badge variant="outline" className="ml-3 bg-blue-50 text-blue-700 border-blue-200">
-                      {getFilteredInventory().length} productos
-                    </Badge>
+                  <div className="flex gap-2">
+                    <Button onClick={exportToCSV} variant="outline" className="shadow-sm bg-white hover:bg-slate-50">
+                      <Download className="w-4 h-4 mr-2" />
+                      Exportar Excel
+                    </Button>
+                    {hasPermission("DELETE_ITEM") && (
+                      <Button onClick={handleRemoveDuplicates} variant="outline" className="shadow-sm bg-white hover:bg-red-50 text-red-600 border-red-200">
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Eliminar Duplicados
+                      </Button>
+                    )}
                   </div>
-                  <Button onClick={exportToCSV} variant="outline" className="ml-auto shadow-sm bg-white hover:bg-slate-50">
-                    <Download className="w-4 h-4 mr-2" />
-                    Exportar Excel
-                  </Button>
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
