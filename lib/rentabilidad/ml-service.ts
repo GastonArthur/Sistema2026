@@ -211,7 +211,84 @@ export class MLService {
       })
   }
 
+  // --- Helper Methods ---
+
+  async getAccountBySellerId(sellerId: string | number): Promise<RT_ML_Account | null> {
+    const supabase = this.getSupabase()
+    // Cast to string to ensure matching
+    const { data } = await supabase
+      .from("rt_ml_accounts")
+      .select("*")
+      .eq("seller_id", String(sellerId))
+      .single()
+    
+    return data as RT_ML_Account | null
+  }
+
+  private async saveOrder(account: RT_ML_Account, order: any) {
+    const supabase = this.getSupabase()
+    
+    // Upsert Order
+    await supabase.from("rt_ml_orders").upsert({
+        account_id: account.id,
+        order_id: order.id,
+        status: order.status,
+        date_created: order.date_created,
+        total_amount: order.total_amount,
+        paid_amount: order.paid_amount,
+        buyer_id: order.buyer.id,
+        shipment_id: order.shipping.id,
+        raw: order,
+        updated_at: new Date().toISOString()
+    })
+
+    // Upsert Items
+    await supabase.from("rt_ml_order_items").delete().match({ account_id: account.id, order_id: order.id })
+
+    for (const item of order.order_items) {
+        const sku = item.item.seller_sku || item.item.id 
+        
+        await supabase.from("rt_ml_order_items").insert({
+            account_id: account.id,
+            order_id: order.id,
+            sku: sku,
+            item_id: item.item.id,
+            variation_id: item.item.variation_id,
+            title: item.item.title,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            discount: 0,
+            raw: item
+        })
+    }
+  }
+
   // --- Orders ---
+  
+  async syncOrderById(sellerId: string | number, orderId: string) {
+    const account = await this.getAccountBySellerId(sellerId)
+    if (!account) {
+        console.error(`[Sync] Account not found for seller_id: ${sellerId}`)
+        return
+    }
+
+    const token = await this.getValidAccessToken(account)
+    console.log(`[Sync] Fetching single order ${orderId} for seller ${sellerId}`)
+
+    const res = await fetch(`${ML_API_URL}/orders/${orderId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+    })
+
+    if (!res.ok) {
+        const errText = await res.text()
+        console.error(`[Sync] Error fetching order ${orderId}: ${res.status} - ${errText}`)
+        return
+    }
+
+    const order = await res.json()
+    await this.saveOrder(account, order)
+    console.log(`[Sync] Order ${orderId} synced successfully`)
+  }
   
   async syncOrders(account: RT_ML_Account, fullHistory: boolean = false) {
       const token = await this.getValidAccessToken(account)
@@ -290,38 +367,7 @@ export class MLService {
               if (orderDate > maxDate) maxDate = orderDate
 
               // Upsert Order
-              await supabase.from("rt_ml_orders").upsert({
-                  account_id: account.id,
-                  order_id: order.id,
-                  status: order.status,
-                  date_created: order.date_created,
-                  total_amount: order.total_amount,
-                  paid_amount: order.paid_amount,
-                  buyer_id: order.buyer.id,
-                  shipment_id: order.shipping.id,
-                  raw: order,
-                  updated_at: new Date().toISOString()
-              })
-
-              // Upsert Items
-              await supabase.from("rt_ml_order_items").delete().match({ account_id: account.id, order_id: order.id })
-
-              for (const item of order.order_items) {
-                  const sku = item.item.seller_sku || item.item.id 
-                  
-                  await supabase.from("rt_ml_order_items").insert({
-                      account_id: account.id,
-                      order_id: order.id,
-                      sku: sku,
-                      item_id: item.item.id,
-                      variation_id: item.item.variation_id,
-                      title: item.item.title,
-                      quantity: item.quantity,
-                      unit_price: item.unit_price,
-                      discount: 0,
-                      raw: item
-                  })
-              }
+              await this.saveOrder(account, order)
           }
           
           totalFetched += orders.length

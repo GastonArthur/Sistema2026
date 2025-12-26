@@ -140,11 +140,57 @@ export default function RentabilidadPage() {
 
       if (error) throw error
       
-      // Enrich with account names
-      const enrichedSales = data?.map(sale => ({
-        ...sale,
-        account_name: accounts.find(a => a.id === sale.account_id)?.name || 'Desconocido'
-      })) || []
+      // 1. Extract SKUs from all orders
+      const allSkus = new Set<string>()
+      data?.forEach(order => {
+        order.items?.forEach((item: any) => {
+           if(item.sku) allSkus.add(item.sku)
+        })
+      })
+
+      // 2. Fetch costs from Inventory
+      let costMap = new Map<string, number>()
+      if (allSkus.size > 0) {
+        const { data: inventoryData, error: inventoryError } = await supabase
+          .from("inventory")
+          .select("sku, cost_without_tax")
+          .in("sku", Array.from(allSkus))
+        
+        if (!inventoryError && inventoryData) {
+            inventoryData.forEach((item: any) => {
+                costMap.set(item.sku, Number(item.cost_without_tax) || 0)
+            })
+        }
+      }
+
+      // 3. Enrich with account names and calculate Profit
+      const enrichedSales = data?.map(sale => {
+        const accountName = accounts.find(a => a.id === sale.account_id)?.name || 'Desconocido'
+        
+        let totalCost = 0
+        let hasInvalidCost = false
+
+        sale.items?.forEach((item: any) => {
+           const cost = costMap.get(item.sku) || 0
+           // Si el costo es 0 o no existe, marcamos para excluir
+           if (cost <= 0) {
+             hasInvalidCost = true
+           }
+           totalCost += cost * (item.quantity || 1)
+        })
+
+        // Si hay costos inválidos (0), no tomamos esta venta para la rentabilidad
+        if (hasInvalidCost) return null
+
+        const profit = (sale.total_amount || 0) - totalCost
+
+        return {
+          ...sale,
+          account_name: accountName,
+          total_cost: totalCost,
+          profit: profit
+        }
+      }).filter(item => item !== null) || []
 
       setSales(enrichedSales)
     } catch (err) {
@@ -266,8 +312,10 @@ export default function RentabilidadPage() {
   // Calculate Summary Metrics
   const totalSales = filteredSales.reduce((sum, s) => sum + (s.total_amount || 0), 0)
   const totalOrders = filteredSales.length
-  // Placeholder for profit logic (needs cost calculation)
-  const estimatedProfit = totalSales * 0.15 
+  
+  // Real Profit Logic (Sales Price - Inventory Cost)
+  const totalProfit = filteredSales.reduce((sum, s) => sum + (s.profit || 0), 0)
+  const marginPercentage = totalSales > 0 ? (totalProfit / totalSales) * 100 : 0 
 
   return (
     <SidebarProvider>
@@ -335,12 +383,14 @@ export default function RentabilidadPage() {
                 </Card>
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Ganancia Estimada</CardTitle>
+                    <CardTitle className="text-sm font-medium">Ganancia Real</CardTitle>
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{formatCurrency(estimatedProfit)}</div>
-                    <p className="text-xs text-muted-foreground">~15% (Cálculo preliminar)</p>
+                    <div className="text-2xl font-bold">{formatCurrency(totalProfit)}</div>
+                    <p className="text-xs text-muted-foreground">
+                        {marginPercentage.toFixed(1)}% de margen (Sobre ventas)
+                    </p>
                   </CardContent>
                 </Card>
                 <Card>
@@ -533,6 +583,7 @@ export default function RentabilidadPage() {
                                     <TableHead>Cuenta</TableHead>
                                     <TableHead>Items</TableHead>
                                     <TableHead>Estado</TableHead>
+                                    <TableHead className="text-right">Ganancia</TableHead>
                                     <TableHead className="text-right">Total</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -558,6 +609,9 @@ export default function RentabilidadPage() {
                                                 {sale.status}
                                             </Badge>
                                         </TableCell>
+                                        <TableCell className={`text-right font-medium ${sale.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            {formatCurrency(sale.profit)}
+                                        </TableCell>
                                         <TableCell className="text-right font-bold">
                                             {formatCurrency(sale.total_amount)}
                                         </TableCell>
@@ -565,7 +619,7 @@ export default function RentabilidadPage() {
                                 ))}
                                 {filteredSales.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
+                                        <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
                                             No hay ventas que coincidan con los filtros.
                                         </TableCell>
                                     </TableRow>
@@ -693,7 +747,7 @@ CREATE TABLE IF NOT EXISTS rt_jobs (name TEXT PRIMARY KEY, cursor JSONB, locked_
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>SKU</TableHead>
-                                    <TableHead>Cuenta</TableHead>
+                                    <TableHead>Cuentas</TableHead>
                                     <TableHead>Cantidad</TableHead>
                                     <TableHead>Estado</TableHead>
                                     <TableHead>Actualizado</TableHead>
@@ -701,10 +755,18 @@ CREATE TABLE IF NOT EXISTS rt_jobs (name TEXT PRIMARY KEY, cursor JSONB, locked_
                             </TableHeader>
                             <TableBody>
                                 {stock.map((item) => (
-                                    <TableRow key={`${item.sku}-${item.account_id}`}>
+                                    <TableRow key={item.sku}>
                                         <TableCell className="font-medium">{item.sku}</TableCell>
-                                        <TableCell>{item.account_name}</TableCell>
-                                        <TableCell>{item.qty}</TableCell>
+                                        <TableCell>
+                                            <div className="flex flex-wrap gap-1">
+                                                {item.accounts.map((acc: string, i: number) => (
+                                                    <Badge key={i} variant="outline" className="text-xs">
+                                                        {acc}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="font-bold text-lg">{item.qty}</TableCell>
                                         <TableCell>
                                             <Badge variant={item.qty > 0 ? "default" : "destructive"}>
                                                 {item.status}

@@ -1503,6 +1503,12 @@ export default function InventoryManagement() {
       case "price_desc":
         filtered.sort((a, b) => b.cost_without_tax - a.cost_without_tax)
         break
+      case "pvp_desc":
+        filtered.sort((a, b) => b.pvp_without_tax - a.pvp_without_tax)
+        break
+      case "cost_desc":
+        filtered.sort((a, b) => b.cost_without_tax - a.cost_without_tax)
+        break
       case "date_asc":
         filtered.sort((a, b) => new Date(a.date_entered).getTime() - new Date(b.date_entered).getTime())
         break
@@ -2916,6 +2922,8 @@ ${csvRows
                         <SelectItem value="date_asc">Más antiguos</SelectItem>
                         <SelectItem value="price_asc">Menor precio</SelectItem>
                         <SelectItem value="price_desc">Mayor precio</SelectItem>
+                        <SelectItem value="pvp_desc">PVP Mayor a Menor</SelectItem>
+                        <SelectItem value="cost_desc">Costo Mayor a Menor</SelectItem>
                         <SelectItem value="sku_duplicates">Duplicados</SelectItem>
                       </SelectContent>
                     </Select>
