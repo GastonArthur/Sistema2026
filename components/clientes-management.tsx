@@ -62,6 +62,7 @@ export function ClientesManagement({ isOpen, onClose }: ClientesManagementProps)
   
   const [showClientForm, setShowClientForm] = useState(false)
   const [editingClient, setEditingClient] = useState<UnifiedClient | null>(null)
+  const [viewingClient, setViewingClient] = useState<UnifiedClient | null>(null)
   
   // Form state
   const [formData, setFormData] = useState({
@@ -516,7 +517,13 @@ export function ClientesManagement({ isOpen, onClose }: ClientesManagementProps)
                 {filteredClients.map((client) => (
                   <TableRow key={client.id}>
                     <TableCell className="font-medium">
-                      <div>{client.name}</div>
+                      <Button 
+                        variant="link" 
+                        className="p-0 h-auto font-medium text-purple-700 hover:text-purple-900 text-left whitespace-normal" 
+                        onClick={() => setViewingClient(client)}
+                      >
+                        {client.name}
+                      </Button>
                       {client.business_name && (
                         <div className="text-xs text-gray-500">{client.business_name}</div>
                       )}
@@ -679,6 +686,87 @@ export function ClientesManagement({ isOpen, onClose }: ClientesManagementProps)
             </div>
           </DialogContent>
         </Dialog>
+        {viewingClient && (
+          <Dialog open={!!viewingClient} onOpenChange={(open) => !open && setViewingClient(null)}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Información del Cliente</DialogTitle>
+                <DialogDescription>
+                  Detalles completos del cliente {viewingClient.type}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant={viewingClient.type === "mayorista" ? "default" : "secondary"}>
+                    {viewingClient.type === "mayorista" ? "Mayorista" : "Minorista"}
+                  </Badge>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-gray-500">Nombre</Label>
+                    <div className="font-medium">{viewingClient.name}</div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-500">Identificador</Label>
+                    <div className="font-medium">{viewingClient.identifier || "-"}</div>
+                  </div>
+                </div>
+
+                {viewingClient.type === "mayorista" && (
+                   <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-xs text-gray-500">Razón Social</Label>
+                        <div className="font-medium">{viewingClient.business_name || "-"}</div>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-500">Persona de Contacto</Label>
+                        <div className="font-medium">{viewingClient.contact_person || "-"}</div>
+                      </div>
+                   </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-gray-500">Email</Label>
+                    <div className="font-medium truncate" title={viewingClient.email}>{viewingClient.email || "-"}</div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-500">Teléfono/WhatsApp</Label>
+                    <div className="font-medium">{viewingClient.phone || "-"}</div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-gray-500">Provincia</Label>
+                    <div className="font-medium">{viewingClient.province || "-"}</div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-500">Ciudad</Label>
+                    <div className="font-medium">{viewingClient.city || "-"}</div>
+                  </div>
+                </div>
+
+                <div>
+                   <Label className="text-xs text-gray-500">Dirección</Label>
+                   <div className="font-medium">{viewingClient.address || "-"}</div>
+                </div>
+
+                {viewingClient.type === "minorista" && (
+                  <div>
+                     <Label className="text-xs text-gray-500">Código Postal</Label>
+                     <div className="font-medium">{viewingClient.zip_code || "-"}</div>
+                  </div>
+                )}
+
+                <div className="flex justify-end pt-4">
+                   <Button onClick={() => setViewingClient(null)}>Cerrar</Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </DialogContent>
     </Dialog>
   )

@@ -154,8 +154,10 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
   const pendingStock = sales.filter(s => s.stock_status === "pendiente").length
 
   useEffect(() => {
-    loadData()
-  }, [])
+    if (isOpen) {
+      loadData()
+    }
+  }, [isOpen])
 
   const loadData = async () => {
     if (isSupabaseConfigured) {
@@ -1095,6 +1097,59 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
                   <Button onClick={handleCreateClient} className="bg-emerald-600 hover:bg-emerald-700">
                     {editingClient ? "Guardar Cambios" : "Crear Cliente"}
                   </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+        {viewingClient && (
+          <Dialog open={!!viewingClient} onOpenChange={(open) => !open && setViewingClient(null)}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Información del Cliente</DialogTitle>
+                <DialogDescription>Detalles completos del cliente minorista</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-gray-500">Nombre</Label>
+                    <div className="font-medium">{viewingClient.name}</div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-500">DNI/CUIT</Label>
+                    <div className="font-medium">{viewingClient.dni_cuit || "-"}</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-gray-500">Email</Label>
+                    <div className="font-medium truncate" title={viewingClient.email}>{viewingClient.email || "-"}</div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-500">Teléfono</Label>
+                    <div className="font-medium">{viewingClient.phone || "-"}</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-gray-500">Provincia</Label>
+                    <div className="font-medium">{viewingClient.province || "-"}</div>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-500">Ciudad</Label>
+                    <div className="font-medium">{viewingClient.city || "-"}</div>
+                  </div>
+                </div>
+                <div>
+                   <Label className="text-xs text-gray-500">Dirección</Label>
+                   <div className="font-medium">{viewingClient.address || "-"}</div>
+                </div>
+                <div>
+                   <Label className="text-xs text-gray-500">Código Postal</Label>
+                   <div className="font-medium">{viewingClient.zip_code || "-"}</div>
+                </div>
+                <div className="flex justify-end pt-4">
+                   <Button onClick={() => setViewingClient(null)}>Cerrar</Button>
                 </div>
               </div>
             </DialogContent>
