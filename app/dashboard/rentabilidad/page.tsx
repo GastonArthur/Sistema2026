@@ -649,6 +649,7 @@ export default function RentabilidadPage() {
                                     <TableHead>Cuenta</TableHead>
                                     <TableHead>Items</TableHead>
                                     <TableHead>Estado</TableHead>
+                                    <TableHead className="text-right">Costo</TableHead>
                                     <TableHead className="text-right">Ganancia</TableHead>
                                     <TableHead className="text-right">Total</TableHead>
                                 </TableRow>
@@ -678,6 +679,9 @@ export default function RentabilidadPage() {
                                                 {sale.status}
                                             </Badge>
                                         </TableCell>
+                                        <TableCell className="text-right text-muted-foreground">
+                                            {formatCurrency(sale.total_cost)}
+                                        </TableCell>
                                         <TableCell className={`text-right font-medium ${sale.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                             {formatCurrency(sale.profit)}
                                             {sale.has_warning && (
@@ -691,7 +695,7 @@ export default function RentabilidadPage() {
                                 ))}
                                 {filteredSales.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
+                                        <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">
                                             No hay ventas que coincidan con los filtros.
                                         </TableCell>
                                     </TableRow>
