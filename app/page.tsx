@@ -2,7 +2,8 @@
 
 import type React from "react"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, Suspense } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { formatCurrency, convertScientificNotation } from "@/lib/utils"
 import { logError } from "@/lib/logger"
@@ -122,7 +123,10 @@ type Brand = {
   name: string
 }
 
-export default function InventoryManagement() {
+function InventoryManagementContent() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
   // Estados de autenticación
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -248,6 +252,46 @@ export default function InventoryManagement() {
       channel: ""
     }
   })
+
+  // Handle URL parameters for navigation from other pages
+  useEffect(() => {
+    const tab = searchParams.get("tab")
+    const section = searchParams.get("section")
+    
+    if (tab) {
+      setActiveTab(tab)
+      // Close overlays if just switching tab
+      setShowWholesale(false)
+      setShowRetail(false)
+      setShowGastos(false)
+      setShowClients(false)
+    }
+    
+    if (section === "wholesale") {
+      setShowWholesale(true)
+      setShowRetail(false)
+      setShowGastos(false)
+      setShowClients(false)
+    }
+    if (section === "retail") {
+      setShowRetail(true)
+      setShowWholesale(false)
+      setShowGastos(false)
+      setShowClients(false)
+    }
+    if (section === "gastos") {
+      setShowGastos(true)
+      setShowWholesale(false)
+      setShowRetail(false)
+      setShowClients(false)
+    }
+    if (section === "clients") {
+      setShowClients(true)
+      setShowWholesale(false)
+      setShowRetail(false)
+      setShowGastos(false)
+    }
+  }, [searchParams])
 
   const loadData = async () => {
     if (!isSupabaseConfigured) {
@@ -4516,5 +4560,13 @@ ${csvRows
       </Dialog>
 
     </SidebarProvider>
+  )
+}
+
+export default function InventoryManagement() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-screen">Cargando...</div>}>
+      <InventoryManagementContent />
+    </Suspense>
   )
 }

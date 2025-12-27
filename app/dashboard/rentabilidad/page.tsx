@@ -93,10 +93,23 @@ export default function RentabilidadPage() {
   }, [])
   // Redirect to main app for other tabs
   const handleSidebarNavigation = (tab: string) => {
-    window.location.href = "/"
+    window.location.href = `/?tab=${tab}`
   }
-  const handleSidebarOpen = (val: boolean) => {
-    if(val) window.location.href = "/"
+  
+  const handleShowWholesale = (val: boolean) => {
+    if(val) window.location.href = "/?section=wholesale"
+  }
+
+  const handleShowRetail = (val: boolean) => {
+    if(val) window.location.href = "/?section=retail"
+  }
+
+  const handleShowGastos = (val: boolean) => {
+    if(val) window.location.href = "/?section=gastos"
+  }
+
+  const handleShowClients = (val: boolean) => {
+    if(val) window.location.href = "/?section=clients"
   }
 
   useEffect(() => {
@@ -398,10 +411,10 @@ export default function RentabilidadPage() {
       <AppSidebar 
         activeTab={sidebarActiveTab}
         setActiveTab={handleSidebarNavigation}
-        setShowWholesale={handleSidebarOpen}
-        setShowRetail={handleSidebarOpen}
-        setShowGastos={handleSidebarOpen}
-        setShowClients={handleSidebarOpen}
+        setShowWholesale={handleShowWholesale}
+        setShowRetail={handleShowRetail}
+        setShowGastos={handleShowGastos}
+        setShowClients={handleShowClients}
         onLogout={() => window.location.href = "/"} 
         userEmail={userEmail} 
       />
