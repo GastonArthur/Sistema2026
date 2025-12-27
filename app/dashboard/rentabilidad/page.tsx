@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
+import { checkSession } from "@/lib/auth"
 import { createClient } from "@supabase/supabase-js"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
@@ -79,8 +80,7 @@ export default function RentabilidadPage() {
   const [showRetail, setShowRetail] = useState(false)
   const [showGastos, setShowGastos] = useState(false)
   const [showClients, setShowClients] = useState(false)
-se)
-  const [urEmail, setUserEmail] = useState("Usuario")
+  const [userEmail, setUserEmail] = useState("Usuario")
 
   useEffect(() => {
     const initSession = async () => {
@@ -90,7 +90,7 @@ se)
       }
     }
     initSession()
-  }, []
+  }, [])
   // Redirect to main app for other tabs
   const handleSidebarNavigation = (tab: string) => {
     window.location.href = "/"
