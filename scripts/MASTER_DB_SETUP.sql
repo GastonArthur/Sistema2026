@@ -14,6 +14,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION clean_expired_sessions()
+RETURNS void AS $$
+BEGIN
+  DELETE FROM user_sessions WHERE expires_at < NOW();
+END;
+$$ LANGUAGE plpgsql;
+
 -- 3. Users and Auth (Custom Implementation)
 CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
@@ -133,6 +140,20 @@ CREATE INDEX IF NOT EXISTS idx_inventory_ean ON inventory(ean);
 CREATE INDEX IF NOT EXISTS idx_inventory_created_at ON inventory(created_at);
 CREATE INDEX IF NOT EXISTS idx_inventory_company_channel ON inventory(company, channel);
 
+-- Price History
+CREATE TABLE IF NOT EXISTS price_history (
+  id SERIAL PRIMARY KEY,
+  sku VARCHAR(100) NOT NULL,
+  old_cost_without_tax DECIMAL(10,2),
+  new_cost_without_tax DECIMAL(10,2),
+  old_pvp_without_tax DECIMAL(10,2),
+  new_pvp_without_tax DECIMAL(10,2),
+  price_change_percentage DECIMAL(5,2),
+  changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  changed_by INTEGER REFERENCES users(id)
+);
+CREATE INDEX IF NOT EXISTS idx_price_history_sku ON price_history(sku);
+
 -- 7. Expenses Management
 CREATE TABLE IF NOT EXISTS expense_categories (
   id SERIAL PRIMARY KEY,
@@ -164,7 +185,13 @@ CREATE TABLE IF NOT EXISTS expenses (
   updated_by INTEGER REFERENCES users(id)
 );
 
--- Triggers for expenses
+-- Expenses Indexes
+CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(expense_date);
+CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category_id);
+CREATE INDEX IF NOT EXISTS idx_expenses_created_by ON expenses(created_by);
+CREATE INDEX IF NOT EXISTS idx_expenses_paid_by ON expenses(paid_by);
+
+-- Triggers for updated_at
 DROP TRIGGER IF EXISTS update_expenses_updated_at ON expenses;
 CREATE TRIGGER update_expenses_updated_at
   BEFORE UPDATE ON expenses
@@ -174,6 +201,30 @@ CREATE TRIGGER update_expenses_updated_at
 DROP TRIGGER IF EXISTS update_expense_categories_updated_at ON expense_categories;
 CREATE TRIGGER update_expense_categories_updated_at
   BEFORE UPDATE ON expense_categories
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
+CREATE TRIGGER update_users_updated_at
+  BEFORE UPDATE ON users
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_suppliers_updated_at ON suppliers;
+CREATE TRIGGER update_suppliers_updated_at
+  BEFORE UPDATE ON suppliers
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_brands_updated_at ON brands;
+CREATE TRIGGER update_brands_updated_at
+  BEFORE UPDATE ON brands
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_inventory_updated_at ON inventory;
+CREATE TRIGGER update_inventory_updated_at
+  BEFORE UPDATE ON inventory
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
@@ -268,12 +319,8 @@ VALUES (
   can_view_logs = true,
   can_view_wholesale = true;
 
--- 10. Sample Data (Optional - Uncomment if needed)
--- INSERT INTO suppliers (name) VALUES ('PROVEEDOR PRINCIPAL'), ('DISTRIBUIDOR NACIONAL') ON CONFLICT (name) DO NOTHING;
--- INSERT INTO brands (name) VALUES ('MARCA PREMIUM'), ('MARCA ESTÁNDAR') ON CONFLICT (name) DO NOTHING;
-
 -- 11. Maintenance
-VACUUM ANALYZE;
+-- VACUUM ANALYZE; -- Commented out because it cannot run inside a transaction block in Supabase SQL Editor
 
 -- Log the setup
 INSERT INTO activity_logs (
@@ -284,4 +331,3 @@ SELECT
 FROM users 
 WHERE email = 'maycamadmin@maycam.com'
 LIMIT 1;
-
