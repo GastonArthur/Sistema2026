@@ -202,6 +202,11 @@ export const login = async (
     currentUser = user
     localStorage.setItem("session_token", sessionToken)
 
+    if (typeof document !== 'undefined') {
+      const cookieExpires = new Date(Date.now() + 24 * 60 * 60 * 1000).toUTCString()
+      document.cookie = `session_token=${sessionToken}; expires=${cookieExpires}; path=/; SameSite=Lax`
+    }
+
     await logActivity("LOGIN", null, null, null, null, `Usuario ${user.name} inició sesión correctamente`)
 
     return { success: true, user }
@@ -376,6 +381,13 @@ export const checkSession = async (): Promise<User | null> => {
     }
 
     currentUser = Array.isArray(session.users) ? session.users[0] : session.users
+    
+    // Ensure cookie is synchronized with localStorage
+    if (typeof document !== 'undefined' && !document.cookie.includes(`session_token=${sessionToken}`)) {
+       const cookieExpires = new Date(session.expires_at).toUTCString()
+       document.cookie = `session_token=${sessionToken}; expires=${cookieExpires}; path=/; SameSite=Lax`
+    }
+
     // @ts-ignore
     return currentUser
   } catch (error) {

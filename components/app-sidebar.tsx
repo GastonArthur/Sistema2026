@@ -214,9 +214,13 @@ export function AppSidebar({
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild className="group/btn hover:bg-emerald-50 hover:text-emerald-700 transition-all duration-200 ease-in-out">
+                <SidebarMenuButton 
+                  asChild 
+                  isActive={activeTab === "rentabilidad"}
+                  className="group/btn hover:bg-emerald-50 hover:text-emerald-700 transition-all duration-200 ease-in-out data-[active=true]:bg-emerald-100 data-[active=true]:text-emerald-800"
+                >
                   <a href="/dashboard/rentabilidad">
-                    <TrendingUp className="group-hover/btn:scale-110 transition-transform text-emerald-500/80 group-hover/btn:text-emerald-600" />
+                    <TrendingUp className="group-hover/btn:scale-110 transition-transform text-emerald-500/80 group-hover/btn:text-emerald-600 group-data-[active=true]:text-emerald-700" />
                     <span className="font-medium">Rentabilidad Real</span>
                   </a>
                 </SidebarMenuButton>

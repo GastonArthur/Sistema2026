@@ -75,7 +75,7 @@ export default function RentabilidadPage() {
   const [dbReady, setDbReady] = useState(false)
 
   // Sidebar State (Dummy to satisfy interface)
-  const [sidebarActiveTab, setSidebarActiveTab] = useState("")
+  const [sidebarActiveTab, setSidebarActiveTab] = useState("rentabilidad")
   const [showWholesale, setShowWholesale] = useState(false)
   const [showRetail, setShowRetail] = useState(false)
   const [showGastos, setShowGastos] = useState(false)
