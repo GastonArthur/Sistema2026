@@ -1,11 +1,11 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { LoginForm } from "@/components/login-form"
 import { checkSession } from "@/lib/auth"
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [checking, setChecking] = useState(true)
@@ -43,5 +43,20 @@ export default function LoginPage() {
         window.location.href = redirect
       }} 
     />
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-pulse flex flex-col items-center">
+          <div className="h-12 w-12 bg-slate-200 rounded-full mb-4"></div>
+          <div className="h-4 w-48 bg-slate-200 rounded"></div>
+        </div>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   )
 }
