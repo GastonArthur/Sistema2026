@@ -15,6 +15,10 @@ export type User = {
   password_hash?: string
   two_factor_enabled?: boolean
   two_factor_secret?: string
+  two_factor_method?: "app" | "sms" | "email"
+  two_factor_code?: string
+  two_factor_expires?: string
+  phone?: string
 }
 
 export type ActivityLog = {
@@ -151,6 +155,27 @@ export const login = async (
 
     // 2FA Check
     if (user.two_factor_enabled) {
+      if (user.two_factor_method === 'sms' || user.two_factor_method === 'email') {
+        const code = Math.floor(100000 + Math.random() * 900000).toString()
+        const expires = new Date()
+        expires.setMinutes(expires.getMinutes() + 10)
+
+        await supabase
+          .from("users")
+          .update({
+            two_factor_code: code,
+            two_factor_expires: expires.toISOString(),
+          })
+          .eq("id", user.id)
+
+        // En un entorno real, aquí se llamaría al servicio de SMS/Email
+        // Por ahora, simulamos el envío en logs del servidor (visible en consola)
+        console.log(`🔐 [2FA] Código para ${user.email} (${user.two_factor_method}): ${code}`)
+        
+        // También registramos en logs de actividad para depuración
+        await logActivity("2FA_CODE_SENT", "users", user.id, null, null, `Código 2FA enviado vía ${user.two_factor_method}`)
+      }
+
       return { success: true, require2FA: true, userId: user.id }
     }
 
@@ -201,7 +226,33 @@ export const verify2FALogin = async (
       return { success: false, error: "Usuario no encontrado" }
     }
 
-    const isValid = verifyToken(token, user.two_factor_secret)
+    let isValid = false
+
+    if (user.two_factor_method === 'sms' || user.two_factor_method === 'email') {
+      if (!user.two_factor_code || !user.two_factor_expires) {
+        return { success: false, error: "Código no generado o expirado" }
+      }
+      
+      const now = new Date()
+      const expires = new Date(user.two_factor_expires)
+      
+      if (now > expires) {
+        return { success: false, error: "El código ha expirado" }
+      }
+      
+      if (token === user.two_factor_code) {
+        isValid = true
+        // Limpiar código usado
+        await supabase.from("users").update({ 
+          two_factor_code: null, 
+          two_factor_expires: null 
+        }).eq("id", user.id)
+      }
+    } else {
+      // Default: Google Authenticator (TOTP)
+      isValid = verifyToken(token, user.two_factor_secret)
+    }
+
     if (!isValid) {
       return { success: false, error: "Código inválido" }
     }

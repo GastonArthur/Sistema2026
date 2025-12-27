@@ -16,10 +16,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { secret, code } = await req.json()
+    const { secret, code, method } = await req.json()
 
-    if (!secret || !code) {
-      return NextResponse.json({ error: "Missing parameters" }, { status: 400 })
+    if (!code) {
+      return NextResponse.json({ error: "Código requerido" }, { status: 400 })
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey)
@@ -35,24 +35,62 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Verify Token
-    const isValid = verifyToken(code, secret)
+    if (method === 'sms') {
+        // Verify SMS Code
+        const { data: user } = await supabase
+            .from("users")
+            .select("two_factor_code, two_factor_expires")
+            .eq("id", session.user_id)
+            .single()
 
-    if (!isValid) {
-      return NextResponse.json({ error: "Invalid code" }, { status: 400 })
-    }
+        if (!user || !user.two_factor_code || !user.two_factor_expires) {
+            return NextResponse.json({ error: "Código no solicitado" }, { status: 400 })
+        }
 
-    // Enable 2FA for user
-    const { error: updateError } = await supabase
-      .from("users")
-      .update({
-        two_factor_enabled: true,
-        two_factor_secret: secret
-      })
-      .eq("id", session.user_id)
+        if (new Date() > new Date(user.two_factor_expires)) {
+            return NextResponse.json({ error: "Código expirado" }, { status: 400 })
+        }
 
-    if (updateError) {
-      throw updateError
+        if (user.two_factor_code !== code) {
+            return NextResponse.json({ error: "Código incorrecto" }, { status: 400 })
+        }
+
+        // Enable SMS 2FA
+        const { error: updateError } = await supabase
+            .from("users")
+            .update({
+                two_factor_enabled: true,
+                two_factor_method: 'sms',
+                two_factor_code: null, // Clear code
+                two_factor_expires: null
+            })
+            .eq("id", session.user_id)
+
+        if (updateError) throw updateError
+
+    } else {
+        // Default: App (TOTP)
+        if (!secret) {
+            return NextResponse.json({ error: "Missing parameters" }, { status: 400 })
+        }
+
+        const isValid = verifyToken(code, secret)
+
+        if (!isValid) {
+            return NextResponse.json({ error: "Invalid code" }, { status: 400 })
+        }
+
+        // Enable App 2FA
+        const { error: updateError } = await supabase
+            .from("users")
+            .update({
+                two_factor_enabled: true,
+                two_factor_secret: secret,
+                two_factor_method: 'app'
+            })
+            .eq("id", session.user_id)
+
+        if (updateError) throw updateError
     }
 
     return NextResponse.json({ success: true })

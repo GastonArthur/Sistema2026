@@ -27,62 +27,13 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
-  
-  // 2FA State
   const [require2FA, setRequire2FA] = useState(false)
   const [userId, setUserId] = useState<number | null>(null)
   const [code, setCode] = useState("")
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleVerify2FA = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (require2FA) {
-      handle2FAVerify()
-      return
-    }
-
-    if (!email.trim() || !password.trim()) {
-      setError("Por favor ingrese email y contraseña")
-      return
-    }
-
-    setIsLoading(true)
-    setError("")
-
-    try {
-      const result = await login(email.trim(), password)
-
-      if (result.success) {
-        if (result.require2FA && result.userId) {
-          setRequire2FA(true)
-          setUserId(result.userId)
-          toast({
-            title: "Verificación de dos pasos",
-            description: "Por favor ingrese el código de su aplicación autenticadora.",
-          })
-        } else if (result.user) {
-          toast({
-            title: "¡Bienvenido!",
-            description: `Hola ${result.user.name}`,
-          })
-          onLoginSuccess()
-        }
-      } else {
-        setError(result.error || "Credenciales inválidas")
-      }
-    } catch (error) {
-      logError("Error en login:", error)
-      setError("Error interno del servidor")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handle2FAVerify = async () => {
-    if (!code || code.length !== 6 || !userId) {
-      setError("Por favor ingrese un código válido")
-      return
-    }
+    if (!userId || code.length !== 6) return
 
     setIsLoading(true)
     setError("")
@@ -100,10 +51,54 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
         setError(result.error || "Código inválido")
       }
     } catch (error) {
-      logError("Error en login 2FA:", error)
+      logError("Error en verificación 2FA:", error)
       setError("Error interno del servidor")
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (require2FA) {
+      return handleVerify2FA(e)
+    }
+
+    if (!email.trim() || !password.trim()) {
+      setError("Por favor ingrese email y contraseña")
+      return
+    }
+
+    setIsLoading(true)
+    setError("")
+
+    try {
+      const result = await login(email.trim(), password)
+
+      if (result.success) {
+        if (result.require2FA && result.userId) {
+          setRequire2FA(true)
+          setUserId(result.userId)
+          setIsLoading(false)
+          return
+        }
+        
+        if (result.user) {
+          toast({
+            title: "¡Bienvenido!",
+            description: `Hola ${result.user.name}`,
+          })
+          onLoginSuccess()
+        }
+      } else {
+        setError(result.error || "Credenciales inválidas")
+      }
+    } catch (error) {
+      logError("Error en login:", error)
+      setError("Error interno del servidor")
+    } finally {
+      if (!require2FA) setIsLoading(false)
     }
   }
 
@@ -131,55 +126,89 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-700 font-medium">
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="usuario@maycam.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-12 text-base"
-                disabled={isLoading}
-                autoComplete="email"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-700 font-medium">
-                Contraseña
-              </Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="h-12 text-base pr-10"
-                  disabled={isLoading}
-                  autoComplete="current-password"
-                  required
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowPassword(!showPassword)}
-                  disabled={isLoading}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-slate-500" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-slate-500" />
-                  )}
-                </Button>
+            {require2FA ? (
+              <div className="space-y-4 flex flex-col items-center">
+                <div className="bg-blue-50 p-4 rounded-full mb-2">
+                  <ShieldCheck className="w-8 h-8 text-blue-600" />
+                </div>
+                <div className="text-center space-y-2">
+                  <h3 className="font-semibold text-lg">Verificación de Dos Pasos</h3>
+                  <p className="text-sm text-slate-500">Ingrese el código de 6 dígitos de su aplicación autenticadora.</p>
+                </div>
+                
+                <div className="flex justify-center py-4">
+                  <InputOTP
+                    maxLength={6}
+                    value={code}
+                    onChange={(value) => setCode(value)}
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                    </InputOTPGroup>
+                    <div className="w-2" />
+                    <InputOTPGroup>
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
               </div>
-            </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-slate-700 font-medium">
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="usuario@maycam.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="h-12 text-base"
+                    disabled={isLoading}
+                    autoComplete="email"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-slate-700 font-medium">
+                    Contraseña
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="h-12 text-base pr-10"
+                      disabled={isLoading}
+                      autoComplete="current-password"
+                      required
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                      disabled={isLoading}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-slate-500" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-slate-500" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
 
             <Button
               type="submit"
@@ -189,22 +218,40 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
               {isLoading ? (
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Iniciando sesión...
+                  {require2FA ? "Verificando..." : "Iniciando sesión..."}
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <LogIn className="w-4 h-4" />
-                  Iniciar Sesión
+                  {require2FA ? <ShieldCheck className="w-4 h-4" /> : <LogIn className="w-4 h-4" />}
+                  {require2FA ? "Verificar Código" : "Iniciar Sesión"}
                 </div>
               )}
             </Button>
+            
+            {require2FA && (
+              <Button 
+                type="button" 
+                variant="ghost" 
+                className="w-full text-slate-500"
+                onClick={() => {
+                  setRequire2FA(false)
+                  setUserId(null)
+                  setCode("")
+                  setError("")
+                }}
+              >
+                Cancelar y volver
+              </Button>
+            )}
           </form>
 
-          <div className="text-center text-sm text-slate-500 border-t pt-4 space-y-1">
-            <p className="font-medium">Sistema de Gestión de Inventario MAYCAM</p>
-            <p>Versión 2.0 - 2025</p>
-            <p className="text-xs">Acceso seguro en la nube</p>
-          </div>
+          {!require2FA && (
+            <div className="text-center text-sm text-slate-500 border-t pt-4 space-y-1">
+              <p className="font-medium">Sistema de Gestión de Inventario MAYCAM</p>
+              <p>Versión 2.0 - 2025</p>
+              <p className="text-xs">Acceso seguro en la nube</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -516,10 +516,18 @@ function InventoryManagementContent() {
 
   const handleLoginSuccess = () => {
     setIsAuthenticated(true)
-    loadData().then(() => {
-      setLastSync(new Date())
-      startAutoRefresh()
-    })
+    // Check for login param and remove it
+    const loginParam = searchParams.get("login")
+    const redirectParam = searchParams.get("redirect")
+    
+    if (loginParam && redirectParam) {
+      router.push(redirectParam)
+    } else {
+      loadData().then(() => {
+        setLastSync(new Date())
+        startAutoRefresh()
+      })
+    }
   }
 
   const handleLogout = () => {
