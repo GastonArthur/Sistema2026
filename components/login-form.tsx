@@ -7,10 +7,15 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Eye, EyeOff, LogIn, Package, AlertCircle } from "lucide-react"
-import { login } from "@/lib/auth"
+import { Eye, EyeOff, LogIn, Package, AlertCircle, ShieldCheck } from "lucide-react"
+import { login, verify2FALogin } from "@/lib/auth"
 import { toast } from "@/hooks/use-toast"
 import { logError } from "@/lib/logger"
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp"
 
 interface LoginFormProps {
   onLoginSuccess: () => void
@@ -22,9 +27,19 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  
+  // 2FA State
+  const [require2FA, setRequire2FA] = useState(false)
+  const [userId, setUserId] = useState<number | null>(null)
+  const [code, setCode] = useState("")
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (require2FA) {
+      handle2FAVerify()
+      return
+    }
 
     if (!email.trim() || !password.trim()) {
       setError("Por favor ingrese email y contraseña")
@@ -37,6 +52,44 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
     try {
       const result = await login(email.trim(), password)
 
+      if (result.success) {
+        if (result.require2FA && result.userId) {
+          setRequire2FA(true)
+          setUserId(result.userId)
+          toast({
+            title: "Verificación de dos pasos",
+            description: "Por favor ingrese el código de su aplicación autenticadora.",
+          })
+        } else if (result.user) {
+          toast({
+            title: "¡Bienvenido!",
+            description: `Hola ${result.user.name}`,
+          })
+          onLoginSuccess()
+        }
+      } else {
+        setError(result.error || "Credenciales inválidas")
+      }
+    } catch (error) {
+      logError("Error en login:", error)
+      setError("Error interno del servidor")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handle2FAVerify = async () => {
+    if (!code || code.length !== 6 || !userId) {
+      setError("Por favor ingrese un código válido")
+      return
+    }
+
+    setIsLoading(true)
+    setError("")
+
+    try {
+      const result = await verify2FALogin(userId, code)
+
       if (result.success && result.user) {
         toast({
           title: "¡Bienvenido!",
@@ -44,10 +97,10 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
         })
         onLoginSuccess()
       } else {
-        setError(result.error || "Credenciales inválidas")
+        setError(result.error || "Código inválido")
       }
     } catch (error) {
-      logError("Error en login:", error)
+      logError("Error en login 2FA:", error)
       setError("Error interno del servidor")
     } finally {
       setIsLoading(false)

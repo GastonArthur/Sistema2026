@@ -13,9 +13,28 @@ export async function POST(req: NextRequest) {
     if (!supabaseUrl || !supabaseKey) {
       return NextResponse.json({ error: "Supabase credentials missing" }, { status: 500 })
     }
+
+    // Security Check: Verify CRON_SECRET
+    const authHeader = req.headers.get('authorization')
+    const cronSecret = process.env.CRON_SECRET
+    
+    // Allow if CRON_SECRET matches Bearer token or if 'key' query param matches
+    // If CRON_SECRET is not set in env, we strictly deny access to prevent accidental exposure
+    if (!cronSecret) {
+      console.error("CRON_SECRET is not set in environment variables.")
+      return NextResponse.json({ error: "Server configuration error" }, { status: 500 })
+    }
+
+    const { searchParams } = new URL(req.url)
+    const queryKey = searchParams.get('key')
+    
+    const isValid = (authHeader === `Bearer ${cronSecret}`) || (queryKey === cronSecret)
+
+    if (!isValid) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
     
     // Check query param for full sync
-    const { searchParams } = new URL(req.url)
     const fullHistory = searchParams.get('full') === 'true'
 
     const supabase = createClient(supabaseUrl, supabaseKey)

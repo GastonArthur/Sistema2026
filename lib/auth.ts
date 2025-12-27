@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { compare, hash } from "bcryptjs"
 import { logError } from "@/lib/logger"
+import { verifyToken } from "@/lib/totp"
 
 export type User = {
   id: number
@@ -12,6 +13,8 @@ export type User = {
   can_view_wholesale: boolean
   created_at: string
   password_hash?: string
+  two_factor_enabled?: boolean
+  two_factor_secret?: string
 }
 
 export type ActivityLog = {
@@ -74,7 +77,7 @@ export const getCurrentUser = (): User | null => {
 export const login = async (
   email: string,
   password: string,
-): Promise<{ success: boolean; user?: User; error?: string }> => {
+): Promise<{ success: boolean; user?: User; error?: string; require2FA?: boolean; userId?: number }> => {
   if (!isSupabaseConfigured) {
     // Modo offline - solo usuario administrador
     if (email === "maycam@gmail.com" && password === "MaycaM1123!") {
@@ -146,6 +149,11 @@ export const login = async (
       return { success: false, error: "Credenciales inválidas" }
     }
 
+    // 2FA Check
+    if (user.two_factor_enabled) {
+      return { success: true, require2FA: true, userId: user.id }
+    }
+
     // Limpiar sesiones anteriores del usuario
     await supabase.from("user_sessions").delete().eq("user_id", user.id)
 
@@ -178,6 +186,62 @@ export const login = async (
   }
 }
 
+export const verify2FALogin = async (
+  userId: number,
+  token: string
+): Promise<{ success: boolean; user?: User; error?: string }> => {
+  try {
+    const { data: user, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", userId)
+      .single()
+
+    if (error || !user) {
+      return { success: false, error: "Usuario no encontrado" }
+    }
+
+    const isValid = verifyToken(token, user.two_factor_secret)
+    if (!isValid) {
+      return { success: false, error: "Código inválido" }
+    }
+
+    // Create session
+    await supabase.from("user_sessions").delete().eq("user_id", user.id)
+
+    const sessionToken = generateSecureSessionToken()
+    const expiresAt = new Date()
+    expiresAt.setHours(expiresAt.getHours() + 24)
+
+    const { error: sessionError } = await supabase.from("user_sessions").insert([
+      {
+        user_id: user.id,
+        session_token: sessionToken,
+        expires_at: expiresAt.toISOString(),
+        ip_address: null,
+        user_agent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+      },
+    ])
+
+    if (sessionError) throw sessionError
+
+    currentUser = user
+    localStorage.setItem("session_token", sessionToken)
+    
+    if (typeof document !== 'undefined') {
+      const cookieExpires = new Date(Date.now() + 24 * 60 * 60 * 1000).toUTCString()
+      document.cookie = `session_token=${sessionToken}; expires=${cookieExpires}; path=/; SameSite=Lax`
+    }
+
+    await logActivity("LOGIN_2FA", null, null, null, null, `Usuario ${user.name} verificó 2FA exitosamente`)
+
+    return { success: true, user }
+  } catch (error) {
+    logError("Error verificando 2FA:", error)
+    return { success: false, error: "Error interno del servidor" }
+  }
+}
+
 export const logout = async (): Promise<void> => {
   if (!isSupabaseConfigured) {
     if (currentUser) {
@@ -196,8 +260,11 @@ export const logout = async (): Promise<void> => {
       // Limpiar sesión de la base de datos
       await supabase.from("user_sessions").delete().eq("session_token", sessionToken)
 
-      // Limpiar almacenamiento local
+      // Limpiar almacenamiento local y cookie
       localStorage.removeItem("session_token")
+      if (typeof document !== 'undefined') {
+        document.cookie = "session_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/"
+      }
     }
 
     currentUser = null
@@ -205,6 +272,9 @@ export const logout = async (): Promise<void> => {
     logError("Error en logout:", error)
     // Limpiar localmente aunque haya error
     localStorage.removeItem("session_token")
+    if (typeof document !== 'undefined') {
+      document.cookie = "session_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/"
+    }
     currentUser = null
   }
 }
