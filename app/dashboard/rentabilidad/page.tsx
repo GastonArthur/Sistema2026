@@ -34,7 +34,6 @@ import {
 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
-
 // Initialize Supabase Client (Client Side)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -80,7 +79,18 @@ export default function RentabilidadPage() {
   const [showRetail, setShowRetail] = useState(false)
   const [showGastos, setShowGastos] = useState(false)
   const [showClients, setShowClients] = useState(false)
+se)
+  const [urEmail, setUserEmail] = useState("Usuario")
 
+  useEffect(() => {
+    const initSession = async () => {
+      const user = await checkSession()
+      if (user) {
+        setUserEmail(user.email)
+      }
+    }
+    initSession()
+  }, []
   // Redirect to main app for other tabs
   const handleSidebarNavigation = (tab: string) => {
     window.location.href = "/"
@@ -393,7 +403,7 @@ export default function RentabilidadPage() {
         setShowGastos={handleSidebarOpen}
         setShowClients={handleSidebarOpen}
         onLogout={() => window.location.href = "/"} 
-        userEmail="Usuario" 
+        userEmail={userEmail} 
       />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
