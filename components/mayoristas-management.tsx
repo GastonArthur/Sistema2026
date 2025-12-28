@@ -2873,7 +2873,6 @@ Este reporte contiene información confidencial y está destinado únicamente pa
             </DialogContent>
           </Dialog>
         )}
-      </DialogContent>
 
       {viewingClient && (
         <Dialog open={!!viewingClient} onOpenChange={(open) => !open && setViewingClient(null)}>
