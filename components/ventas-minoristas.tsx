@@ -676,6 +676,7 @@ export function VentasMinoristas({ inventory }: VentasMinoristasProps) {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

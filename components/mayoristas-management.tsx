@@ -2124,6 +2124,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
