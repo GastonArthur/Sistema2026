@@ -72,6 +72,7 @@ import {
   Receipt,
   ShoppingCart,
   Search,
+  Check,
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
@@ -2590,6 +2591,12 @@ ${csvRows
             lastSync={lastSync}
           />
         <div className="relative flex min-h-svh flex-1 flex-col bg-background peer-data-[variant=inset]:min-h-[calc(100svh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow">
+          {/* Mobile Header */}
+          <div className="md:hidden flex items-center gap-2 p-4 border-b bg-white shadow-sm">
+             <SidebarTrigger className="h-8 w-8" />
+             <span className="font-bold text-lg text-slate-800">Sistema Maycam</span>
+          </div>
+
           {/* Zócalo de Anuncios - Solo visible si hay anuncios */}
           {announcement && (
         <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg">
@@ -3315,7 +3322,7 @@ ${csvRows
                      </div>
                   </div>
                 )}
-                <div className="overflow-auto max-h-[65vh] relative w-full max-w-[calc(100vw-2rem)] md:max-w-full">
+                <div className="hidden md:block overflow-auto max-h-[65vh] relative w-full max-w-[calc(100vw-2rem)] md:max-w-full">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-gradient-to-r from-blue-600 to-indigo-700 border-b border-blue-800 sticky top-0 z-20 shadow-md">
@@ -3530,6 +3537,58 @@ ${csvRows
                     </TableBody>
                   </Table>
                 </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-4">
+                  {getFilteredInventory().length > 0 ? (
+                    getFilteredInventory().map((item) => (
+                      <Card key={item.id} className="shadow-sm border-l-4 border-l-blue-500">
+                        <CardHeader className="p-3 pb-1">
+                          <div className="flex justify-between items-start">
+                             <div className="flex-1">
+                                <CardTitle className="text-sm font-bold text-blue-800 line-clamp-2">{item.description}</CardTitle>
+                                <div className="flex items-center gap-2 mt-1">
+                                   <Badge variant="outline" className="text-[10px] h-5">{item.sku}</Badge>
+                                   {item.brands?.name && <Badge variant="secondary" className="text-[10px] h-5">{item.brands.name}</Badge>}
+                                </div>
+                             </div>
+                             <div className="flex flex-col items-end gap-1">
+                                <Badge className={item.quantity > 0 ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200" : "bg-red-100 text-red-800 hover:bg-red-200"}>
+                                   {item.quantity} un.
+                                </Badge>
+                             </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="p-3 pt-2 text-xs">
+                          <div className="grid grid-cols-2 gap-2 mb-3 bg-slate-50 p-2 rounded-md">
+                             <div>
+                                <span className="text-slate-500 block">Costo s/IVA</span>
+                                <span className="font-mono font-medium">${item.cost_without_tax.toFixed(2)}</span>
+                             </div>
+                             <div className="text-right">
+                                <span className="text-slate-500 block">PVP c/IVA</span>
+                                <span className="font-mono font-bold text-base text-blue-700">${item.pvp_with_tax.toFixed(2)}</span>
+                             </div>
+                          </div>
+                          <div className="flex items-center justify-between gap-2 border-t pt-2">
+                             <span className="text-slate-400 text-[10px]">{item.date_entered}</span>
+                             <div className="flex gap-2">
+                                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleEdit(item)}>Editar</Button>
+                                <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => setDeleteConfirm({ show: true, type: "item", id: item.id, name: item.description })}>
+                                   <Trash2 className="w-3 h-3" />
+                                </Button>
+                             </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 bg-slate-50 rounded-lg">
+                      <Package className="w-12 h-12 text-slate-300 mx-auto mb-2" />
+                      <p className="text-slate-500 font-medium">No se encontraron productos</p>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -3657,6 +3716,7 @@ ${csvRows
                     </Button>
                   </div>
                 )}
+                <div className="hidden md:block">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-slate-50">
@@ -3735,6 +3795,45 @@ ${csvRows
                     ))}
                   </TableBody>
                 </Table>
+                </div>
+                
+                {/* Mobile Suppliers Card View */}
+                <div className="md:hidden space-y-3">
+                  {suppliers.map((supplier) => (
+                    <Card key={supplier.id} className="shadow-sm">
+                      <CardContent className="p-4 flex items-center justify-between">
+                         <div className="flex-1">
+                             {editingSupplier?.id === supplier.id ? (
+                                 <Input
+                                     value={editingSupplier.name}
+                                     onChange={(e) => setEditingSupplier({ ...editingSupplier, name: e.target.value })}
+                                     className="mb-2 h-8 text-sm"
+                                 />
+                             ) : (
+                                 <span className="font-medium text-slate-700">{supplier.name}</span>
+                             )}
+                         </div>
+                         <div className="flex gap-2 ml-4">
+                             {editingSupplier?.id === supplier.id ? (
+                                 <>
+                                    <Button size="sm" onClick={() => updateSupplier(editingSupplier)} className="h-8 w-8 p-0 bg-green-600"><Check className="h-4 w-4" /></Button>
+                                    <Button size="sm" variant="ghost" onClick={() => setEditingSupplier(null)} className="h-8 w-8 p-0"><X className="h-4 w-4" /></Button>
+                                 </>
+                             ) : (
+                                 <>
+                                    {hasPermission("EDIT_SUPPLIER") && (
+                                        <Button size="sm" variant="outline" onClick={() => setEditingSupplier(supplier)} className="h-8 w-8 p-0"><Edit className="h-4 w-4" /></Button>
+                                    )}
+                                    {hasPermission("DELETE_SUPPLIER") && (
+                                        <Button size="sm" variant="destructive" onClick={() => setDeleteConfirm({ show: true, type: "supplier", id: supplier.id, name: supplier.name })} className="h-8 w-8 p-0"><Trash2 className="h-4 w-4" /></Button>
+                                    )}
+                                 </>
+                             )}
+                         </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -3762,6 +3861,7 @@ ${csvRows
                     </Button>
                   </div>
                 )}
+                <div className="hidden md:block">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-slate-50">
@@ -3840,6 +3940,45 @@ ${csvRows
                     ))}
                   </TableBody>
                 </Table>
+                </div>
+                
+                {/* Mobile Brands Card View */}
+                <div className="md:hidden space-y-3">
+                  {brands.map((brand) => (
+                    <Card key={brand.id} className="shadow-sm">
+                      <CardContent className="p-4 flex items-center justify-between">
+                         <div className="flex-1">
+                             {editingBrand?.id === brand.id ? (
+                                 <Input
+                                     value={editingBrand.name}
+                                     onChange={(e) => setEditingBrand({ ...editingBrand, name: e.target.value })}
+                                     className="mb-2 h-8 text-sm"
+                                 />
+                             ) : (
+                                 <span className="font-medium text-slate-700">{brand.name}</span>
+                             )}
+                         </div>
+                         <div className="flex gap-2 ml-4">
+                             {editingBrand?.id === brand.id ? (
+                                 <>
+                                    <Button size="sm" onClick={() => updateBrand(editingBrand)} className="h-8 w-8 p-0 bg-green-600"><Check className="h-4 w-4" /></Button>
+                                    <Button size="sm" variant="ghost" onClick={() => setEditingBrand(null)} className="h-8 w-8 p-0"><X className="h-4 w-4" /></Button>
+                                 </>
+                             ) : (
+                                 <>
+                                    {hasPermission("EDIT_BRAND") && (
+                                        <Button size="sm" variant="outline" onClick={() => setEditingBrand(brand)} className="h-8 w-8 p-0"><Edit className="h-4 w-4" /></Button>
+                                    )}
+                                    {hasPermission("DELETE_BRAND") && (
+                                        <Button size="sm" variant="destructive" onClick={() => setDeleteConfirm({ show: true, type: "brand", id: brand.id, name: brand.name })} className="h-8 w-8 p-0"><Trash2 className="h-4 w-4" /></Button>
+                                    )}
+                                 </>
+                             )}
+                         </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -4255,7 +4394,7 @@ ${csvRows
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg shadow-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
               <h2 className="text-lg font-semibold mb-4 text-blue-600">Historial del SKU: {skuHistoryModal.sku}</h2>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto hidden md:block">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-gradient-to-r from-blue-500 to-blue-600">
@@ -4281,6 +4420,32 @@ ${csvRows
                   </TableBody>
                 </Table>
               </div>
+              
+              <div className="md:hidden space-y-2">
+                 {skuHistoryModal.history.map((item, index) => (
+                    <div key={index} className="border rounded-md p-3 bg-slate-50">
+                       <div className="flex justify-between text-xs text-slate-500 mb-1">
+                          <span>{item.date_entered}</span>
+                          <span>Fac: {item.invoice_number || "-"}</span>
+                       </div>
+                       <div className="flex justify-between items-center mb-2">
+                          <span className="font-medium text-sm text-slate-700">{item.suppliers?.name || "Sin proveedor"}</span>
+                          <Badge variant="outline">{item.quantity} un.</Badge>
+                       </div>
+                       <div className="grid grid-cols-2 gap-2 text-xs border-t pt-2 border-slate-200">
+                          <div>
+                             <span className="block text-slate-500">Costo</span>
+                             <span className="font-mono">{formatCurrency(item.cost_without_tax)}</span>
+                          </div>
+                          <div className="text-right">
+                             <span className="block text-slate-500">PVP</span>
+                             <span className="font-mono">{formatCurrency(item.pvp_without_tax)}</span>
+                          </div>
+                       </div>
+                    </div>
+                 ))}
+              </div>
+
               <div className="flex justify-end mt-6">
                 <Button onClick={() => setSKUHistoryModal({ show: false, sku: "", history: [] })}>Cerrar</Button>
               </div>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -496,7 +496,7 @@ export function ClientesManagement() {
           </div>
 
           {/* Table */}
-          <div className="flex-1 overflow-auto border rounded-md">
+          <div className="flex-1 overflow-auto border rounded-md hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -588,6 +588,40 @@ export function ClientesManagement() {
                 )}
               </TableBody>
             </Table>
+          </div>
+          
+          <div className="md:hidden space-y-4">
+             {filteredClients.map((client) => (
+                <Card key={client.id} className="shadow-sm">
+                   <CardHeader className="p-4 pb-2">
+                      <div className="flex justify-between items-start">
+                         <div>
+                            <CardTitle className="text-base font-bold text-purple-700" onClick={() => setViewingClient(client)}>{client.name}</CardTitle>
+                            <CardDescription className="text-xs">{client.identifier}</CardDescription>
+                         </div>
+                         <Badge variant={client.type === "mayorista" ? "default" : "secondary"}>
+                            {client.type === "mayorista" ? "M" : "m"}
+                         </Badge>
+                      </div>
+                   </CardHeader>
+                   <CardContent className="p-4 pt-2 text-sm space-y-2">
+                      {client.email && <div className="flex items-center gap-2 text-slate-600"><Mail className="w-3 h-3" /> <span className="truncate">{client.email}</span></div>}
+                      {client.phone && <div className="flex items-center gap-2 text-slate-600"><Phone className="w-3 h-3" /> <span>{client.phone}</span></div>}
+                      <div className="text-xs text-slate-500 mt-2">
+                         {client.city}, {client.province}
+                      </div>
+                      <div className="flex justify-end gap-2 pt-2 border-t">
+                         <Button variant="outline" size="sm" className="h-7" onClick={() => openEdit(client)}><Edit className="w-3 h-3" /></Button>
+                         <Button variant="destructive" size="sm" className="h-7" onClick={() => handleDelete(client)}><Trash2 className="w-3 h-3" /></Button>
+                      </div>
+                   </CardContent>
+                </Card>
+             ))}
+             {filteredClients.length === 0 && (
+                <div className="text-center py-8 text-gray-500 bg-white rounded-lg border">
+                  No se encontraron clientes.
+                </div>
+             )}
           </div>
         </div>
 
