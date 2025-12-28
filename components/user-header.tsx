@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/hooks/use-toast"
-
+import { ActivityLogs } from "@/components/activity-logs"
+import { UserManagement } from "@/components/user-management"
 
 interface UserHeaderProps {
   onLogout: () => void
@@ -20,6 +21,8 @@ interface UserHeaderProps {
 export function UserHeader({ onLogout, setActiveTab }: UserHeaderProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isLogsOpen, setIsLogsOpen] = useState(false)
+  const [isUsersOpen, setIsUsersOpen] = useState(false)
   const [profileData, setProfileData] = useState({
     name: "",
     email: "",
@@ -62,12 +65,12 @@ export function UserHeader({ onLogout, setActiveTab }: UserHeaderProps) {
 
   const handleShowLogs = () => {
     setIsOpen(false)
-    setActiveTab("logs")
+    setIsLogsOpen(true)
   }
 
   const handleShowUsers = () => {
     setIsOpen(false)
-    setActiveTab("users")
+    setIsUsersOpen(true)
   }
 
 
@@ -275,6 +278,18 @@ export function UserHeader({ onLogout, setActiveTab }: UserHeaderProps) {
           <DialogFooter>
             <Button type="submit" onClick={handleSaveProfile}>Guardar cambios</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isLogsOpen} onOpenChange={setIsLogsOpen}>
+        <DialogContent className="max-w-[90vw] h-[90vh] overflow-y-auto">
+          <ActivityLogs />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isUsersOpen} onOpenChange={setIsUsersOpen}>
+        <DialogContent className="max-w-[90vw] h-[90vh] overflow-y-auto">
+          <UserManagement />
         </DialogContent>
       </Dialog>
     </div>

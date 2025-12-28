@@ -340,10 +340,8 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
   }
 
   useEffect(() => {
-    if (isOpen) {
-      loadWholesaleData()
-    }
-  }, [isOpen])
+    loadWholesaleData()
+  }, [])
 
   const loadWholesaleData = async () => {
     if (!isSupabaseConfigured) {
@@ -2062,7 +2060,8 @@ Este reporte contiene información confidencial y está destinado únicamente pa
 
             <Card>
               <CardContent className="p-0">
-                <Table>
+                <div className="overflow-x-auto">
+                  <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Nombre</TableHead>
@@ -2125,6 +2124,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -2142,7 +2142,8 @@ Este reporte contiene información confidencial y está destinado únicamente pa
 
             <Card>
               <CardContent className="p-0">
-                <Table>
+                <div className="overflow-x-auto">
+                  <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>ID</TableHead>
@@ -2260,7 +2261,8 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                                     <Package className="w-4 h-4" />
                                     Detalle del Pedido
                                   </h4>
-                                  <Table>
+                                  <div className="overflow-x-auto">
+                                    <Table>
                                     <TableHeader>
                                       <TableRow className="hover:bg-transparent">
                                         <TableHead className="h-8">SKU</TableHead>
@@ -2289,6 +2291,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                                       ))}
                                     </TableBody>
                                   </Table>
+                                  </div>
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -2305,6 +2308,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                     )}
                   </TableBody>
                 </Table>
+                </div>
               </CardContent>
             </Card>
 
@@ -2761,6 +2765,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                     })}
                   </TableBody>
                 </Table>
+                </div>
               </CardContent>
             </Card>
 

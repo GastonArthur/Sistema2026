@@ -537,7 +537,8 @@ export function VentasMinoristas({ inventory }: VentasMinoristasProps) {
 
               <Card>
                 <CardContent className="p-0">
-                  <Table>
+                  <div className="overflow-x-auto">
+                    <Table>
                     <TableHeader>
                       <TableRow className="bg-gray-50/50">
                         <TableHead className="w-[50px]">ID</TableHead>
@@ -634,7 +635,8 @@ export function VentasMinoristas({ inventory }: VentasMinoristasProps) {
                                     <ShoppingBag className="w-4 h-4" />
                                     Detalle de Productos
                                   </h4>
-                                  <Table>
+                                  <div className="overflow-x-auto">
+                                    <Table>
                                     <TableHeader>
                                       <TableRow className="hover:bg-transparent">
                                         <TableHead className="h-8">SKU</TableHead>
@@ -665,6 +667,7 @@ export function VentasMinoristas({ inventory }: VentasMinoristasProps) {
                                       ))}
                                     </TableBody>
                                   </Table>
+                                  </div>
                                 </div>
                               </TableCell>
                             </TableRow>
@@ -673,6 +676,7 @@ export function VentasMinoristas({ inventory }: VentasMinoristasProps) {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -743,6 +747,7 @@ export function VentasMinoristas({ inventory }: VentasMinoristasProps) {
                       ))}
                     </TableBody>
                   </Table>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
