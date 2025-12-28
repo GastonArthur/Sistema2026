@@ -320,7 +320,7 @@ export function GastosManagement({ onUpdateExpenses }: GastosManagementProps) {
       paid_date: formData.paid_date || null,
       payment_method: formData.payment_method,
       observations: formData.observations || null,
-      image_url: formData.image_url || null,
+      // image_url: formData.image_url || null, // Temporarily disabled due to schema cache error
       is_reconciled: formData.is_reconciled,
       updated_by: getCurrentUser()?.id
     }

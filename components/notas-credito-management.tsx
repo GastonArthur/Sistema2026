@@ -44,6 +44,7 @@ interface CreditNote {
   date: string
   status: CreditNoteStatus
   description?: string
+  imageUrl?: string
 }
 
 // Datos de ejemplo
@@ -56,7 +57,8 @@ const MOCK_DATA: CreditNote[] = [
     total: 5500.00,
     date: "2024-01-14",
     status: "disponible",
-    description: "Devolución de mercadería dañada"
+    description: "Devolución de mercadería dañada",
+    imageUrl: "nc-001.jpg"
   },
   {
     id: 2,
@@ -66,7 +68,8 @@ const MOCK_DATA: CreditNote[] = [
     total: 1200.50,
     date: "2024-01-15",
     status: "utilizada",
-    description: "Descuento por pronto pago"
+    description: "Descuento por pronto pago",
+    imageUrl: "nc-002.pdf"
   }
 ]
 
@@ -76,6 +79,8 @@ export function NotasCreditoManagement() {
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [supplierFilter, setSupplierFilter] = useState<string>("all")
   const [isNewNoteOpen, setIsNewNoteOpen] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [imageFile, setImageFile] = useState<File | null>(null)
   
   // Estado para nueva nota
   const [newNote, setNewNote] = useState<Partial<CreditNote>>({
@@ -84,7 +89,8 @@ export function NotasCreditoManagement() {
     total: 0,
     items_count: 1,
     status: "disponible",
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0],
+    imageUrl: ""
   })
 
   // Estadísticas
@@ -130,32 +136,92 @@ export function NotasCreditoManagement() {
     })
   }
 
-  const handleCreateNote = () => {
-    const note: CreditNote = {
-      id: Math.max(...notes.map(n => n.id), 0) + 1,
-      number: newNote.number || `NC-${Date.now()}`,
-      supplier: newNote.supplier || "Sin proveedor",
-      items_count: newNote.items_count || 1,
-      total: newNote.total || 0,
-      date: newNote.date || new Date().toISOString().split('T')[0],
-      status: "disponible",
-      description: newNote.description
+  const handleSaveNote = () => {
+    // Validar imagen obligatoria
+    if (!imageFile && !newNote.imageUrl) {
+      toast({
+        title: "Error",
+        description: "Debe cargar una imagen de la nota de crédito.",
+        variant: "destructive",
+      })
+      return
     }
 
-    setNotes([...notes, note])
+    // Simular URL de imagen si hay archivo nuevo
+    const finalImageUrl = imageFile ? URL.createObjectURL(imageFile) : newNote.imageUrl
+
+    if (editingId) {
+      // Modificar existente
+      setNotes(notes.map(note => {
+        if (note.id === editingId) {
+          return {
+            ...note,
+            number: newNote.number || note.number,
+            supplier: newNote.supplier || note.supplier,
+            items_count: newNote.items_count || note.items_count,
+            total: newNote.total || note.total,
+            date: newNote.date || note.date,
+            description: newNote.description,
+            imageUrl: finalImageUrl
+          }
+        }
+        return note
+      }))
+      toast({
+        title: "Nota actualizada",
+        description: "La nota de crédito ha sido modificada correctamente.",
+      })
+    } else {
+      // Crear nueva
+      const note: CreditNote = {
+        id: Math.max(...notes.map(n => n.id), 0) + 1,
+        number: newNote.number || `NC-${Date.now()}`,
+        supplier: newNote.supplier || "Sin proveedor",
+        items_count: newNote.items_count || 1,
+        total: newNote.total || 0,
+        date: newNote.date || new Date().toISOString().split('T')[0],
+        status: "disponible",
+        description: newNote.description,
+        imageUrl: finalImageUrl
+      }
+      setNotes([...notes, note])
+      toast({
+        title: "Nota creada",
+        description: "La nueva nota de crédito ha sido registrada.",
+      })
+    }
+
+    handleCloseDialog()
+  }
+
+  const handleCloseDialog = () => {
     setIsNewNoteOpen(false)
+    setEditingId(null)
+    setImageFile(null)
     setNewNote({
       number: "",
       supplier: "",
       total: 0,
       items_count: 1,
       status: "disponible",
-      date: new Date().toISOString().split('T')[0]
+      date: new Date().toISOString().split('T')[0],
+      imageUrl: ""
     })
-    toast({
-      title: "Nota creada",
-      description: "La nueva nota de crédito ha sido registrada.",
+  }
+
+  const handleEditNote = (note: CreditNote) => {
+    setEditingId(note.id)
+    setNewNote({
+      number: note.number,
+      supplier: note.supplier,
+      total: note.total,
+      items_count: note.items_count,
+      status: note.status,
+      date: note.date,
+      description: note.description,
+      imageUrl: note.imageUrl
     })
+    setIsNewNoteOpen(true)
   }
 
   return (
@@ -261,18 +327,18 @@ export function NotasCreditoManagement() {
         </div>
 
         <div className="flex gap-2">
-          <Dialog open={isNewNoteOpen} onOpenChange={setIsNewNoteOpen}>
+          <Dialog open={isNewNoteOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
             <DialogTrigger asChild>
-              <Button className="bg-pink-600 hover:bg-pink-700 text-white">
+              <Button className="bg-pink-600 hover:bg-pink-700 text-white" onClick={() => setIsNewNoteOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Nueva Nota
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Nueva Nota de Crédito</DialogTitle>
+                <DialogTitle>{editingId ? "Editar Nota de Crédito" : "Nueva Nota de Crédito"}</DialogTitle>
                 <DialogDescription>
-                  Ingrese los detalles de la nueva nota de crédito.
+                  {editingId ? "Modifique los detalles de la nota de crédito." : "Ingrese los detalles de la nueva nota de crédito."}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
@@ -310,10 +376,31 @@ export function NotasCreditoManagement() {
                     className="col-span-3"
                   />
                 </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="image" className="text-right">
+                    Imagen *
+                  </Label>
+                  <div className="col-span-3">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="image"
+                        type="file"
+                        accept="image/*,.pdf"
+                        onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                        className="cursor-pointer"
+                      />
+                    </div>
+                    {newNote.imageUrl && !imageFile && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Imagen actual: {newNote.imageUrl.split('/').pop()}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsNewNoteOpen(false)}>Cancelar</Button>
-                <Button onClick={handleCreateNote} className="bg-pink-600 hover:bg-pink-700">Guardar</Button>
+                <Button variant="outline" onClick={handleCloseDialog}>Cancelar</Button>
+                <Button onClick={handleSaveNote} className="bg-pink-600 hover:bg-pink-700">Guardar</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -393,9 +480,16 @@ export function NotasCreditoManagement() {
                             Usar
                           </Button>
                         )}
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                        {note.status !== "utilizada" && (
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => handleEditNote(note)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button 
                           size="sm" 
                           variant="ghost" 

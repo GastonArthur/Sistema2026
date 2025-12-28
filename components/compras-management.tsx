@@ -124,7 +124,8 @@ export function ComprasManagement() {
           }
         ]
       } else {
-        const { data: inventoryData, error } = await supabase
+        // Fetch inventory without join to avoid relationship errors
+        const { data: inventoryData, error: inventoryError } = await supabase
           .from("inventory")
           .select(`
             id,
@@ -134,13 +135,26 @@ export function ComprasManagement() {
             quantity,
             date_entered,
             supplier_id,
-            invoice_number,
-            suppliers (name)
+            invoice_number
           `)
           .order("date_entered", { ascending: false })
 
-        if (error) throw error
-        data = inventoryData as any
+        if (inventoryError) throw inventoryError
+
+        // Fetch suppliers separately
+        const { data: suppliersData, error: suppliersError } = await supabase
+          .from("suppliers")
+          .select("id, name")
+
+        if (suppliersError) throw suppliersError
+
+        // Map suppliers to inventory items
+        const suppliersMap = new Map(suppliersData?.map(s => [s.id, s.name]))
+        
+        data = inventoryData.map((item: any) => ({
+          ...item,
+          suppliers: { name: suppliersMap.get(item.supplier_id) || 'Desconocido' }
+        }))
       }
 
       // Process data into Purchase Orders
@@ -154,11 +168,12 @@ export function ComprasManagement() {
       // Calculate monthly totals for calendar
       calculateMonthlyTotals(grouped)
 
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Error detailed:", error)
       logError("Error loading purchases:", error)
       toast({
         title: "Error",
-        description: "No se pudieron cargar las compras",
+        description: `No se pudieron cargar las compras: ${error.message || "Error desconocido"}`,
         variant: "destructive",
       })
     } finally {

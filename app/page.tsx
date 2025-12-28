@@ -2672,98 +2672,102 @@ ${csvRows
           </div>
         </div>
 
-        {/* Filtros de Dashboard */}
-        <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-6">
-          <div className="flex items-center gap-2">
-             <Filter className="w-5 h-5 text-slate-500" />
-             <span className="font-medium text-slate-700">Filtro de Período:</span>
-          </div>
-          <Select value={dashboardFilter} onValueChange={setDashboardFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Seleccionar período" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="monthly">Mensual</SelectItem>
-              <SelectItem value="weekly">Semanal</SelectItem>
-              <SelectItem value="daily">Diario</SelectItem>
-              <SelectItem value="historical">Histórico</SelectItem>
-              <SelectItem value="custom">Personalizado</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          {dashboardFilter === "custom" && (
-            <div className="flex items-center gap-2">
-              <Input 
-                type="date" 
-                value={customDateRange.from} 
-                onChange={(e) => setCustomDateRange(prev => ({ ...prev, from: e.target.value }))}
-                className="w-auto"
-              />
-              <span className="text-slate-400">-</span>
-              <Input 
-                type="date" 
-                value={customDateRange.to} 
-                onChange={(e) => setCustomDateRange(prev => ({ ...prev, to: e.target.value }))}
-                className="w-auto"
-              />
+        {activeTab === "inventory" && (
+          <>
+            {/* Filtros de Dashboard */}
+            <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-6">
+              <div className="flex items-center gap-2">
+                <Filter className="w-5 h-5 text-slate-500" />
+                <span className="font-medium text-slate-700">Filtro de Período:</span>
+              </div>
+              <Select value={dashboardFilter} onValueChange={setDashboardFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Seleccionar período" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">Mensual</SelectItem>
+                  <SelectItem value="weekly">Semanal</SelectItem>
+                  <SelectItem value="daily">Diario</SelectItem>
+                  <SelectItem value="historical">Histórico</SelectItem>
+                  <SelectItem value="custom">Personalizado</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {dashboardFilter === "custom" && (
+                <div className="flex items-center gap-2">
+                  <Input 
+                    type="date" 
+                    value={customDateRange.from} 
+                    onChange={(e) => setCustomDateRange(prev => ({ ...prev, from: e.target.value }))}
+                    className="w-auto"
+                  />
+                  <span className="text-slate-400">-</span>
+                  <Input 
+                    type="date" 
+                    value={customDateRange.to} 
+                    onChange={(e) => setCustomDateRange(prev => ({ ...prev, to: e.target.value }))}
+                    className="w-auto"
+                  />
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* Stats Cards - Reorganizado y optimizado para diferentes pantallas */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {/* 1. Compras Filtradas */}
-          <Card 
-            className="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transform transition-all hover:scale-105 cursor-pointer"
-            onClick={() => setActiveTab("purchases")}
-          >
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-100 text-xs font-medium">
-                    Compras {dashboardFilter === "monthly" ? "Mes" : 
-                             dashboardFilter === "weekly" ? "Semana" : 
-                             dashboardFilter === "daily" ? "Hoy" : 
-                             dashboardFilter === "historical" ? "Histórico" : "Personalizado"}
-                  </p>
-                  <p className="text-lg font-bold">{formatCurrency(stats.currentMonthValue)}</p>
-                </div>
-                <TrendingUp className="w-5 h-5 text-blue-200" />
-              </div>
-            </CardContent>
-          </Card>
+            {/* Stats Cards - Reorganizado y optimizado para diferentes pantallas */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {/* 1. Compras Filtradas */}
+              <Card 
+                className="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transform transition-all hover:scale-105 cursor-pointer"
+                onClick={() => setActiveTab("purchases")}
+              >
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-blue-100 text-xs font-medium">
+                        Compras {dashboardFilter === "monthly" ? "Mes" : 
+                                dashboardFilter === "weekly" ? "Semana" : 
+                                dashboardFilter === "daily" ? "Hoy" : 
+                                dashboardFilter === "historical" ? "Histórico" : "Personalizado"}
+                      </p>
+                      <p className="text-lg font-bold">{formatCurrency(stats.currentMonthValue)}</p>
+                    </div>
+                    <TrendingUp className="w-5 h-5 text-blue-200" />
+                  </div>
+                </CardContent>
+              </Card>
 
-          {/* 2. Gastos Filtrados */}
-          <Card className="bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-lg transform transition-all hover:scale-105">
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-pink-100 text-xs font-medium">
-                    Gastos {dashboardFilter === "monthly" ? "Mes" : 
-                             dashboardFilter === "weekly" ? "Semana" : 
-                             dashboardFilter === "daily" ? "Hoy" : 
-                             dashboardFilter === "historical" ? "Histórico" : "Personalizado"}
-                  </p>
-                  <p className="text-lg font-bold">{formatCurrency(stats.currentMonthExpenses)}</p>
-                </div>
-                <Receipt className="w-5 h-5 text-pink-200" />
-              </div>
-            </CardContent>
-          </Card>
+              {/* 2. Gastos Filtrados */}
+              <Card className="bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-lg transform transition-all hover:scale-105">
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-pink-100 text-xs font-medium">
+                        Gastos {dashboardFilter === "monthly" ? "Mes" : 
+                                dashboardFilter === "weekly" ? "Semana" : 
+                                dashboardFilter === "daily" ? "Hoy" : 
+                                dashboardFilter === "historical" ? "Histórico" : "Personalizado"}
+                      </p>
+                      <p className="text-lg font-bold">{formatCurrency(stats.currentMonthExpenses)}</p>
+                    </div>
+                    <Receipt className="w-5 h-5 text-pink-200" />
+                  </div>
+                </CardContent>
+              </Card>
 
-          {/* 3. SKUs Únicos */}
-          <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg transform transition-all hover:scale-105">
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-red-100 text-xs font-medium">SKUs Únicos</p>
-                  <p className="text-lg font-bold">{stats.uniqueSKUs}</p>
-                </div>
-                <Package className="w-5 h-5 text-red-200" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              {/* 3. SKUs Únicos */}
+              <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg transform transition-all hover:scale-105">
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-red-100 text-xs font-medium">SKUs Únicos</p>
+                      <p className="text-lg font-bold">{stats.uniqueSKUs}</p>
+                    </div>
+                    <Package className="w-5 h-5 text-red-200" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </>
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
 
