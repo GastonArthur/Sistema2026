@@ -2923,5 +2923,6 @@ Este reporte contiene información confidencial y está destinado únicamente pa
         </Dialog>
       )}
     </div>
+    </div>
   )
 }
