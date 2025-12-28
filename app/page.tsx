@@ -73,6 +73,10 @@ import {
   ShoppingCart,
   Search,
   Check,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
@@ -179,6 +183,13 @@ function InventoryManagementContent() {
     sortBy: "date_desc",
     searchSku: "",
   })
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(50)
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filters, itemsPerPage])
 
   // New supplier/brand forms
   const [newSupplier, setNewSupplier] = useState("")
@@ -1655,10 +1666,18 @@ function InventoryManagementContent() {
     return filtered
   }
 
+  const filteredInventory = getFilteredInventory()
+  
+  // Lógica de paginación
+  const totalPages = Math.ceil(filteredInventory.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentItems = filteredInventory.slice(startIndex, endIndex)
+
   // Funciones de Selección Masiva
   const toggleSelectAll = (checked: boolean) => {
     if (checked) {
-      const allIds = getFilteredInventory().map(item => item.id)
+      const allIds = currentItems.map(item => item.id)
       setSelectedItems(allIds)
     } else {
       setSelectedItems([])
@@ -3120,7 +3139,20 @@ ${csvRows
                   {/* Period */}
                   <div className="lg:col-span-2">
                     <Select
-                      value={filters.period}
+                          value={itemsPerPage.toString()}
+                          onValueChange={(value) => setItemsPerPage(Number(value))}
+                        >
+                          <SelectTrigger className="h-8 text-sm w-[80px]">
+                            <SelectValue placeholder="50" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="50">50</SelectItem>
+                            <SelectItem value="100">100</SelectItem>
+                            <SelectItem value="200">200</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={filters.period}
                       onValueChange={(value) => setFilters((prev) => ({ ...prev, period: value }))}
                     >
                       <SelectTrigger className="h-8 text-sm">
@@ -3277,7 +3309,7 @@ ${csvRows
                         Lista de Inventario
                       </span>
                       <Badge variant="outline" className="ml-3 bg-blue-50 text-blue-700 border-blue-200">
-                        {getFilteredInventory().length} productos
+                        {filteredInventory.length} productos
                       </Badge>
                     </div>
                   </div>
@@ -3328,7 +3360,7 @@ ${csvRows
                       <TableRow className="bg-gradient-to-r from-blue-600 to-indigo-700 border-b border-blue-800 sticky top-0 z-20 shadow-md">
                         <TableHead className="w-[40px] px-2 h-8 border-r border-blue-400/30 text-center align-middle">
                            <Checkbox 
-                              checked={selectedItems.length > 0 && selectedItems.length === getFilteredInventory().length}
+                              checked={selectedItems.length > 0 && selectedItems.length === currentItems.length}
                               onCheckedChange={toggleSelectAll}
                               className="border-white data-[state=checked]:bg-white data-[state=checked]:text-blue-600 translate-y-[2px]"
                            />
@@ -3386,8 +3418,8 @@ ${csvRows
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {getFilteredInventory().length > 0 ? (
-                        getFilteredInventory().map((item) => (
+                      {currentItems.length > 0 ? (
+                        currentItems.map((item) => (
                           <TableRow key={item.id} className="hover:bg-blue-100/40 transition-colors border-b border-slate-100 group h-8 even:bg-blue-50/10">
                           <TableCell className="w-[40px] px-2 py-1 border-r border-slate-100 text-center align-middle">
                               <Checkbox 
@@ -3588,6 +3620,54 @@ ${csvRows
                       <p className="text-slate-500 font-medium">No se encontraron productos</p>
                     </div>
                   )}
+                </div>
+
+                {/* Controles de Paginación */}
+                <div className="flex items-center justify-between px-4 py-4 border-t border-slate-200 bg-slate-50 rounded-b-lg">
+                  <div className="text-sm text-slate-500">
+                    Mostrando {filteredInventory.length > 0 ? startIndex + 1 : 0} a {Math.min(endIndex, filteredInventory.length)} de {filteredInventory.length} productos
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage === 1}
+                      className="h-8 w-8 p-0"
+                    >
+                      <ChevronsLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="h-8 w-8 p-0"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <div className="text-sm font-medium text-slate-700">
+                      Página {currentPage} de {totalPages || 1}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages || totalPages === 0}
+                      className="h-8 w-8 p-0"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(totalPages)}
+                      disabled={currentPage === totalPages || totalPages === 0}
+                      className="h-8 w-8 p-0"
+                    >
+                      <ChevronsRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
