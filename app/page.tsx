@@ -97,6 +97,7 @@ import { MayoristasManagement } from "@/components/mayoristas-management"
 import { VentasMinoristas } from "@/components/ventas-minoristas"
 import { ClientesManagement } from "@/components/clientes-management"
 import { ComprasManagement } from "@/components/compras-management"
+import { NotasCreditoManagement } from "@/components/notas-credito-management"
 
 type InventoryItem = {
   id: number
