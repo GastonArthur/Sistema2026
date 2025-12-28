@@ -14,7 +14,8 @@ import {
   LogOut,
   UserCircle,
   TrendingUp,
-  ShieldCheck
+  ShieldCheck,
+  FileText
 } from "lucide-react"
 
 import {
