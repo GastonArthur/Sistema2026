@@ -412,19 +412,26 @@ export default function RentabilidadPage() {
       toast({ title: "Sincronizando...", description: "Descargando órdenes y stock de MercadoLibre." })
       
       // 1. Sync Orders
-      await fetch("/api/cron/rt/sync-orders", { method: "POST" })
+      const res1 = await fetch("/api/cron/rt/sync-orders", { method: "POST" })
+      if (!res1.ok) {
+         const err = await res1.json()
+         throw new Error(err.error || "Error al sincronizar órdenes")
+      }
       
       // 2. Sync Stock (Optional but good)
-      await fetch("/api/cron/rt/sync-stock", { method: "POST" })
+      const res2 = await fetch("/api/cron/rt/sync-stock", { method: "POST" })
+      if (!res2.ok) {
+         console.error("Stock sync failed but continuing...")
+      }
 
       toast({ title: "Sincronización completada", description: "Los datos se han actualizado." })
       
       // Refresh local data
       await fetchAccounts()
       await fetchSales()
-    } catch (err) {
+    } catch (err: any) {
       console.error("Sync error:", err)
-      toast({ title: "Error", description: "Hubo un problema al sincronizar.", variant: "destructive" })
+      toast({ title: "Error", description: err.message || "Hubo un problema al sincronizar.", variant: "destructive" })
     } finally {
       setSyncing(false)
     }

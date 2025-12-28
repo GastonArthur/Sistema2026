@@ -2617,7 +2617,7 @@ ${csvRows
         {/* Header con información del usuario */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-2">
-             <SidebarTrigger className="md:hidden" />
+             <SidebarTrigger />
              <div>
                 <p className="text-slate-600 font-medium">Gestión Integral de Inventario</p>
              </div>

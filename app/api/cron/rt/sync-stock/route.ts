@@ -15,6 +15,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Supabase credentials missing" }, { status: 500 })
     }
 
+    // Security Check: Removed by user request (Open API)
+    // const authHeader = req.headers.get('authorization')
+    // const cronSecret = process.env.CRON_SECRET
+    // ... logic removed ...
+
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // 2. Fetch Accounts

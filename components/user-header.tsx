@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { User, LogOut, Activity, ChevronDown, ShoppingCart, Settings } from "lucide-react"
+import { User, LogOut, Activity, ChevronDown, Settings } from "lucide-react"
 import { getCurrentUser, logout, hasPermission, updateUser } from "@/lib/auth"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -70,10 +70,7 @@ export function UserHeader({ onLogout, setActiveTab }: UserHeaderProps) {
     setActiveTab("users")
   }
 
-  const handleShowWholesale = () => {
-    setIsOpen(false)
-    setActiveTab("wholesale")
-  }
+
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -175,11 +172,7 @@ export function UserHeader({ onLogout, setActiveTab }: UserHeaderProps) {
                   <Badge variant="outline" className={`${getRoleColor(user.role)} w-fit text-xs`}>
                     {getRoleLabel(user.role)}
                   </Badge>
-                  {user.can_view_wholesale && (
-                    <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200 w-fit text-xs">
-                      Mayoristas
-                    </Badge>
-                  )}
+
                 </div>
               </div>
             </div>
@@ -196,15 +189,7 @@ export function UserHeader({ onLogout, setActiveTab }: UserHeaderProps) {
                 </button>
               )}
 
-              {hasPermission("VIEW_WHOLESALE") && (
-                <button
-                  onClick={handleShowWholesale}
-                  className="w-full px-3 py-2 text-left hover:bg-slate-50 flex items-center text-slate-700 transition-colors"
-                >
-                  <ShoppingCart className="mr-2 h-4 w-4 text-slate-600" />
-                  <span>Ventas Mayoristas</span>
-                </button>
-              )}
+
 
               {user.role === "admin" && (
                 <button
