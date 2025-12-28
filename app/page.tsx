@@ -2617,7 +2617,6 @@ ${csvRows
         {/* Header con información del usuario */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-2">
-             <SidebarTrigger />
              <div>
                 <p className="text-slate-600 font-medium">Gestión Integral de Inventario</p>
              </div>
@@ -3316,7 +3315,7 @@ ${csvRows
                      </div>
                   </div>
                 )}
-                <div className="overflow-auto max-h-[65vh] relative">
+                <div className="overflow-auto max-h-[65vh] relative w-full max-w-[calc(100vw-2rem)] md:max-w-full">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-gradient-to-r from-blue-600 to-indigo-700 border-b border-blue-800 sticky top-0 z-20 shadow-md">

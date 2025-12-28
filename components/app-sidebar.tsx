@@ -30,6 +30,7 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
   SidebarRail,
+  SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 
@@ -59,14 +60,17 @@ export function AppSidebar({
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border/50 pb-4 mb-2 bg-gradient-to-r from-sidebar-background to-sidebar-accent/30">
         <div className="flex flex-col px-4 py-2 gap-1 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0">
-          <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20 shrink-0">
-              <Package className="size-5" />
+          <div className="flex items-center justify-between w-full group-data-[collapsible=icon]:justify-center">
+            <div className="flex items-center gap-3 group-data-[collapsible=icon]:hidden">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20 shrink-0">
+                <Package className="size-5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-bold text-lg tracking-tight">Sistema Maycam</span>
+                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Dashboard</span>
+              </div>
             </div>
-            <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-              <span className="font-bold text-lg tracking-tight">Sistema Maycam</span>
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Dashboard</span>
-            </div>
+            <SidebarTrigger />
           </div>
           <div className="flex flex-col pl-[3.25rem] gap-1 group-data-[collapsible=icon]:hidden">
             <div className="flex items-center gap-2">
