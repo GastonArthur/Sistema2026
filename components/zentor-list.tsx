@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Download, Package, Filter, X, TrendingUp, TrendingDown } from "lucide-react"
+import { Download, Package, Filter, X, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { logActivity, hasPermission } from "@/lib/auth"
 import { formatCurrency } from "@/lib/utils"
@@ -77,6 +77,15 @@ export function ZentorList({ inventory, suppliers, brands }: ZentorListProps) {
     company: "all",
     priceChanges: "all", // all, cost_changed, pvp_changed, both_changed
   })
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(50)
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filters, itemsPerPage])
+
+
 
   // Procesar inventario para obtener SKUs únicos con información consolidada
   const zentorData = useMemo(() => {
@@ -360,6 +369,13 @@ ${csvRows
 
   const filteredData = getFilteredZentorData()
 
+  // Lógica de paginación
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentItems = filteredData.slice(startIndex, endIndex)
+
+
   return (
     <div className="space-y-6">
       {/* Header con zócalo gris oscuro */}
@@ -407,7 +423,25 @@ ${csvRows
             Limpiar
           </Button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+          <div>
+            <Label htmlFor="itemsPerPage" className="text-xs text-slate-500 mb-1 block">
+              Items por página
+            </Label>
+            <Select
+              value={itemsPerPage.toString()}
+              onValueChange={(value) => setItemsPerPage(Number(value))}
+            >
+              <SelectTrigger className="h-8 text-sm">
+                <SelectValue placeholder="50" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+                <SelectItem value="200">200</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div>
             <Label htmlFor="searchSku" className="text-xs text-slate-500 mb-1 block">
               Buscar SKU/Nombre
@@ -571,7 +605,7 @@ ${csvRows
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredData.map((item) => (
+                {currentItems.map((item) => (
                   <TableRow key={item.sku} className="hover:bg-slate-50/50">
                     <TableCell className="font-medium border border-slate-200">{item.sku}</TableCell>
                     <TableCell className="border border-slate-200 max-w-xs">{item.description}</TableCell>
@@ -648,6 +682,54 @@ ${csvRows
                 )}
               </TableBody>
             </Table>
+          </div>
+          
+          {/* Controles de Paginación */}
+          <div className="flex items-center justify-between px-4 py-4 border-t border-slate-200 bg-slate-50 rounded-b-lg">
+            <div className="text-sm text-slate-500">
+              Mostrando {filteredData.length > 0 ? startIndex + 1 : 0} a {Math.min(endIndex, filteredData.length)} de {filteredData.length} productos
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="text-sm font-medium text-slate-700">
+                Página {currentPage} de {totalPages || 1}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

@@ -35,7 +35,11 @@ import {
   Phone,
   Mail,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { logActivity, hasPermission, getCurrentUser } from "@/lib/auth"
@@ -200,6 +204,14 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
     search: "",
     showNewOnly: false,
   })
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(50)
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [priceFilters, itemsPerPage])
+
 
   // Estadísticas reales
   const [statistics, setStatistics] = useState({
@@ -472,7 +484,7 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
     return wholesalePrices
   }
 
-  const getFilteredWholesalePrices = () => {
+  const getFilteredWholesaleItems = () => {
     let filtered = getWholesalePrices()
 
     if (priceFilters.search) {
@@ -491,20 +503,7 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
       filtered = filtered.filter((item) => item.is_new)
     }
 
-    // Agrupar por marca
-    const groupedByBrand = filtered.reduce(
-      (acc, item) => {
-        const brandName = item.brands?.name || "Sin marca"
-        if (!acc[brandName]) {
-          acc[brandName] = []
-        }
-        acc[brandName].push(item)
-        return acc
-      },
-      {} as Record<string, typeof filtered>,
-    )
-
-    return groupedByBrand
+    return filtered
   }
 
   const updateWholesaleConfig = async (newConfig: typeof wholesaleConfig) => {
@@ -1148,8 +1147,7 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
       return
     }
 
-    const groupedPrices = getFilteredWholesalePrices()
-    const allPrices = Object.values(groupedPrices).flat()
+    const allPrices = getFilteredWholesaleItems()
 
     const headers = [
       "SKU",
@@ -1781,11 +1779,38 @@ Este reporte contiene información confidencial y está destinado únicamente pa
     })
   }
 
-  const groupedPrices = getFilteredWholesalePrices()
-  const totalProducts = Object.values(groupedPrices).flat().length
-  const newProducts = Object.values(groupedPrices)
-    .flat()
-    .filter((item) => item.is_new).length
+  const filteredItems = getFilteredWholesaleItems()
+  const totalProducts = filteredItems.length
+  const newProducts = filteredItems.filter((item) => item.is_new).length
+  
+  // Agrupar por marca para mostrar en las tarjetas de estadísticas, aunque la tabla principal será paginada
+  const groupedByBrandForStats = filteredItems.reduce(
+    (acc, item) => {
+      const brandName = item.brands?.name || "Sin marca"
+      acc[brandName] = true
+      return acc
+    },
+    {} as Record<string, boolean>,
+  )
+
+  // Lógica de paginación
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentItems = filteredItems.slice(startIndex, endIndex)
+
+  // Agrupar los items de la página actual por marca
+  const groupedCurrentItems = currentItems.reduce(
+    (acc, item) => {
+      const brandName = item.brands?.name || "Sin marca"
+      if (!acc[brandName]) {
+        acc[brandName] = []
+      }
+      acc[brandName].push(item)
+      return acc
+    },
+    {} as Record<string, typeof currentItems>,
+  )
 
   const closeClientForm = () => {
     setShowClientForm(false)
@@ -1905,6 +1930,22 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                 <span className="text-sm font-medium hidden sm:inline-block">Filtros</span>
               </div>
 
+              <div className="flex items-center gap-2">
+                 <Select
+                  value={itemsPerPage.toString()}
+                  onValueChange={(value) => setItemsPerPage(Number(value))}
+                >
+                  <SelectTrigger className="h-8 text-sm w-[80px]">
+                    <SelectValue placeholder="50" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                    <SelectItem value="200">200</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="flex items-center gap-2 flex-1 min-w-[200px] max-w-sm">
                 <Input
                   placeholder="Buscar por SKU o descripción..."
@@ -1980,7 +2021,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                 <CardContent className="p-4">
                   <div className="text-center">
                     <p className="text-green-600 text-sm">Marcas</p>
-                    <p className="text-2xl font-bold text-green-800">{Object.keys(groupedPrices).length}</p>
+                    <p className="text-2xl font-bold text-green-800">{Object.keys(groupedByBrandForStats).length}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -2004,11 +2045,16 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                 </Button>
               </CardHeader>
               <CardContent className="p-0">
+                <div className="p-4 bg-slate-50 border-b flex justify-between items-center text-sm text-slate-500">
+                   <div>
+                     Mostrando {filteredItems.length > 0 ? startIndex + 1 : 0} a {Math.min(endIndex, filteredItems.length)} de {filteredItems.length} productos
+                   </div>
+                </div>
                 <ScrollArea className="h-[400px]">
-                  {Object.entries(groupedPrices).map(([brandName, products]) => (
+                  {Object.entries(groupedCurrentItems).map(([brandName, products]) => (
                     <div key={brandName} className="mb-6">
-                      <div className="bg-purple-100 px-4 py-2 font-semibold text-purple-800 sticky top-0">
-                        {brandName} ({products.length} productos)
+                      <div className="bg-purple-100 px-4 py-2 font-semibold text-purple-800 sticky top-0 z-10">
+                        {brandName} ({products.length} productos en esta página)
                       </div>
                       <Table>
                         <TableHeader>
@@ -2042,7 +2088,58 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                       </Table>
                     </div>
                   ))}
+                  {filteredItems.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      No se encontraron productos
+                    </div>
+                  )}
                 </ScrollArea>
+                
+                 {/* Controles de Paginación */}
+                 <div className="flex items-center justify-between px-4 py-4 border-t border-slate-200 bg-slate-50 rounded-b-lg">
+                   <div className="text-sm text-slate-500">
+                     Página {currentPage} de {totalPages || 1}
+                   </div>
+                   <div className="flex items-center space-x-2">
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={() => setCurrentPage(1)}
+                       disabled={currentPage === 1}
+                       className="h-8 w-8 p-0"
+                     >
+                       <ChevronsLeft className="h-4 w-4" />
+                     </Button>
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                       disabled={currentPage === 1}
+                       className="h-8 w-8 p-0"
+                     >
+                       <ChevronLeft className="h-4 w-4" />
+                     </Button>
+                     
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                       disabled={currentPage === totalPages || totalPages === 0}
+                       className="h-8 w-8 p-0"
+                     >
+                       <ChevronRight className="h-4 w-4" />
+                     </Button>
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={() => setCurrentPage(totalPages)}
+                       disabled={currentPage === totalPages || totalPages === 0}
+                       className="h-8 w-8 p-0"
+                     >
+                       <ChevronsRight className="h-4 w-4" />
+                     </Button>
+                   </div>
+                 </div>
               </CardContent>
             </Card>
           </TabsContent>

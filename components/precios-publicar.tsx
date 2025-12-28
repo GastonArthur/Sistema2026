@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Download, DollarSign, Filter, X, Settings, Trash2 } from "lucide-react"
+import { Download, DollarSign, Filter, X, Settings, Trash2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { logActivity, hasPermission, getCurrentUser } from "@/lib/auth"
 import { logError } from "@/lib/logger"
@@ -83,6 +83,13 @@ export function PreciosPublicar({
     brand: "all",
     company: "all",
   })
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(50)
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filters, itemsPerPage])
 
   useEffect(() => {
     // Cargar promociones guardadas desde localStorage
@@ -327,6 +334,14 @@ ${csvRows
     })
   }
 
+  const filteredInventory = getFilteredInventory()
+  
+  // Lógica de paginación
+  const totalPages = Math.ceil(filteredInventory.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentItems = filteredInventory.slice(startIndex, endIndex)
+
   return (
     <div className="space-y-6">
       {/* Header con zócalo amarillo */}
@@ -393,7 +408,25 @@ ${csvRows
             )}
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+          <div>
+            <Label htmlFor="itemsPerPage" className="text-xs text-slate-500 mb-1 block">
+              Items por página
+            </Label>
+            <Select
+              value={itemsPerPage.toString()}
+              onValueChange={(value) => setItemsPerPage(Number(value))}
+            >
+              <SelectTrigger className="h-8 text-sm">
+                <SelectValue placeholder="50" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+                <SelectItem value="200">200</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div>
             <Label htmlFor="searchSku" className="text-xs text-slate-500 mb-1 block">
               Buscar SKU
@@ -475,7 +508,7 @@ ${csvRows
       <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
         <CardHeader className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-t-lg">
           <CardTitle className="text-amber-800">
-            Lista de Precios a Publicar ({getFilteredInventory().length} productos)
+            Lista de Precios a Publicar ({filteredInventory.length} productos)
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -512,7 +545,7 @@ ${csvRows
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {getFilteredInventory().map((item) => {
+                {currentItems.map((item) => {
                   const promocion = promociones[item.id] || 0
                   const basePrice = item.pvp_with_tax
                   const priceWithPromo = calculatePriceWithPromotion(basePrice, promocion)
@@ -571,6 +604,54 @@ ${csvRows
                 })}
               </TableBody>
             </Table>
+          </div>
+          
+          {/* Controles de Paginación */}
+          <div className="flex items-center justify-between px-4 py-4 border-t border-slate-200 bg-slate-50 rounded-b-lg">
+            <div className="text-sm text-slate-500">
+              Mostrando {filteredInventory.length > 0 ? startIndex + 1 : 0} a {Math.min(endIndex, filteredInventory.length)} de {filteredInventory.length} productos
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="text-sm font-medium text-slate-700">
+                Página {currentPage} de {totalPages || 1}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
