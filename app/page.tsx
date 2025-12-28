@@ -76,7 +76,9 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
@@ -94,6 +96,7 @@ import { GastosManagement } from "@/components/gastos-management"
 import { MayoristasManagement } from "@/components/mayoristas-management"
 import { VentasMinoristas } from "@/components/ventas-minoristas"
 import { ClientesManagement } from "@/components/clientes-management"
+import { ComprasManagement } from "@/components/compras-management"
 
 type InventoryItem = {
   id: number
@@ -137,6 +140,7 @@ function InventoryManagementContent() {
   const [isLoading, setIsLoading] = useState(true)
   // Removed showLogs, showUsers, showWholesale, showGastos, showRetail, showClients
   const [activeTab, setActiveTab] = useState("inventory")
+  const [isAddItemExpanded, setIsAddItemExpanded] = useState(false)
 
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
@@ -2708,7 +2712,10 @@ ${csvRows
         {/* Stats Cards - Reorganizado y optimizado para diferentes pantallas */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {/* 1. Compras Filtradas */}
-          <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transform transition-all hover:scale-105">
+          <Card 
+            className="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transform transition-all hover:scale-105 cursor-pointer"
+            onClick={() => setActiveTab("purchases")}
+          >
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div>
@@ -2785,15 +2792,24 @@ ${csvRows
             {/* Form */}
             {hasPermission("CREATE_ITEM") && (
               <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-                <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
-                  <CardTitle className="flex items-center gap-2 text-blue-800">
-                    <Plus className="w-5 h-5" />
-                    Agregar Mercadería
-                  </CardTitle>
-                  <CardDescription>
-                    Complete todos los campos para agregar un nuevo producto al inventario
-                  </CardDescription>
+                <CardHeader 
+                  className={`bg-gradient-to-r from-blue-50 to-indigo-50 cursor-pointer transition-colors hover:bg-blue-100/50 ${isAddItemExpanded ? "rounded-t-lg" : "rounded-lg"}`}
+                  onClick={() => setIsAddItemExpanded(!isAddItemExpanded)}
+                >
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-blue-800">
+                      <Plus className="w-5 h-5" />
+                      Agregar Mercadería
+                    </CardTitle>
+                    {isAddItemExpanded ? <ChevronUp className="w-5 h-5 text-blue-800" /> : <ChevronDown className="w-5 h-5 text-blue-800" />}
+                  </div>
+                  {isAddItemExpanded && (
+                    <CardDescription>
+                      Complete todos los campos para agregar un nuevo producto al inventario
+                    </CardDescription>
+                  )}
                 </CardHeader>
+                {isAddItemExpanded && (
                 <CardContent className="space-y-6 p-6">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
@@ -3089,6 +3105,7 @@ ${csvRows
                     Agregar Producto
                   </Button>
                 </CardContent>
+                )}
               </Card>
             )}
 
@@ -4130,10 +4147,18 @@ ${csvRows
             />
           </TabsContent>
 
+          <TabsContent value="purchases">
+            <ComprasManagement />
+          </TabsContent>
+
           <TabsContent value="gastos">
             <GastosManagement
               onUpdateExpenses={updateCurrentMonthExpenses}
             />
+          </TabsContent>
+
+          <TabsContent value="notas-credito">
+            <NotasCreditoManagement />
           </TabsContent>
 
           <TabsContent value="clients">

@@ -465,6 +465,28 @@ export function ClientesManagement() {
           </div>
         </div>
 
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
+          <Card className="bg-blue-600 text-white border-none shadow-md">
+            <CardContent className="p-6">
+              <div className="text-sm font-medium opacity-90">Total Clientes</div>
+              <div className="text-3xl font-bold">{clients.length}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-purple-600 text-white border-none shadow-md">
+            <CardContent className="p-6">
+              <div className="text-sm font-medium opacity-90">Mayoristas</div>
+              <div className="text-3xl font-bold">{clients.filter(c => c.type === "mayorista").length}</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-emerald-500 text-white border-none shadow-md">
+            <CardContent className="p-6">
+              <div className="text-sm font-medium opacity-90">Minoristas</div>
+              <div className="text-3xl font-bold">{clients.filter(c => c.type === "minorista").length}</div>
+            </CardContent>
+          </Card>
+        </div>
+
         <div className="flex flex-col gap-4 flex-1">
           {/* Filters */}
           <div className="bg-white p-4 rounded-lg border flex flex-wrap gap-4 items-center">

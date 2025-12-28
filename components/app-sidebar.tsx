@@ -233,6 +233,18 @@ export function AppSidebar({
                   <span className="font-medium">Gastos</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={() => handleNavigation("notas-credito")}
+                  isActive={activeTab === "notas-credito"}
+                  tooltip="Notas de Crédito"
+                  className="group/btn hover:bg-pink-50 hover:text-pink-700 transition-all duration-200 ease-in-out data-[active=true]:bg-pink-100 data-[active=true]:text-pink-800"
+                >
+                  <FileText className="group-hover/btn:scale-110 transition-transform text-pink-500/80 group-hover/btn:text-pink-600 group-data-[active=true]:text-pink-700" />
+                  <span className="font-medium">Notas de Crédito</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
