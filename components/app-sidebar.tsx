@@ -35,10 +35,6 @@ import { Button } from "@/components/ui/button"
 export type SidebarNavigationProps = {
   activeTab: string
   setActiveTab: (tab: string) => void
-  setShowWholesale: (show: boolean) => void
-  setShowRetail: (show: boolean) => void
-  setShowGastos: (show: boolean) => void
-  setShowClients: (show: boolean) => void
   onLogout: () => void
   userEmail?: string
   isOnline?: boolean
@@ -48,10 +44,6 @@ export type SidebarNavigationProps = {
 export function AppSidebar({
   activeTab,
   setActiveTab,
-  setShowWholesale,
-  setShowRetail,
-  setShowGastos,
-  setShowClients,
   onLogout,
   userEmail,
   isOnline = true,
@@ -60,39 +52,6 @@ export function AppSidebar({
 
   const handleNavigation = (tab: string) => {
     setActiveTab(tab)
-    setShowWholesale(false)
-    setShowRetail(false)
-    setShowGastos(false)
-    setShowClients(false)
-  }
-
-  const handleOpenWholesale = () => {
-    setShowWholesale(true)
-    setShowRetail(false)
-    setShowGastos(false)
-    setShowClients(false)
-    // Optionally set active tab to something generic or keep current
-  }
-
-  const handleOpenRetail = () => {
-    setShowRetail(true)
-    setShowWholesale(false)
-    setShowGastos(false)
-    setShowClients(false)
-  }
-
-  const handleOpenGastos = () => {
-    setShowGastos(true)
-    setShowWholesale(false)
-    setShowRetail(false)
-    setShowClients(false)
-  }
-
-  const handleOpenClients = () => {
-    setShowClients(true)
-    setShowWholesale(false)
-    setShowRetail(false)
-    setShowGastos(false)
   }
 
   return (
@@ -130,7 +89,7 @@ export function AppSidebar({
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton 
-                  isActive={activeTab === "inventory" && !setShowWholesale && !setShowGastos} 
+                  isActive={activeTab === "inventory"} 
                   onClick={() => handleNavigation("inventory")}
                   className="group/btn hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 ease-in-out data-[active=true]:bg-blue-100 data-[active=true]:text-blue-800"
                 >
@@ -158,7 +117,8 @@ export function AppSidebar({
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton 
-                  onClick={handleOpenClients}
+                  onClick={() => handleNavigation("clients")}
+                  isActive={activeTab === "clients"}
                   className="group/btn hover:bg-violet-50 hover:text-violet-700 transition-all duration-200 ease-in-out data-[active=true]:bg-violet-100 data-[active=true]:text-violet-800"
                 >
                   <Users className="group-hover/btn:scale-110 transition-transform text-violet-500/80 group-hover/btn:text-violet-600 group-data-[active=true]:text-violet-700" />
@@ -227,28 +187,33 @@ export function AppSidebar({
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton 
-                  onClick={handleOpenRetail}
-                  className="group/btn hover:bg-emerald-50 hover:text-emerald-700 transition-all duration-200 ease-in-out"
+                  onClick={() => handleNavigation("wholesale")}
+                  isActive={activeTab === "wholesale"}
+                  className="group/btn hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 ease-in-out data-[active=true]:bg-purple-100 data-[active=true]:text-purple-800"
                 >
-                  <ShoppingBag className="group-hover/btn:scale-110 transition-transform text-emerald-500/80 group-hover/btn:text-emerald-600" />
-                  <span className="font-medium">Ventas Minoristas</span>
+                  <ShoppingCart className="group-hover/btn:scale-110 transition-transform text-purple-500/80 group-hover/btn:text-purple-600 group-data-[active=true]:text-purple-700" />
+                  <span className="font-medium">Mayoristas</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              
               <SidebarMenuItem>
                 <SidebarMenuButton 
-                  onClick={handleOpenWholesale}
-                  className="group/btn hover:bg-emerald-50 hover:text-emerald-700 transition-all duration-200 ease-in-out"
+                  onClick={() => handleNavigation("retail")}
+                  isActive={activeTab === "retail"}
+                  className="group/btn hover:bg-green-50 hover:text-green-700 transition-all duration-200 ease-in-out data-[active=true]:bg-green-100 data-[active=true]:text-green-800"
                 >
-                  <ShoppingCart className="group-hover/btn:scale-110 transition-transform text-emerald-500/80 group-hover/btn:text-emerald-600" />
-                  <span className="font-medium">Ventas Mayoristas</span>
+                  <ShoppingBag className="group-hover/btn:scale-110 transition-transform text-green-500/80 group-hover/btn:text-green-600 group-data-[active=true]:text-green-700" />
+                  <span className="font-medium">Minoristas</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              
               <SidebarMenuItem>
                 <SidebarMenuButton 
-                  onClick={handleOpenGastos}
-                  className="group/btn hover:bg-emerald-50 hover:text-emerald-700 transition-all duration-200 ease-in-out"
+                  onClick={() => handleNavigation("gastos")}
+                  isActive={activeTab === "gastos"}
+                  className="group/btn hover:bg-teal-50 hover:text-teal-700 transition-all duration-200 ease-in-out data-[active=true]:bg-teal-100 data-[active=true]:text-teal-800"
                 >
-                  <Receipt className="group-hover/btn:scale-110 transition-transform text-emerald-500/80 group-hover/btn:text-emerald-600" />
+                  <Receipt className="group-hover/btn:scale-110 transition-transform text-teal-500/80 group-hover/btn:text-teal-600 group-data-[active=true]:text-teal-700" />
                   <span className="font-medium">Gastos</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>

@@ -130,13 +130,8 @@ function InventoryManagementContent() {
   // Estados de autenticación
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [showLogs, setShowLogs] = useState(false)
-  const [showUsers, setShowUsers] = useState(false)
-  const [showWholesale, setShowWholesale] = useState(false)
+  // Removed showLogs, showUsers, showWholesale, showGastos, showRetail, showClients
   const [activeTab, setActiveTab] = useState("inventory")
-  const [showGastos, setShowGastos] = useState(false)
-  const [showRetail, setShowRetail] = useState(false)
-  const [showClients, setShowClients] = useState(false)
 
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
@@ -260,36 +255,19 @@ function InventoryManagementContent() {
     
     if (tab) {
       setActiveTab(tab)
-      // Close overlays if just switching tab
-      setShowWholesale(false)
-      setShowRetail(false)
-      setShowGastos(false)
-      setShowClients(false)
     }
     
     if (section === "wholesale") {
-      setShowWholesale(true)
-      setShowRetail(false)
-      setShowGastos(false)
-      setShowClients(false)
+      setActiveTab("wholesale")
     }
     if (section === "retail") {
-      setShowRetail(true)
-      setShowWholesale(false)
-      setShowGastos(false)
-      setShowClients(false)
+      setActiveTab("retail")
     }
     if (section === "gastos") {
-      setShowGastos(true)
-      setShowWholesale(false)
-      setShowRetail(false)
-      setShowClients(false)
+      setActiveTab("gastos")
     }
     if (section === "clients") {
-      setShowClients(true)
-      setShowWholesale(false)
-      setShowRetail(false)
-      setShowGastos(false)
+      setActiveTab("clients")
     }
   }, [searchParams])
 
@@ -2048,6 +2026,7 @@ ${csvRows
   const updateCurrentMonthExpenses = (amount: number) => {
     console.log("💰 Updating current month expenses to:", amount)
     setCurrentMonthExpenses(amount)
+    loadData()
   }
 
   const getSKUStats = () => {
@@ -2605,10 +2584,6 @@ ${csvRows
         <AppSidebar
             activeTab={activeTab}
             setActiveTab={setActiveTab}
-            setShowWholesale={setShowWholesale}
-            setShowRetail={setShowRetail}
-            setShowGastos={setShowGastos}
-            setShowClients={setShowClients}
             onLogout={handleLogout}
             userEmail={getCurrentUser()?.email}
             isOnline={isOnline}
@@ -2662,9 +2637,7 @@ ${csvRows
 
             <UserHeader
               onLogout={handleLogout}
-              onShowLogs={() => setShowLogs(true)}
-              onShowUsers={() => setShowUsers(true)}
-              onShowWholesale={() => setShowWholesale(true)}
+              setActiveTab={setActiveTab}
             />
           </div>
         </div>
@@ -3923,39 +3896,40 @@ ${csvRows
           <TabsContent value="zentor">
             <ZentorList inventory={inventory} suppliers={suppliers} brands={brands} />
           </TabsContent>
-        </Tabs>
+          <TabsContent value="wholesale">
+            {hasPermission("VIEW_WHOLESALE") && (
+              <MayoristasManagement
+                inventory={inventory}
+                suppliers={suppliers}
+                brands={brands}
+              />
+            )}
+          </TabsContent>
 
-        {/* Modales para Logs, Usuarios y Gastos */}
-        <ActivityLogs isOpen={showLogs} onClose={() => setShowLogs(false)} />
-        <UserManagement isOpen={showUsers} onClose={() => setShowUsers(false)} />
-        <GastosManagement
-          isOpen={showGastos}
-          onClose={() => {
-            setShowGastos(false)
-            loadData()
-          }}
-          onUpdateExpenses={updateCurrentMonthExpenses}
-        />
-        {hasPermission("VIEW_WHOLESALE") && (
-          <MayoristasManagement
-            isOpen={showWholesale}
-            onClose={() => setShowWholesale(false)}
-            inventory={inventory}
-            suppliers={suppliers}
-            brands={brands}
-          />
-        )}
-        
-        <VentasMinoristas
-          isOpen={showRetail}
-          onClose={() => setShowRetail(false)}
-          inventory={inventory}
-        />
-        
-        <ClientesManagement
-          isOpen={showClients}
-          onClose={() => setShowClients(false)}
-        />
+          <TabsContent value="retail">
+            <VentasMinoristas
+              inventory={inventory}
+            />
+          </TabsContent>
+
+          <TabsContent value="gastos">
+            <GastosManagement
+              onUpdateExpenses={updateCurrentMonthExpenses}
+            />
+          </TabsContent>
+
+          <TabsContent value="clients">
+            <ClientesManagement />
+          </TabsContent>
+
+          <TabsContent value="logs">
+            <ActivityLogs />
+          </TabsContent>
+
+          <TabsContent value="users">
+            <UserManagement />
+          </TabsContent>
+        </Tabs>
 
         {/* Modal de confirmación de eliminación */}
         {deleteConfirm.show && (

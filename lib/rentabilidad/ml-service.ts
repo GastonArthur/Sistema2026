@@ -130,12 +130,15 @@ export class MLService {
         const item = itemWrapper.body
         if (!item || item.error) continue
 
+        const title = item.title
+        const thumbnail = item.thumbnail || (item.pictures && item.pictures.length > 0 ? item.pictures[0].url : null)
+
         // Process Variations
         if (item.variations && item.variations.length > 0) {
           for (const variation of item.variations) {
              const sku = this.extractSku(variation, item)
              if (sku) {
-               await this.upsertStock(account.id, sku, variation.available_quantity, item.status)
+               await this.upsertStock(account.id, sku, variation.available_quantity, item.status, title, thumbnail)
                await this.upsertMapping(account.id, sku, item.id, variation.id)
              }
           }
@@ -143,7 +146,7 @@ export class MLService {
           // Simple item
           const sku = this.extractSku(item, null)
           if (sku) {
-            await this.upsertStock(account.id, sku, item.available_quantity, item.status)
+            await this.upsertStock(account.id, sku, item.available_quantity, item.status, title, thumbnail)
             await this.upsertMapping(account.id, sku, item.id, null)
           }
         }
@@ -164,7 +167,7 @@ export class MLService {
     return null
   }
 
-  private async upsertStock(accountId: string, sku: string, qty: number, status: string) {
+  private async upsertStock(accountId: string, sku: string, qty: number, status: string, title?: string, thumbnail?: string) {
     const supabase = this.getSupabase()
     
     let stockStatus = "Stock"
@@ -176,6 +179,8 @@ export class MLService {
       sku: sku,
       qty: qty,
       status: stockStatus,
+      title: title,
+      thumbnail: thumbnail,
       updated_at: new Date().toISOString()
     })
   }

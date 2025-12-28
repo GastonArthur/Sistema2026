@@ -18,11 +18,10 @@ import { es } from "date-fns/locale"
 import type { JSX } from "react"
 
 interface ActivityLogsProps {
-  isOpen: boolean
-  onClose: () => void
+  // Removed isOpen and onClose as they are no longer needed for modal control
 }
 
-export function ActivityLogs({ isOpen, onClose }: ActivityLogsProps) {
+export function ActivityLogs() {
   const [logs, setLogs] = useState<ActivityLog[]>([])
   const [filteredLogs, setFilteredLogs] = useState<ActivityLog[]>([])
   const [loading, setLoading] = useState(false)
@@ -31,10 +30,8 @@ export function ActivityLogs({ isOpen, onClose }: ActivityLogsProps) {
   const [selectedLog, setSelectedLog] = useState<ActivityLog | null>(null)
 
   useEffect(() => {
-    if (isOpen) {
-      loadLogs()
-    }
-  }, [isOpen])
+    loadLogs()
+  }, [])
 
   useEffect(() => {
     filterLogs()
@@ -279,15 +276,12 @@ export function ActivityLogs({ isOpen, onClose }: ActivityLogsProps) {
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-6xl max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Activity className="w-5 h-5" />
-              Logs de Actividad del Sistema
-            </DialogTitle>
-            <DialogDescription>Registro completo de todas las acciones realizadas por los usuarios</DialogDescription>
-          </DialogHeader>
+      <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Activity className="w-5 h-5" />
+            <h2 className="text-xl font-semibold">Logs de Actividad del Sistema</h2>
+          </div>
+          <p className="text-sm text-gray-500 mb-4">Registro completo de todas las acciones realizadas por los usuarios</p>
 
           <div className="space-y-4">
             {/* Filtros */}
@@ -380,8 +374,7 @@ export function ActivityLogs({ isOpen, onClose }: ActivityLogsProps) {
               Mostrando {filteredLogs.length} de {logs.length} registros
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
 
       {/* Modal de detalles del log */}
       <Dialog open={!!selectedLog} onOpenChange={() => setSelectedLog(null)}>

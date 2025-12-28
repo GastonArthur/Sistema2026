@@ -47,12 +47,10 @@ type Expense = {
 }
 
 interface GastosManagementProps {
-  isOpen: boolean
-  onClose: () => void
   onUpdateExpenses?: (amount: number) => void
 }
 
-export function GastosManagement({ isOpen, onClose, onUpdateExpenses }: GastosManagementProps) {
+export function GastosManagement({ onUpdateExpenses }: GastosManagementProps) {
   const currentUser = getCurrentUser()
   const isReadOnly = currentUser?.role === "viewer"
 
@@ -191,10 +189,8 @@ export function GastosManagement({ isOpen, onClose, onUpdateExpenses }: GastosMa
   ])
 
   useEffect(() => {
-    if (isOpen) {
-      loadData()
-    }
-  }, [isOpen])
+    loadData()
+  }, [])
 
   useEffect(() => {
     if (onUpdateExpenses) {
@@ -833,15 +829,12 @@ ${csvRows
   console.log("- Filters:", filters)
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Receipt className="w-5 h-5 text-teal-600" />
-            Gestión de Gastos Mensuales
-          </DialogTitle>
-          <DialogDescription>Administre todos los gastos de la empresa con control detallado</DialogDescription>
-        </DialogHeader>
+    <div className="space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Receipt className="w-5 h-5 text-teal-600" />
+          <h2 className="text-xl font-semibold">Gestión de Gastos Mensuales</h2>
+        </div>
+        <p className="text-sm text-gray-500 mb-4">Administre todos los gastos de la empresa con control detallado</p>
 
         <div className="space-y-4">
           {/* Resumen del mes actual y mes filtrado */}
@@ -1144,7 +1137,6 @@ ${csvRows
             </CardContent>
           </Card>
         </div>
-      </DialogContent>
 
       {/* Modal de formulario */}
       <Dialog open={showForm} onOpenChange={(open) => !open && resetForm()}>
@@ -1337,6 +1329,6 @@ ${csvRows
           </div>
         </DialogContent>
       </Dialog>
-    </Dialog>
+    </div>
   )
 }

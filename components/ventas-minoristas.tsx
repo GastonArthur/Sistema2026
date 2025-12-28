@@ -88,12 +88,10 @@ type RetailSale = {
 }
 
 interface VentasMinoristasProps {
-  isOpen: boolean
-  onClose: () => void
   inventory: InventoryItem[]
 }
 
-export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinoristasProps) {
+export function VentasMinoristas({ inventory }: VentasMinoristasProps) {
   const currentUser = getCurrentUser()
   const isReadOnly = currentUser?.role === "viewer"
 
@@ -154,10 +152,8 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
   const pendingStock = sales.filter(s => s.stock_status === "pendiente").length
 
   useEffect(() => {
-    if (isOpen) {
-      loadData()
-    }
-  }, [isOpen])
+    loadData()
+  }, [])
 
   const loadData = async () => {
     if (isSupabaseConfigured) {
@@ -451,24 +447,16 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-hidden flex flex-col p-0">
-        <div className="p-6 pb-2">
-          <DialogHeader className="flex flex-row items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ShoppingBag className="w-6 h-6 text-green-600" />
-              <div>
-                <DialogTitle>Gestión de Ventas Minoristas</DialogTitle>
-                <DialogDescription>Gestión de ventas minoristas y clientes</DialogDescription>
-              </div>
-            </div>
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <XCircle className="w-5 h-5" />
-            </Button>
-          </DialogHeader>
+    <div className="space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          <ShoppingBag className="w-6 h-6 text-green-600" />
+          <div>
+            <h2 className="text-xl font-semibold">Gestión de Ventas Minoristas</h2>
+            <p className="text-sm text-gray-500">Gestión de ventas minoristas y clientes</p>
+          </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
           <div className="px-6 border-b">
             <TabsList>
               <TabsTrigger value="ventas" className="gap-2">
@@ -1155,7 +1143,6 @@ export function VentasMinoristas({ isOpen, onClose, inventory }: VentasMinorista
             </DialogContent>
           </Dialog>
         )}
-      </DialogContent>
-    </Dialog>
+    </div>
   )
 }

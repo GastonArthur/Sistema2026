@@ -45,12 +45,12 @@ type UnifiedClient = {
   zip_code?: string
 }
 
+
 interface ClientesManagementProps {
-  isOpen: boolean
-  onClose: () => void
+  // Removed props
 }
 
-export function ClientesManagement({ isOpen, onClose }: ClientesManagementProps) {
+export function ClientesManagement() {
   const currentUser = getCurrentUser()
   const isReadOnly = currentUser?.role === "viewer"
 
@@ -80,10 +80,8 @@ export function ClientesManagement({ isOpen, onClose }: ClientesManagementProps)
   })
 
   useEffect(() => {
-    if (isOpen) {
-      loadClients()
-    }
-  }, [isOpen])
+    loadClients()
+  }, [])
 
   useEffect(() => {
     filterClients()
@@ -457,19 +455,17 @@ export function ClientesManagement({ isOpen, onClose }: ClientesManagementProps)
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] flex flex-col overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-purple-600" />
-            Gestión General de Clientes
-          </DialogTitle>
-          <DialogDescription>
-            Administre todos los clientes mayoristas y minoristas en un solo lugar.
-          </DialogDescription>
-        </DialogHeader>
+    <div className="space-y-4">
+      <div className="space-y-4 flex flex-col">
+        <div className="flex items-center gap-2 mb-4">
+          <Users className="w-5 h-5 text-purple-600" />
+          <div>
+            <h2 className="text-xl font-semibold">Gestión General de Clientes</h2>
+            <p className="text-sm text-gray-500">Administre todos los clientes mayoristas y minoristas en un solo lugar.</p>
+          </div>
+        </div>
 
-        <div className="flex flex-col gap-4 flex-1 overflow-hidden">
+        <div className="flex flex-col gap-4 flex-1">
           {/* Filters */}
           <div className="bg-white p-4 rounded-lg border flex flex-wrap gap-4 items-center">
             <div className="relative w-64">
@@ -767,7 +763,7 @@ export function ClientesManagement({ isOpen, onClose }: ClientesManagementProps)
             </DialogContent>
           </Dialog>
         )}
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   )
 }

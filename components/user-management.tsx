@@ -16,11 +16,10 @@ import { toast } from "@/hooks/use-toast"
 import { logError } from "@/lib/logger"
 
 interface UserManagementProps {
-  isOpen: boolean
-  onClose: () => void
+  // Removed props
 }
 
-export function UserManagement({ isOpen, onClose }: UserManagementProps) {
+export function UserManagement() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
@@ -40,10 +39,8 @@ export function UserManagement({ isOpen, onClose }: UserManagementProps) {
   }>({ show: false, user: null })
 
   useEffect(() => {
-    if (isOpen) {
-      loadUsers()
-    }
-  }, [isOpen])
+    loadUsers()
+  }, [])
 
   const loadUsers = async () => {
     setLoading(true)
@@ -205,18 +202,15 @@ export function UserManagement({ isOpen, onClose }: UserManagementProps) {
   const currentUser = getCurrentUser()
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl max-h-[90vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Shield className="w-5 h-5" />
-            Gestión de Usuarios
-          </DialogTitle>
-          <DialogDescription>Administre los usuarios del sistema y sus permisos</DialogDescription>
-        </DialogHeader>
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 mb-4">
+        <Shield className="w-5 h-5" />
+        <h2 className="text-xl font-semibold">Gestión de Usuarios</h2>
+      </div>
+      <p className="text-sm text-gray-500 mb-4">Administre los usuarios del sistema y sus permisos</p>
 
-        <div className="space-y-4">
-          {/* Botones de acción */}
+      <div className="space-y-4">
+        {/* Botones de acción */}
           <div className="flex gap-4 items-center">
             <Button
               onClick={() => setShowCreateForm(true)}
@@ -481,7 +475,6 @@ export function UserManagement({ isOpen, onClose }: UserManagementProps) {
             </Table>
           </ScrollArea>
         </div>
-      </DialogContent>
 
       {/* Modal para crear usuario */}
       <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
@@ -609,6 +602,6 @@ export function UserManagement({ isOpen, onClose }: UserManagementProps) {
           </div>
         </DialogContent>
       </Dialog>
-    </Dialog>
+    </div>
   )
 }

@@ -14,12 +14,10 @@ import { toast } from "@/hooks/use-toast"
 
 interface UserHeaderProps {
   onLogout: () => void
-  onShowLogs: () => void
-  onShowUsers: () => void
-  onShowWholesale: () => void
+  setActiveTab: (tab: string) => void
 }
 
-export function UserHeader({ onLogout, onShowLogs, onShowUsers, onShowWholesale }: UserHeaderProps) {
+export function UserHeader({ onLogout, setActiveTab }: UserHeaderProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [profileData, setProfileData] = useState({
@@ -64,17 +62,17 @@ export function UserHeader({ onLogout, onShowLogs, onShowUsers, onShowWholesale 
 
   const handleShowLogs = () => {
     setIsOpen(false)
-    onShowLogs()
+    setActiveTab("logs")
   }
 
   const handleShowUsers = () => {
     setIsOpen(false)
-    onShowUsers()
+    setActiveTab("users")
   }
 
   const handleShowWholesale = () => {
     setIsOpen(false)
-    onShowWholesale()
+    setActiveTab("wholesale")
   }
 
   const getRoleColor = (role: string) => {

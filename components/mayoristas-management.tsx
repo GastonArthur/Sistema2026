@@ -114,8 +114,6 @@ type WholesaleOrderItem = {
 }
 
 interface MayoristasManagementProps {
-  isOpen: boolean
-  onClose: () => void
   inventory: InventoryItem[]
   suppliers: Supplier[]
   brands: Brand[]
@@ -149,7 +147,7 @@ const getStatusLabel = (status: string) => {
   return labels[status] || status
 }
 
-export function MayoristasManagement({ isOpen, onClose, inventory, suppliers, brands }: MayoristasManagementProps) {
+export function MayoristasManagement({ inventory, suppliers, brands }: MayoristasManagementProps) {
   const currentUser = getCurrentUser()
   const isReadOnly = currentUser?.role === "viewer"
 
@@ -1808,17 +1806,15 @@ Este reporte contiene información confidencial y está destinado únicamente pa
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <ShoppingCart className="w-5 h-5 text-purple-600" />
-            Ventas Mayoristas
-          </DialogTitle>
-          <DialogDescription>Gestión completa de ventas mayoristas, precios y clientes</DialogDescription>
-        </DialogHeader>
+    <div className="space-y-4">
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          <ShoppingCart className="w-5 h-5 text-purple-600" />
+          <h2 className="text-xl font-semibold">Ventas Mayoristas</h2>
+        </div>
+        <p className="text-sm text-gray-500 mb-4">Gestión completa de ventas mayoristas, precios y clientes</p>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="precios" className="flex items-center gap-2">
               <Package className="w-4 h-4" />
@@ -2927,6 +2923,6 @@ Este reporte contiene información confidencial y está destinado únicamente pa
           </DialogContent>
         </Dialog>
       )}
-    </Dialog>
+    </div>
   )
 }

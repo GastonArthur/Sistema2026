@@ -62,6 +62,9 @@ export default function RentabilidadPage() {
   
   // Stock State
   const [stock, setStock] = useState<any[]>([])
+  
+  // Products State
+  const [products, setProducts] = useState<any[]>([])
 
   // Filters
   const [accountFilter, setAccountFilter] = useState("all")
@@ -123,11 +126,89 @@ export default function RentabilidadPage() {
     if (activeTab === "stock") {
       fetchStock()
     }
+    if (activeTab === "products") {
+      fetchProducts()
+    }
   }, [activeTab, accounts]) // Refetch when accounts load or tab changes
 
   useEffect(() => {
     applyFilters()
   }, [sales, accountFilter, dateFilter, dateRange])
+
+  const fetchProducts = async () => {
+    if (!supabase) return
+    try {
+      setLoading(true)
+      // 1. Get Inventory
+      const { data: inventory, error: invError } = await supabase.from("inventory").select("*")
+      // If inventory table doesn't exist or error, we might want to handle it, but for now just log
+      if (invError) console.error("Error fetching inventory:", invError)
+
+      // 2. Get Stock (all)
+      const { data: stockData, error: stockError } = await supabase.from("rt_stock_current").select("*")
+      
+      // 3. Merge
+      const stockMap = new Map()
+      stockData?.forEach(s => {
+          if (!stockMap.has(s.sku)) stockMap.set(s.sku, { qty: 0, accounts: [], status: 'Sin stock', title: s.title, thumbnail: s.thumbnail })
+          const entry = stockMap.get(s.sku)
+          entry.qty += (s.qty || 0)
+          
+          const accName = accounts.find(a => a.id === s.account_id)?.name || 'Unknown'
+          if (!entry.accounts.includes(accName)) {
+              entry.accounts.push(accName)
+          }
+          
+          if (s.qty > 0) entry.status = 'En Stock'
+          if (s.title && !entry.title) entry.title = s.title
+          if (s.thumbnail && !entry.thumbnail) entry.thumbnail = s.thumbnail
+      })
+
+      // Combined list: Inventory items + items in Stock not in Inventory (Shadow)
+      let combined = []
+      
+      if (inventory) {
+          combined = inventory.map((inv: any) => {
+            const stockInfo = stockMap.get(inv.sku)
+            return {
+                ...inv,
+                ml_qty: stockInfo?.qty || 0,
+                ml_status: stockInfo?.status || 'No sincronizado',
+                ml_connected: !!stockInfo,
+                ml_accounts: stockInfo?.accounts || [],
+                ml_title: stockInfo?.title,
+                ml_thumbnail: stockInfo?.thumbnail
+            }
+          })
+      }
+
+      // Add items from ML that are NOT in inventory
+      stockMap.forEach((val, key) => {
+          const exists = combined.find(c => c.sku === key)
+          if (!exists) {
+              combined.push({
+                  sku: key,
+                  name: val.title || 'Producto desconocido (Solo en ML)',
+                  description: 'Importado desde MercadoLibre',
+                  cost_without_tax: 0,
+                  ml_qty: val.qty,
+                  ml_status: val.status,
+                  ml_connected: true,
+                  ml_accounts: val.accounts,
+                  ml_title: val.title,
+                  ml_thumbnail: val.thumbnail,
+                  is_shadow: true
+              })
+          }
+      })
+
+      setProducts(combined)
+    } catch (err) {
+      console.error("Error fetching products:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const fetchStock = async () => {
     if (!supabase) return
@@ -145,7 +226,9 @@ export default function RentabilidadPage() {
                 qty: 0,
                 accounts: [],
                 updated_at: row.updated_at,
-                status: row.status
+                status: row.status,
+                title: row.title,
+                thumbnail: row.thumbnail
             })
         }
         const item = grouped.get(row.sku)
@@ -155,6 +238,9 @@ export default function RentabilidadPage() {
         if (!item.accounts.includes(accName)) {
             item.accounts.push(accName)
         }
+        // Update title/thumb if missing
+        if (!item.title && row.title) item.title = row.title
+        if (!item.thumbnail && row.thumbnail) item.thumbnail = row.thumbnail
       })
 
       const stockItems = Array.from(grouped.values())
@@ -835,6 +921,74 @@ CREATE TABLE IF NOT EXISTS rt_jobs (name TEXT PRIMARY KEY, cursor JSONB, locked_
               </Card>
             </TabsContent>
             
+            <TabsContent value="products" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Inventario de Productos</CardTitle>
+                  <CardDescription>
+                    Comparación de inventario local vs MercadoLibre
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Producto</TableHead>
+                        <TableHead>SKU</TableHead>
+                        <TableHead>Stock ML</TableHead>
+                        <TableHead>Estado ML</TableHead>
+                        <TableHead>Conexión</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {products.map((item) => (
+                        <TableRow key={item.sku}>
+                          <TableCell className="flex items-center gap-2">
+                             {(item.ml_thumbnail || item.thumbnail) && (
+                               <img src={item.ml_thumbnail || item.thumbnail} alt="" className="w-8 h-8 rounded object-cover" />
+                             )}
+                             <div className="flex flex-col">
+                               <span className="font-medium text-sm">{item.name || item.ml_title || item.sku}</span>
+                               <span className="text-xs text-muted-foreground">{item.description}</span>
+                             </div>
+                          </TableCell>
+                          <TableCell className="font-mono text-xs">{item.sku}</TableCell>
+                          <TableCell className="font-bold">{item.ml_qty}</TableCell>
+                          <TableCell>
+                             <Badge variant={item.ml_qty > 0 ? "default" : "secondary"}>
+                               {item.ml_status}
+                             </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {item.ml_connected ? (
+                                <div className="flex flex-wrap gap-1">
+                                    {item.ml_accounts.map((acc: string, i: number) => (
+                                        <Badge key={i} variant="outline" className="text-xs border-green-200 text-green-700 bg-green-50">
+                                            {acc}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            ) : (
+                                <Badge variant="outline" className="text-yellow-600 bg-yellow-50 border-yellow-200">
+                                    No conectado
+                                </Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {products.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                            No se encontraron productos.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
             <TabsContent value="stock">
                 <Card>
                     <CardHeader>
@@ -845,7 +999,7 @@ CREATE TABLE IF NOT EXISTS rt_jobs (name TEXT PRIMARY KEY, cursor JSONB, locked_
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>SKU</TableHead>
+                                    <TableHead>Producto / SKU</TableHead>
                                     <TableHead>Cuentas</TableHead>
                                     <TableHead>Cantidad</TableHead>
                                     <TableHead>Costo</TableHead>
@@ -856,7 +1010,17 @@ CREATE TABLE IF NOT EXISTS rt_jobs (name TEXT PRIMARY KEY, cursor JSONB, locked_
                             <TableBody>
                                 {stock.map((item) => (
                                     <TableRow key={item.sku}>
-                                        <TableCell className="font-medium">{item.sku}</TableCell>
+                                        <TableCell>
+                                           <div className="flex items-center gap-2">
+                                             {item.thumbnail && (
+                                                <img src={item.thumbnail} alt="" className="w-8 h-8 rounded object-cover" />
+                                             )}
+                                             <div className="flex flex-col">
+                                                 <span className="font-medium">{item.sku}</span>
+                                                 {item.title && <span className="text-xs text-muted-foreground max-w-[200px] truncate">{item.title}</span>}
+                                             </div>
+                                           </div>
+                                        </TableCell>
                                         <TableCell>
                                             <div className="flex flex-wrap gap-1">
                                                 {item.accounts.map((acc: string, i: number) => (
@@ -878,7 +1042,7 @@ CREATE TABLE IF NOT EXISTS rt_jobs (name TEXT PRIMARY KEY, cursor JSONB, locked_
                                 ))}
                                 {stock.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                                             No hay datos de stock sincronizados.
                                             <br />
                                             Asegúrate de ejecutar la sincronización.
