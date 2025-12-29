@@ -74,18 +74,18 @@ export default function CatalogoPage() {
     return s
   }
   const widthClassForIndex = (ci: number) => {
-    if (ci === 0) return "w-[46%] min-w-[22rem]"
-    if (ci === 1) return "w-[8%] min-w-[8rem]"
-    if (ci === 2) return "w-[8%] min-w-[8rem]"
-    if (ci === 3) return "w-[8%] min-w-[8rem]"
-    if (ci === 4) return "w-[6%] min-w-[4rem]"
-    if (ci === 5) return "w-[10%] min-w-[8rem]"
-    if (ci === 6) return "w-[8%] min-w-[6rem]"
-    if (ci === 7) return "w-[12%] min-w-[10rem]"
-    if (ci === 8) return "w-[6%] min-w-[5rem]"
-    if (ci === 9) return "w-[6%] min-w-[4rem]"
-    if (ci === 10) return "w-[10%] min-w-[8rem]"
-    return "w-[8%] min-w-[6rem]"
+    if (ci === 0) return "w-[380px] min-w-[380px]"
+    if (ci === 1) return "w-[140px] min-w-[140px]"
+    if (ci === 2) return "w-[140px] min-w-[140px]"
+    if (ci === 3) return "w-[140px] min-w-[140px]"
+    if (ci === 4) return "w-[70px] min-w-[70px]"
+    if (ci === 5) return "w-[120px] min-w-[120px]"
+    if (ci === 6) return "w-[90px] min-w-[90px]"
+    if (ci === 7) return "w-[180px] min-w-[180px]"
+    if (ci === 8) return "w-[80px] min-w-[80px]"
+    if (ci === 9) return "w-[70px] min-w-[70px]"
+    if (ci === 10) return "w-[120px] min-w-[120px]"
+    return "w-[100px] min-w-[100px]"
   }
   const isPriceCol = (ci: number) => ci === 1 || ci === 2 || ci === 3
   const formatARS = (val: any) => {
@@ -198,7 +198,7 @@ export default function CatalogoPage() {
                                       const val = row[ci] ?? ""
                                       const isEstado = ci === estadoIdx
                                       const isCantidad = ci === cantidadIdx
-                                      let cellClass = `${widthClassForIndex(ci)} px-3 py-2 rounded border bg-background whitespace-normal break-words text-center align-middle focus:outline-none mx-1 my-1`
+                                      let cellClass = `${widthClassForIndex(ci)} px-3 py-2 rounded-lg border bg-white whitespace-normal break-words text-center align-middle focus:outline-none mx-2 my-2 h-12 flex items-center justify-center`
                                       if (isEstado) {
                                         const t = String(val).toLowerCase()
                                         if (t.includes("stock") && !t.includes("sin")) {
@@ -214,7 +214,8 @@ export default function CatalogoPage() {
                                         }
                                       }
                                       if (ci === 0) {
-                                        cellClass += " bg-indigo-50/50"
+                                        cellClass = cellClass.replace("justify-center", "justify-start")
+                                        cellClass += " bg-indigo-50/60"
                                       }
                                       const displayVal = isPriceCol(ci) ? formatARS(val) : String(val)
                                       return (
@@ -234,14 +235,14 @@ export default function CatalogoPage() {
                                       )
                                     })}
                                     <TableCell className="align-middle">
-                                      <div className="flex items-center justify-center gap-2">
-                                        <Button variant="secondary" size="sm" onClick={() => moveRow(si, ri, "up")}>
+                                      <div className="flex items-center justify-center gap-2 h-12">
+                                        <Button variant="secondary" size="sm" className="rounded-full" onClick={() => moveRow(si, ri, "up")}>
                                           <ArrowUp className="h-4 w-4" />
                                         </Button>
-                                        <Button variant="secondary" size="sm" onClick={() => moveRow(si, ri, "down")}>
+                                        <Button variant="secondary" size="sm" className="rounded-full" onClick={() => moveRow(si, ri, "down")}>
                                           <ArrowDown className="h-4 w-4" />
                                         </Button>
-                                        <Button variant="destructive" size="sm" onClick={() => deleteRow(si, ri)}>
+                                        <Button variant="destructive" size="sm" className="rounded-full" onClick={() => deleteRow(si, ri)}>
                                           <Trash2 className="h-4 w-4" />
                                         </Button>
                                       </div>
