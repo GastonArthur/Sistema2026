@@ -115,19 +115,6 @@ export function AppSidebar({
                   <span className="font-medium">Importar</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton 
-                  asChild 
-                  isActive={activeTab === "catalogo"}
-                  tooltip="Catálogo"
-                  className="group/btn hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 ease-in-out data-[active=true]:bg-blue-100 data-[active=true]:text-blue-800"
-                >
-                  <a href="/dashboard/catalogo">
-                    <FileSpreadsheet className="group-hover/btn:scale-110 transition-transform text-blue-500/80 group-hover/btn:text-blue-600 group-data-[active=true]:text-blue-700" />
-                    <span className="font-medium">Catalogo</span>
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
