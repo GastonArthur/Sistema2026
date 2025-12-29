@@ -74,10 +74,11 @@ export default function CatalogoPage() {
   }
   const widthClassFor = (header: (string | number | null)[], ci: number) => {
     const h = String(header[ci] ?? "").toLowerCase()
-    if (h.includes("titulo") || h.includes("nombre") || h.includes("producto")) return "min-w-64 w-64"
-    if (h.includes("sku")) return "min-w-32 w-32"
-    if (h.includes("estado") || h.includes("cant")) return "min-w-24 w-24"
-    return "min-w-28 w-28"
+    if (h.includes("titulo") || h.includes("nombre") || h.includes("producto")) return "w-[40%] min-w-[18rem]"
+    if (h.includes("sku")) return "w-[12%] min-w-[8rem]"
+    if (h.includes("estado") || h.includes("cant")) return "w-[8%] min-w-[6rem]"
+    if (sanitizeHeader(header[ci], ci) === "") return "w-[4%] min-w-[3rem]"
+    return "w-[10%] min-w-[6rem]"
   }
 
   return (
@@ -94,11 +95,8 @@ export default function CatalogoPage() {
             <h1 className="text-xl font-semibold">Catálogo</h1>
           </div>
           <div className="p-4 space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Subir hoja de cálculo</CardTitle>
-              </CardHeader>
-              <CardContent className="flex items-center gap-3">
+            <Card className="border-0 shadow-none">
+              <CardContent className="flex items-center gap-3 p-0">
                 <Input
                   type="file"
                   accept=".xlsx,.xlsm,.csv"
@@ -118,21 +116,18 @@ export default function CatalogoPage() {
 
             {sheets.length > 0 && (
               <Card>
-                <CardHeader>
-                  <CardTitle>Catálogo (desde fila 21, sin columna A)</CardTitle>
-                </CardHeader>
                 <CardContent>
                   <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="flex flex-wrap gap-2 bg-muted rounded-md p-2 border sticky top-0 z-10">
+                    <TabsList className="flex flex-wrap gap-2 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-3 border sticky top-0 z-10 shadow-sm">
                       {sheets.map((s) => (
-                        <TabsTrigger key={s.name} value={s.name} className="rounded-full px-4 py-2 bg-background border hover:bg-muted data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                        <TabsTrigger key={s.name} value={s.name} className="rounded-full px-5 py-2 bg-background border hover:bg-muted data-[state=active]:bg-primary data-[state=active]:text-primary-foreground shadow-sm">
                           {s.name}
                         </TabsTrigger>
                       ))}
                     </TabsList>
                     {sheets.map((s, si) => (
                       <TabsContent key={s.name} value={s.name}>
-                        <div className="border rounded-md">
+                        <div className="border rounded-xl shadow-sm bg-white">
                           <Table className="table-fixed w-full">
                             <TableHeader>
                               <TableRow>
@@ -142,7 +137,7 @@ export default function CatalogoPage() {
                                   return (
                                     <TableHead
                                       key={ci}
-                                      className="sticky top-0 bg-background z-10 text-muted-foreground"
+                                      className="sticky top-0 bg-background z-10 text-muted-foreground text-center"
                                     >
                                       {String(label)}
                                     </TableHead>
@@ -161,7 +156,7 @@ export default function CatalogoPage() {
                                       const val = row[ci] ?? ""
                                       const isEstado = ci === estadoIdx
                                       const isCantidad = ci === cantidadIdx
-                                      let cellClass = `${widthClassFor(header, ci)} px-3 py-2 rounded border bg-background whitespace-normal break-words focus:outline-none`
+                                      let cellClass = `${widthClassFor(header, ci)} px-3 py-2 rounded border bg-background whitespace-normal break-words text-center focus:outline-none`
                                       if (isEstado) {
                                         const t = String(val).toLowerCase()
                                         if (t.includes("stock") && !t.includes("sin")) {
@@ -175,6 +170,11 @@ export default function CatalogoPage() {
                                           if (q > 0) cellClass += " text-emerald-600 font-semibold"
                                           else if (q === 0) cellClass += " text-red-600 font-semibold"
                                         }
+                                      }
+                                      const h = String(header[ci] ?? "").toLowerCase()
+                                      if (h.includes("titulo") || h.includes("nombre") || h.includes("producto")) {
+                                        cellClass = cellClass.replace("text-center", "text-left")
+                                        cellClass += " bg-indigo-50/50"
                                       }
                                       return (
                                         <TableCell key={ci}>
