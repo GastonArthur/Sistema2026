@@ -18,18 +18,24 @@ type SheetData = {
 export default function CatalogoPage() {
   const [sheets, setSheets] = useState<SheetData[]>([])
   const [activeTab, setActiveTab] = useState<string>("")
+  const allowedSheets = useMemo(
+    () => new Set(["PALETAS DE PADEL", "BOLSOS Y MOCHILAS", "ACCESORIOS Y ZAPATILLAS", "PELOTAS PADEL"]),
+    []
+  )
 
   const handleFile = async (file: File) => {
     const buf = await file.arrayBuffer()
     const wb = read(buf, { type: "array" })
     const names = wb.SheetNames || []
-    const parsed: SheetData[] = names.map((n) => {
-      const ws = wb.Sheets[n]
-      const raw = utils.sheet_to_json(ws, { header: 1, blankrows: false }) as any[][]
-      const sliced = raw.slice(20)
-      const withoutA = sliced.map((row) => row.slice(1))
-      return { name: n, rows: withoutA }
-    })
+    const parsed: SheetData[] = names
+      .filter((n) => allowedSheets.has(n.toUpperCase()))
+      .map((n) => {
+        const ws = wb.Sheets[n]
+        const raw = utils.sheet_to_json(ws, { header: 1, blankrows: false }) as any[][]
+        const sliced = raw.slice(20)
+        const withoutA = sliced.map((row) => row.slice(1))
+        return { name: n, rows: withoutA }
+      })
     setSheets(parsed)
     setActiveTab(parsed[0]?.name || "")
   }
@@ -61,17 +67,29 @@ export default function CatalogoPage() {
     const t = token.toLowerCase()
     return header.findIndex((h) => String(h ?? "").toLowerCase().includes(t))
   }
+  const sanitizeHeader = (label: string | number | null, idx: number) => {
+    const s = String(label ?? `Col ${idx + 1}`)
+    if (/^col\s*\d+$/i.test(s)) return ""
+    return s
+  }
+  const widthClassFor = (header: (string | number | null)[], ci: number) => {
+    const h = String(header[ci] ?? "").toLowerCase()
+    if (h.includes("titulo") || h.includes("nombre") || h.includes("producto")) return "min-w-64 w-64"
+    if (h.includes("sku")) return "min-w-32 w-32"
+    if (h.includes("estado") || h.includes("cant")) return "min-w-24 w-24"
+    return "min-w-28 w-28"
+  }
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen overflow-x-hidden">
         <AppSidebar
           activeTab="rentabilidad"
           setActiveTab={() => {}}
           onLogout={() => {}}
         />
-        <SidebarInset className="flex-1">
-          <div className="flex items-center gap-2 p-4 border-b">
+        <SidebarInset className="flex-1 bg-muted/20">
+          <div className="flex items-center gap-2 p-4 border-b bg-background sticky top-0 z-20">
             <SidebarTrigger />
             <h1 className="text-xl font-semibold">Catálogo</h1>
           </div>
@@ -105,28 +123,28 @@ export default function CatalogoPage() {
                 </CardHeader>
                 <CardContent>
                   <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="flex flex-wrap">
+                    <TabsList className="flex flex-wrap gap-2 bg-muted rounded-md p-2 border sticky top-0 z-10">
                       {sheets.map((s) => (
-                        <TabsTrigger key={s.name} value={s.name}>
+                        <TabsTrigger key={s.name} value={s.name} className="rounded-full px-4 py-2 bg-background border hover:bg-muted data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                           {s.name}
                         </TabsTrigger>
                       ))}
                     </TabsList>
                     {sheets.map((s, si) => (
                       <TabsContent key={s.name} value={s.name}>
-                        <div className="overflow-auto border rounded-md">
-                          <Table className="min-w-[1000px]">
+                        <div className="border rounded-md">
+                          <Table className="table-fixed w-full">
                             <TableHeader>
                               <TableRow>
                                 {Array.from({ length: getColCount(s.rows) }).map((_, ci) => {
                                   const header = getHeader(s.rows)
-                                  const label = header[ci]
+                                  const label = sanitizeHeader(header[ci], ci)
                                   return (
                                     <TableHead
                                       key={ci}
-                                      className="sticky top-0 bg-background z-10"
+                                      className="sticky top-0 bg-background z-10 text-muted-foreground"
                                     >
-                                      {String(label ?? `Col ${ci + 1}`)}
+                                      {String(label)}
                                     </TableHead>
                                   )
                                 })}
@@ -138,12 +156,12 @@ export default function CatalogoPage() {
                                 const estadoIdx = findColumnIndex(header, "estado")
                                 const cantidadIdx = findColumnIndex(header, "cant")
                                 return (
-                                  <TableRow key={ri} className="odd:bg-muted/30">
+                                  <TableRow key={ri} className="odd:bg-muted/30 hover:bg-muted/40 transition-colors">
                                     {Array.from({ length: getColCount(s.rows) }).map((_, ci) => {
                                       const val = row[ci] ?? ""
                                       const isEstado = ci === estadoIdx
                                       const isCantidad = ci === cantidadIdx
-                                      let cellClass = "min-w-24 px-2 py-1 rounded border hover:bg-muted/50 focus:outline-none"
+                                      let cellClass = `${widthClassFor(header, ci)} px-3 py-2 rounded border bg-background whitespace-normal break-words focus:outline-none`
                                       if (isEstado) {
                                         const t = String(val).toLowerCase()
                                         if (t.includes("stock") && !t.includes("sin")) {
