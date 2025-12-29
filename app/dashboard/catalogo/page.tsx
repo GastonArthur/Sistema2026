@@ -72,13 +72,27 @@ export default function CatalogoPage() {
     if (/^col\s*\d+$/i.test(s)) return ""
     return s
   }
-  const widthClassFor = (header: (string | number | null)[], ci: number) => {
-    const h = String(header[ci] ?? "").toLowerCase()
-    if (h.includes("titulo") || h.includes("nombre") || h.includes("producto")) return "w-[40%] min-w-[18rem]"
-    if (h.includes("sku")) return "w-[12%] min-w-[8rem]"
-    if (h.includes("estado") || h.includes("cant")) return "w-[8%] min-w-[6rem]"
-    if (sanitizeHeader(header[ci], ci) === "") return "w-[4%] min-w-[3rem]"
-    return "w-[10%] min-w-[6rem]"
+  const widthClassForIndex = (ci: number) => {
+    if (ci === 0) return "w-[46%] min-w-[22rem]"
+    if (ci === 1) return "w-[8%] min-w-[8rem]"
+    if (ci === 2) return "w-[8%] min-w-[8rem]"
+    if (ci === 3) return "w-[8%] min-w-[8rem]"
+    if (ci === 4) return "w-[6%] min-w-[4rem]"
+    if (ci === 5) return "w-[10%] min-w-[8rem]"
+    if (ci === 6) return "w-[8%] min-w-[6rem]"
+    if (ci === 7) return "w-[12%] min-w-[10rem]"
+    if (ci === 8) return "w-[6%] min-w-[5rem]"
+    if (ci === 9) return "w-[6%] min-w-[4rem]"
+    if (ci === 10) return "w-[10%] min-w-[8rem]"
+    return "w-[8%] min-w-[6rem]"
+  }
+  const isPriceCol = (ci: number) => ci === 1 || ci === 2 || ci === 3
+  const formatARS = (val: any) => {
+    const n = Number(String(val).replace(/[^\d.-]/g, ""))
+    if (Number.isFinite(n)) {
+      return new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 2 }).format(n)
+    }
+    return String(val ?? "")
   }
 
   return (
@@ -132,12 +146,11 @@ export default function CatalogoPage() {
                             <TableHeader>
                               <TableRow>
                                 {Array.from({ length: getColCount(s.rows) }).map((_, ci) => {
-                                  const header = getHeader(s.rows)
-                                  const label = sanitizeHeader(header[ci], ci)
+                                  const label = sanitizeHeader(getHeader(s.rows)[ci], ci)
                                   return (
                                     <TableHead
                                       key={ci}
-                                      className="sticky top-0 bg-background z-10 text-muted-foreground text-center"
+                                      className={`sticky top-0 bg-background z-10 text-muted-foreground text-center ${widthClassForIndex(ci)}`}
                                     >
                                       {String(label)}
                                     </TableHead>
@@ -147,16 +160,15 @@ export default function CatalogoPage() {
                             </TableHeader>
                             <TableBody>
                               {s.rows.slice(1).map((row, ri) => {
-                                const header = getHeader(s.rows)
-                                const estadoIdx = findColumnIndex(header, "estado")
-                                const cantidadIdx = findColumnIndex(header, "cant")
+                                const estadoIdx = 5
+                                const cantidadIdx = 6
                                 return (
                                   <TableRow key={ri} className="odd:bg-muted/30 hover:bg-muted/40 transition-colors">
                                     {Array.from({ length: getColCount(s.rows) }).map((_, ci) => {
                                       const val = row[ci] ?? ""
                                       const isEstado = ci === estadoIdx
                                       const isCantidad = ci === cantidadIdx
-                                      let cellClass = `${widthClassFor(header, ci)} px-3 py-2 rounded border bg-background whitespace-normal break-words text-center focus:outline-none`
+                                      let cellClass = `${widthClassForIndex(ci)} px-3 py-2 rounded border bg-background whitespace-normal break-words text-center focus:outline-none`
                                       if (isEstado) {
                                         const t = String(val).toLowerCase()
                                         if (t.includes("stock") && !t.includes("sin")) {
@@ -171,20 +183,23 @@ export default function CatalogoPage() {
                                           else if (q === 0) cellClass += " text-red-600 font-semibold"
                                         }
                                       }
-                                      const h = String(header[ci] ?? "").toLowerCase()
-                                      if (h.includes("titulo") || h.includes("nombre") || h.includes("producto")) {
+                                      if (ci === 0) {
                                         cellClass = cellClass.replace("text-center", "text-left")
                                         cellClass += " bg-indigo-50/50"
                                       }
+                                      const displayVal = isPriceCol(ci) ? formatARS(val) : String(val)
                                       return (
                                         <TableCell key={ci}>
                                           <div
                                             contentEditable
                                             suppressContentEditableWarning
                                             className={cellClass}
-                                            onBlur={(e) => updateCell(si, ri + 1, ci, e.currentTarget.textContent || "")}
+                                            onBlur={(e) => {
+                                              const newVal = isPriceCol(ci) ? formatARS(e.currentTarget.textContent || "") : (e.currentTarget.textContent || "")
+                                              updateCell(si, ri + 1, ci, newVal)
+                                            }}
                                           >
-                                            {String(val)}
+                                            {displayVal}
                                           </div>
                                         </TableCell>
                                       )
