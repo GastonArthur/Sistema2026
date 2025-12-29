@@ -9,6 +9,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Trash2, ArrowUp, ArrowDown } from "lucide-react"
 
 type SheetData = {
   name: string
@@ -94,6 +95,32 @@ export default function CatalogoPage() {
     }
     return String(val ?? "")
   }
+  const moveRow = (sheetIdx: number, displayRowIndex: number, direction: "up" | "down") => {
+    setSheets((prev) => {
+      const next = [...prev]
+      const sheet = { ...next[sheetIdx] }
+      const from = displayRowIndex + 1
+      const to = direction === "up" ? from - 1 : from + 1
+      if (to <= 0 || to >= sheet.rows.length) return prev
+      const rows = [...sheet.rows]
+      const [item] = rows.splice(from, 1)
+      rows.splice(to, 0, item)
+      sheet.rows = rows
+      next[sheetIdx] = sheet
+      return next
+    })
+  }
+  const deleteRow = (sheetIdx: number, displayRowIndex: number) => {
+    setSheets((prev) => {
+      const next = [...prev]
+      const sheet = { ...next[sheetIdx] }
+      const idx = displayRowIndex + 1
+      const rows = sheet.rows.filter((_, i) => i !== idx)
+      sheet.rows = rows
+      next[sheetIdx] = sheet
+      return next
+    })
+  }
 
   return (
     <SidebarProvider>
@@ -132,16 +159,16 @@ export default function CatalogoPage() {
               <Card>
                 <CardContent>
                   <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="flex flex-wrap gap-2 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-3 border sticky top-0 z-10 shadow-sm">
+                    <TabsList className="flex flex-wrap gap-3 bg-gradient-to-r from-blue-500 via-indigo-500 to-fuchsia-500 text-white rounded-xl p-2 sticky top-0 z-10 shadow">
                       {sheets.map((s) => (
-                        <TabsTrigger key={s.name} value={s.name} className="rounded-full px-5 py-2 bg-background border hover:bg-muted data-[state=active]:bg-primary data-[state=active]:text-primary-foreground shadow-sm">
+                        <TabsTrigger key={s.name} value={s.name} className="rounded-full px-5 py-2 bg-white/10 hover:bg-white/20 data-[state=active]:bg-white data-[state=active]:text-primary shadow-sm">
                           {s.name}
                         </TabsTrigger>
                       ))}
                     </TabsList>
                     {sheets.map((s, si) => (
                       <TabsContent key={s.name} value={s.name}>
-                        <div className="border rounded-xl shadow-sm bg-white">
+                        <div className="border rounded-xl shadow bg-white">
                           <Table className="table-fixed w-full">
                             <TableHeader>
                               <TableRow>
@@ -150,12 +177,15 @@ export default function CatalogoPage() {
                                   return (
                                     <TableHead
                                       key={ci}
-                                      className={`sticky top-0 bg-background z-10 text-muted-foreground text-center ${widthClassForIndex(ci)}`}
+                                      className={`sticky top-0 z-10 text-center align-middle ${widthClassForIndex(ci)} bg-gradient-to-r from-blue-600 to-indigo-600 text-white`}
                                     >
                                       {String(label)}
                                     </TableHead>
                                   )
                                 })}
+                                <TableHead className="sticky top-0 z-10 text-center align-middle w-[8%] min-w-[6rem] bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+                                  Acciones
+                                </TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -163,12 +193,12 @@ export default function CatalogoPage() {
                                 const estadoIdx = 5
                                 const cantidadIdx = 6
                                 return (
-                                  <TableRow key={ri} className="odd:bg-muted/30 hover:bg-muted/40 transition-colors">
+                                  <TableRow key={ri} className="odd:bg-muted/20 hover:bg-muted/40 transition-colors">
                                     {Array.from({ length: getColCount(s.rows) }).map((_, ci) => {
                                       const val = row[ci] ?? ""
                                       const isEstado = ci === estadoIdx
                                       const isCantidad = ci === cantidadIdx
-                                      let cellClass = `${widthClassForIndex(ci)} px-3 py-2 rounded border bg-background whitespace-normal break-words text-center focus:outline-none`
+                                      let cellClass = `${widthClassForIndex(ci)} px-3 py-2 rounded border bg-background whitespace-normal break-words text-center align-middle focus:outline-none mx-1 my-1`
                                       if (isEstado) {
                                         const t = String(val).toLowerCase()
                                         if (t.includes("stock") && !t.includes("sin")) {
@@ -184,7 +214,6 @@ export default function CatalogoPage() {
                                         }
                                       }
                                       if (ci === 0) {
-                                        cellClass = cellClass.replace("text-center", "text-left")
                                         cellClass += " bg-indigo-50/50"
                                       }
                                       const displayVal = isPriceCol(ci) ? formatARS(val) : String(val)
@@ -204,6 +233,19 @@ export default function CatalogoPage() {
                                         </TableCell>
                                       )
                                     })}
+                                    <TableCell className="align-middle">
+                                      <div className="flex items-center justify-center gap-2">
+                                        <Button variant="secondary" size="sm" onClick={() => moveRow(si, ri, "up")}>
+                                          <ArrowUp className="h-4 w-4" />
+                                        </Button>
+                                        <Button variant="secondary" size="sm" onClick={() => moveRow(si, ri, "down")}>
+                                          <ArrowDown className="h-4 w-4" />
+                                        </Button>
+                                        <Button variant="destructive" size="sm" onClick={() => deleteRow(si, ri)}>
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </TableCell>
                                   </TableRow>
                                 )
                               })}
