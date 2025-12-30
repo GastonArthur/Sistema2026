@@ -291,31 +291,35 @@ const SidebarRail = React.forwardRef<
 >(({ className, ...props }, ref) => {
   const { toggleSidebar, state } = useSidebar()
 
-  if (state !== "collapsed") {
-    return null
-  }
+  const isCollapsed = state === "collapsed"
 
   return (
     <button
       ref={ref}
       data-sidebar="rail"
       aria-label="Toggle Sidebar"
-      tabIndex={-1}
+      tabIndex={0}
       onClick={toggleSidebar}
       title="Toggle Sidebar"
       className={cn(
-        // Prominent circular toggle button at the edge (only when collapsed)
-        "absolute z-20 hidden md:flex size-10 items-center justify-center rounded-full border border-sidebar-border bg-primary text-primary-foreground shadow-lg ring-2 ring-primary/30 transition-colors",
+        // Circular toggle button at the edge (visible in both states)
+        "absolute z-20 flex items-center justify-center rounded-full border border-sidebar-border shadow transition-colors",
+        isCollapsed
+          ? "size-10 bg-primary text-primary-foreground ring-2 ring-primary/30 hover:brightness-110"
+          : "size-8 bg-white text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
         // Position for left-side sidebar
         "[[data-side=left]_&]:top-1/2 [[data-side=left]_&]:-translate-y-1/2 [[data-side=left]_&]:-right-3",
         // Position for right-side sidebar
         "[[data-side=right]_&]:top-1/2 [[data-side=right]_&]:-translate-y-1/2 [[data-side=right]_&]:-left-3",
-        "hover:brightness-110",
         className
       )}
       {...props}
     >
-      <ChevronRight className="size-6" />
+      {isCollapsed ? (
+        <ChevronRight className="size-6" />
+      ) : (
+        <ChevronLeft className="size-5" />
+      )}
     </button>
   )
 })
