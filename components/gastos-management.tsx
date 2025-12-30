@@ -102,11 +102,19 @@ export function GastosManagement({ onUpdateExpenses }: GastosManagementProps) {
   }>({ show: false, type: 'expense', id: null, description: '' })
 
   const [filters, setFilters] = useState({
-    month: new Date().toISOString().slice(0, 7), // YYYY-MM format
+    period: "mensual" as "diario" | "semanal" | "mensual" | "personalizado",
+    dateFrom: (() => {
+      const d = new Date()
+      return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split("T")[0]
+    })(),
+    dateTo: (() => {
+      const d = new Date()
+      return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split("T")[0]
+    })(),
     category: "all",
     paymentMethod: "all",
     hasInvoice: "all",
-    status: "all" // reconciliado o no
+    status: "all"
   })
 
   const [formData, setFormData] = useState({
@@ -148,10 +156,10 @@ export function GastosManagement({ onUpdateExpenses }: GastosManagementProps) {
 
   useEffect(() => {
     if (onUpdateExpenses) {
-      const total = getCurrentMonthTotal()
+      const total = getCurrentPeriodTotal()
       onUpdateExpenses(total)
     }
-  }, [expenses, filters.month, onUpdateExpenses])
+  }, [expenses, filters.period, filters.dateFrom, filters.dateTo, onUpdateExpenses])
 
   const loadData = async () => {
     setLoading(true)
@@ -228,8 +236,35 @@ export function GastosManagement({ onUpdateExpenses }: GastosManagementProps) {
   const getFilteredExpenses = () => {
     let filtered = [...expenses]
 
-    if (filters.month) {
-      filtered = filtered.filter(e => e.expense_date.startsWith(filters.month))
+    if (filters.period) {
+      const today = new Date()
+      today.setHours(0,0,0,0)
+      let from = new Date(filters.dateFrom + "T00:00:00")
+      let to = new Date(filters.dateTo + "T23:59:59")
+
+      if (filters.period === "diario") {
+        from = new Date(today)
+        to = new Date(today)
+        to.setHours(23,59,59,999)
+      } else if (filters.period === "semanal") {
+        const startOfWeek = new Date(today)
+        startOfWeek.setDate(today.getDate() - today.getDay())
+        from = startOfWeek
+        to = new Date(today)
+        to.setHours(23,59,59,999)
+      } else if (filters.period === "mensual") {
+        const d = new Date()
+        from = new Date(d.getFullYear(), d.getMonth(), 1)
+        to = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+        to.setHours(23,59,59,999)
+      } else if (filters.period === "personalizado") {
+        // usa dateFrom/dateTo actuales
+      }
+
+      filtered = filtered.filter(e => {
+        const ed = new Date(e.expense_date + "T00:00:00")
+        return ed >= from && ed <= to
+      })
     }
     if (filters.category !== "all") {
       filtered = filtered.filter(e => e.category_id?.toString() === filters.category)
@@ -249,11 +284,9 @@ export function GastosManagement({ onUpdateExpenses }: GastosManagementProps) {
     return filtered
   }
 
-  const getCurrentMonthTotal = () => {
-    const currentMonth = new Date().toISOString().slice(0, 7)
-    return expenses
-      .filter(e => e.expense_date.startsWith(currentMonth))
-      .reduce((sum, e) => sum + e.amount, 0)
+  const getCurrentPeriodTotal = () => {
+    const filtered = getFilteredExpenses()
+    return filtered.reduce((sum, e) => sum + e.amount, 0)
   }
 
   // --- CRUD GASTOS ---
@@ -449,12 +482,54 @@ export function GastosManagement({ onUpdateExpenses }: GastosManagementProps) {
         <TabsContent value="gastos" className="space-y-4">
             {/* Filters */}
             <div className="bg-white p-4 rounded-lg border shadow-sm flex flex-wrap gap-4 items-center">
-                <Input 
-                    type="month" 
-                    value={filters.month} 
-                    onChange={e => setFilters({...filters, month: e.target.value})}
-                    className="w-40"
-                />
+                <Select 
+                  value={filters.period} 
+                  onValueChange={(v) => {
+                    if (v === "diario") {
+                      const t = new Date().toISOString().split("T")[0]
+                      setFilters(prev => ({ ...prev, period: "diario", dateFrom: t, dateTo: t }))
+                    } else if (v === "semanal") {
+                      const today = new Date()
+                      const startOfWeek = new Date(today)
+                      startOfWeek.setDate(today.getDate() - today.getDay())
+                      const f = startOfWeek.toISOString().split("T")[0]
+                      const t = today.toISOString().split("T")[0]
+                      setFilters(prev => ({ ...prev, period: "semanal", dateFrom: f, dateTo: t }))
+                    } else if (v === "mensual") {
+                      const d = new Date()
+                      const f = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split("T")[0]
+                      const t = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split("T")[0]
+                      setFilters(prev => ({ ...prev, period: "mensual", dateFrom: f, dateTo: t }))
+                    } else {
+                      setFilters(prev => ({ ...prev, period: "personalizado" }))
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-[180px]"><SelectValue placeholder="Periodo" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="diario">Diario</SelectItem>
+                    <SelectItem value="semanal">Semanal</SelectItem>
+                    <SelectItem value="mensual">Mensual</SelectItem>
+                    <SelectItem value="personalizado">Personalizado</SelectItem>
+                  </SelectContent>
+                </Select>
+                {filters.period === "personalizado" && (
+                  <div className="flex items-center gap-2">
+                    <Input 
+                      type="date" 
+                      className="h-9 w-auto text-sm"
+                      value={filters.dateFrom}
+                      onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+                    />
+                    <span className="text-slate-400">-</span>
+                    <Input 
+                      type="date" 
+                      className="h-9 w-auto text-sm"
+                      value={filters.dateTo}
+                      onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+                    />
+                  </div>
+                )}
                 <Select value={filters.category} onValueChange={v => setFilters({...filters, category: v})}>
                     <SelectTrigger className="w-[180px]"><SelectValue placeholder="Categoría" /></SelectTrigger>
                     <SelectContent>

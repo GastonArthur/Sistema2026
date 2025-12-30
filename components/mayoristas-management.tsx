@@ -230,8 +230,9 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
   })
 
   const [reportFilters, setReportFilters] = useState({
-    dateFrom: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-    dateTo: new Date().toISOString().split("T")[0],
+    mode: "mensual" as "diario" | "semanal" | "mensual" | "personalizado",
+    dateFrom: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0],
+    dateTo: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split("T")[0],
     clientId: "all",
   })
 
@@ -2631,23 +2632,77 @@ Este reporte contiene información confidencial y está destinado únicamente pa
               </div>
 
               <div className="flex items-center gap-2">
+                <Select
+                  value={reportFilters.mode}
+                  onValueChange={(val) => {
+                    if (val === "diario") {
+                      const t = new Date().toISOString().split("T")[0]
+                      setReportFilters(prev => ({ ...prev, mode: "diario", dateFrom: t, dateTo: t }))
+                    } else if (val === "semanal") {
+                      const today = new Date()
+                      const startOfWeek = new Date(today)
+                      startOfWeek.setDate(today.getDate() - today.getDay())
+                      const f = startOfWeek.toISOString().split("T")[0]
+                      const t = today.toISOString().split("T")[0]
+                      setReportFilters(prev => ({ ...prev, mode: "semanal", dateFrom: f, dateTo: t }))
+                    } else if (val === "mensual") {
+                      const d = new Date()
+                      const f = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split("T")[0]
+                      const t = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split("T")[0]
+                      setReportFilters(prev => ({ ...prev, mode: "mensual", dateFrom: f, dateTo: t }))
+                    } else {
+                      setReportFilters(prev => ({ ...prev, mode: "personalizado" }))
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-8 text-sm w-[200px]">
+                    <SelectValue placeholder="Periodo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="diario">Diario</SelectItem>
+                    <SelectItem value="semanal">Semanal</SelectItem>
+                    <SelectItem value="mensual">Mensual</SelectItem>
+                    <SelectItem value="personalizado">Personalizado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-slate-500 whitespace-nowrap">Desde:</span>
-                <Input
-                  type="date"
-                  value={reportFilters.dateFrom}
-                  onChange={(e) => setReportFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
-                  className="h-8 text-sm w-auto py-0 px-2"
-                />
+                {reportFilters.mode === "personalizado" ? (
+                  <Input
+                    type="date"
+                    value={reportFilters.dateFrom}
+                    onChange={(e) => setReportFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+                    className="h-8 text-sm w-auto py-0 px-2"
+                  />
+                ) : (
+                  <Input
+                    type="date"
+                    value={reportFilters.dateFrom}
+                    readOnly
+                    className="h-8 text-sm w-auto py-0 px-2"
+                  />
+                )}
               </div>
 
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-slate-500 whitespace-nowrap">Hasta:</span>
-                <Input
-                  type="date"
-                  value={reportFilters.dateTo}
-                  onChange={(e) => setReportFilters(prev => ({ ...prev, dateTo: e.target.value }))}
-                  className="h-8 text-sm w-auto py-0 px-2"
-                />
+                {reportFilters.mode === "personalizado" ? (
+                  <Input
+                    type="date"
+                    value={reportFilters.dateTo}
+                    onChange={(e) => setReportFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+                    className="h-8 text-sm w-auto py-0 px-2"
+                  />
+                ) : (
+                  <Input
+                    type="date"
+                    value={reportFilters.dateTo}
+                    readOnly
+                    className="h-8 text-sm w-auto py-0 px-2"
+                  />
+                )}
               </div>
 
               <div className="flex items-center gap-2">
