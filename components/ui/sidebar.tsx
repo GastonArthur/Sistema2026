@@ -291,6 +291,10 @@ const SidebarRail = React.forwardRef<
 >(({ className, ...props }, ref) => {
   const { toggleSidebar, state } = useSidebar()
 
+  if (state !== "collapsed") {
+    return null
+  }
+
   return (
     <button
       ref={ref}
@@ -300,22 +304,18 @@ const SidebarRail = React.forwardRef<
       onClick={toggleSidebar}
       title="Toggle Sidebar"
       className={cn(
-        // Small circular toggle button at the edge
-        "absolute z-20 hidden md:flex size-7 items-center justify-center rounded-full border border-sidebar-border bg-white text-sidebar-foreground shadow transition-colors",
+        // Prominent circular toggle button at the edge (only when collapsed)
+        "absolute z-20 hidden md:flex size-10 items-center justify-center rounded-full border border-sidebar-border bg-primary text-primary-foreground shadow-lg ring-2 ring-primary/30 transition-colors",
         // Position for left-side sidebar
         "[[data-side=left]_&]:top-1/2 [[data-side=left]_&]:-translate-y-1/2 [[data-side=left]_&]:-right-3",
         // Position for right-side sidebar
         "[[data-side=right]_&]:top-1/2 [[data-side=right]_&]:-translate-y-1/2 [[data-side=right]_&]:-left-3",
-        "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+        "hover:brightness-110",
         className
       )}
       {...props}
     >
-      {state === "collapsed" ? (
-        <ChevronRight className="size-4" />
-      ) : (
-        <ChevronLeft className="size-4" />
-      )}
+      <ChevronRight className="size-6" />
     </button>
   )
 })

@@ -79,7 +79,7 @@ export function AppSidebar({
                 <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Dashboard</span>
               </div>
             </div>
-            <SidebarTrigger />
+            {/* Trigger eliminado para cerrar desde el header */}
           </div>
           <div className="flex flex-col pl-[3.25rem] gap-1 group-data-[collapsible=icon]:hidden">
             <div className="flex items-center gap-2">
