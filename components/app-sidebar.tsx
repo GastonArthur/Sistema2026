@@ -190,10 +190,10 @@ export function AppSidebar({
                       onClick={() => handleNavigation("clients")}
                       isActive={activeTab === "clients"}
                       tooltip="Clientes"
-                      className="group/btn hover:bg-violet-50 hover:text-violet-700 transition-all duration-200 ease-in-out data-[active=true]:bg-violet-100 data-[active=true]:text-violet-800"
+                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary"
                     >
-                      <Users className="group-hover/btn:scale-110 transition-transform text-violet-500/80 group-hover/btn:text-violet-600 group-data-[active=true]:text-violet-700" />
-                      <span className="font-medium">Clientes</span>
+                      <Users className="opacity-70" />
+                      <span>Clientes</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -201,10 +201,10 @@ export function AppSidebar({
                       onClick={() => handleNavigation("brands")}
                       isActive={activeTab === "brands"}
                       tooltip="Marcas"
-                      className="group/btn hover:bg-violet-50 hover:text-violet-700 transition-all duration-200 ease-in-out data-[active=true]:bg-violet-100 data-[active=true]:text-violet-800"
+                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary"
                     >
-                      <Tag className="group-hover/btn:scale-110 transition-transform text-violet-500/80 group-hover/btn:text-violet-600 group-data-[active=true]:text-violet-700" />
-                      <span className="font-medium">Marcas</span>
+                      <Tag className="opacity-70" />
+                      <span>Marcas</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -212,32 +212,10 @@ export function AppSidebar({
                       onClick={() => handleNavigation("suppliers")}
                       isActive={activeTab === "suppliers"}
                       tooltip="Proveedores"
-                      className="group/btn hover:bg-violet-50 hover:text-violet-700 transition-all duration-200 ease-in-out data-[active=true]:bg-violet-100 data-[active=true]:text-violet-800"
+                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary"
                     >
-                      <Users className="group-hover/btn:scale-110 transition-transform text-violet-500/80 group-hover/btn:text-violet-600 group-data-[active=true]:text-violet-700" />
-                      <span className="font-medium">Proveedores</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => handleNavigation("precios")}
-                      isActive={activeTab === "precios"}
-                      tooltip="Precios a Publicar"
-                      className="group/btn hover:bg-violet-50 hover:text-violet-700 transition-all duration-200 ease-in-out data-[active=true]:bg-violet-100 data-[active=true]:text-violet-800"
-                    >
-                      <DollarSign className="group-hover/btn:scale-110 transition-transform text-violet-500/80 group-hover/btn:text-violet-600 group-data-[active=true]:text-violet-700" />
-                      <span className="font-medium">Precios a Publicar</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => handleNavigation("zentor")}
-                      isActive={activeTab === "zentor"}
-                      tooltip="Lista ZENTOR"
-                      className="group/btn hover:bg-violet-50 hover:text-violet-700 transition-all duration-200 ease-in-out data-[active=true]:bg-violet-100 data-[active=true]:text-violet-800"
-                    >
-                      <Package className="group-hover/btn:scale-110 transition-transform text-violet-500/80 group-hover/btn:text-violet-600 group-data-[active=true]:text-violet-700" />
-                      <span className="font-medium">Lista ZENTOR</span>
+                      <Users className="opacity-70" />
+                      <span>Proveedores</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </>
