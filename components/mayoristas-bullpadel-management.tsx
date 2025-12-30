@@ -424,12 +424,18 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
       setClients(clientsData || [])
 
       // Fetch orders
-      const { data: ordersData, error: ordersError } = await supabase
-        .from("wholesale_orders")
-        .select("*, items:wholesale_order_items(*)")
-        .order("created_at", { ascending: false })
+      const clientIds = (clientsData || []).map((c) => c.id)
+      let ordersData: any[] = []
+      if (clientIds.length > 0) {
+        const { data, error } = await supabase
+          .from("wholesale_orders")
+          .select("*, items:wholesale_order_items(*)")
+          .in("client_id", clientIds)
+          .order("created_at", { ascending: false })
+        if (error) throw error
+        ordersData = data || []
+      }
 
-      if (ordersError) throw ordersError
       setOrders(ordersData || [])
 
       // Fetch config
