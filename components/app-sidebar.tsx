@@ -62,6 +62,8 @@ export function AppSidebar({
   }
   const [gestionOpen, setGestionOpen] = useState(true)
   const [ventasOpen, setVentasOpen] = useState(true)
+  const [finanzasOpen, setFinanzasOpen] = useState(true)
+  const [catalogosOpen, setCatalogosOpen] = useState(true)
 
   return (
     <Sidebar collapsible="icon">
@@ -121,6 +123,49 @@ export function AppSidebar({
                   <span className="font-medium">Importar</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-indigo-600 font-bold uppercase tracking-wider text-[10px] mb-1">Catálogos</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <button
+                  className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                  onClick={() => setCatalogosOpen((v) => !v)}
+                >
+                  {catalogosOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                  <span className="font-medium">Sección Catálogos</span>
+                </button>
+              </SidebarMenuItem>
+              {catalogosOpen && (
+                <>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => handleNavigation("precios")}
+                      isActive={activeTab === "precios"}
+                      tooltip="Precios a Publicar"
+                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary"
+                    >
+                      <DollarSign className="opacity-70" />
+                      <span>Precios a Publicar</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => handleNavigation("zentor")}
+                      isActive={activeTab === "zentor"}
+                      tooltip="Lista ZENTOR"
+                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary"
+                    >
+                      <Package className="opacity-70" />
+                      <span>Lista ZENTOR</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -197,50 +242,6 @@ export function AppSidebar({
                   </SidebarMenuItem>
                 </>
               )}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => handleNavigation("brands")}
-                  isActive={activeTab === "brands"}
-                  tooltip="Marcas"
-                  className="group/btn hover:bg-violet-50 hover:text-violet-700 transition-all duration-200 ease-in-out data-[active=true]:bg-violet-100 data-[active=true]:text-violet-800"
-                >
-                  <Tag className="group-hover/btn:scale-110 transition-transform text-violet-500/80 group-hover/btn:text-violet-600 group-data-[active=true]:text-violet-700" />
-                  <span className="font-medium">Marcas</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => handleNavigation("suppliers")}
-                  isActive={activeTab === "suppliers"}
-                  tooltip="Proveedores"
-                  className="group/btn hover:bg-violet-50 hover:text-violet-700 transition-all duration-200 ease-in-out data-[active=true]:bg-violet-100 data-[active=true]:text-violet-800"
-                >
-                  <Users className="group-hover/btn:scale-110 transition-transform text-violet-500/80 group-hover/btn:text-violet-600 group-data-[active=true]:text-violet-700" />
-                  <span className="font-medium">Proveedores</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => handleNavigation("precios")}
-                  isActive={activeTab === "precios"}
-                  tooltip="Precios a Publicar"
-                  className="group/btn hover:bg-violet-50 hover:text-violet-700 transition-all duration-200 ease-in-out data-[active=true]:bg-violet-100 data-[active=true]:text-violet-800"
-                >
-                  <DollarSign className="group-hover/btn:scale-110 transition-transform text-violet-500/80 group-hover/btn:text-violet-600 group-data-[active=true]:text-violet-700" />
-                  <span className="font-medium">Precios a Publicar</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => handleNavigation("zentor")}
-                  isActive={activeTab === "zentor"}
-                  tooltip="Lista ZENTOR"
-                  className="group/btn hover:bg-violet-50 hover:text-violet-700 transition-all duration-200 ease-in-out data-[active=true]:bg-violet-100 data-[active=true]:text-violet-800"
-                >
-                  <Package className="group-hover/btn:scale-110 transition-transform text-violet-500/80 group-hover/btn:text-violet-600 group-data-[active=true]:text-violet-700" />
-                  <span className="font-medium">Lista ZENTOR</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -249,19 +250,6 @@ export function AppSidebar({
           <SidebarGroupLabel className="text-emerald-600 font-bold uppercase tracking-wider text-[10px] mb-1">Ventas y Gastos</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={activeTab === "rentabilidad"}
-                  tooltip="Rentabilidad Real"
-                  className="group/btn hover:bg-emerald-50 hover:text-emerald-700 transition-all duration-200 ease-in-out data-[active=true]:bg-emerald-100 data-[active=true]:text-emerald-800"
-                >
-                  <a href="/dashboard/rentabilidad">
-                    <TrendingUp className="group-hover/btn:scale-110 transition-transform text-emerald-500/80 group-hover/btn:text-emerald-600 group-data-[active=true]:text-emerald-700" />
-                    <span className="font-medium">Rentabilidad Real</span>
-                  </a>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
               <SidebarMenuItem>
                 <button
                   className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
@@ -278,10 +266,10 @@ export function AppSidebar({
                       onClick={() => handleNavigation("wholesale")}
                       isActive={activeTab === "wholesale"}
                       tooltip="Mayoristas"
-                      className="group/btn hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 ease-in-out data-[active=true]:bg-purple-100 data-[active=true]:text-purple-800"
+                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary"
                     >
-                      <ShoppingCart className="group-hover/btn:scale-110 transition-transform text-purple-500/80 group-hover/btn:text-purple-600 group-data-[active=true]:text-purple-700" />
-                      <span className="font-medium">Mayoristas</span>
+                      <ShoppingCart className="opacity-70" />
+                      <span>Mayoristas</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -289,10 +277,10 @@ export function AppSidebar({
                       onClick={() => handleNavigation("wholesale-bullpadel")}
                       isActive={activeTab === "wholesale-bullpadel"}
                       tooltip="Mayoristas Bullpadel"
-                      className="group/btn hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 ease-in-out data-[active=true]:bg-blue-100 data-[active=true]:text-blue-800"
+                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary"
                     >
-                      <ShoppingCart className="group-hover/btn:scale-110 transition-transform text-blue-500/80 group-hover/btn:text-blue-600 group-data-[active=true]:text-blue-700" />
-                      <span className="font-medium">Mayoristas Bullpadel</span>
+                      <ShoppingCart className="opacity-70" />
+                      <span>Mayoristas Bullpadel</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -300,39 +288,64 @@ export function AppSidebar({
                       onClick={() => handleNavigation("retail")}
                       isActive={activeTab === "retail"}
                       tooltip="Minoristas"
-                      className="group/btn hover:bg-green-50 hover:text-green-700 transition-all duration-200 ease-in-out data-[active=true]:bg-green-100 data-[active=true]:text-green-800"
+                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary"
                     >
-                      <ShoppingBag className="group-hover/btn:scale-110 transition-transform text-green-500/80 group-hover/btn:text-green-600 group-data-[active=true]:text-green-700" />
-                      <span className="font-medium">Minoristas</span>
+                      <ShoppingBag className="opacity-70" />
+                      <span>Minoristas</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </>
               )}
 
               <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => handleNavigation("gastos")}
-                  isActive={activeTab === "gastos"}
-                  tooltip="Gastos"
-                  className="group/btn hover:bg-teal-50 hover:text-teal-700 transition-all duration-200 ease-in-out data-[active=true]:bg-teal-100 data-[active=true]:text-teal-800"
+                <button
+                  className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                  onClick={() => setFinanzasOpen((v) => !v)}
                 >
-                  <Receipt className="group-hover/btn:scale-110 transition-transform text-teal-500/80 group-hover/btn:text-teal-600 group-data-[active=true]:text-teal-700" />
-                  <span className="font-medium">Gastos</span>
-                </SidebarMenuButton>
+                  {finanzasOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                  <span className="font-medium">Sección Finanzas</span>
+                </button>
               </SidebarMenuItem>
-
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => handleNavigation("notas-credito")}
-                  isActive={activeTab === "notas-credito"}
-                  tooltip="Notas de Crédito"
-                  className="group/btn hover:bg-pink-50 hover:text-pink-700 transition-all duration-200 ease-in-out data-[active=true]:bg-pink-100 data-[active=true]:text-pink-800 relative"
-                >
-                  <FileText className="group-hover/btn:scale-110 transition-transform text-pink-500/80 group-hover/btn:text-pink-600 group-data-[active=true]:text-pink-700" />
-                  <span className="font-medium">Notas de Crédito</span>
-                  <SidebarMenuBadge className="bg-emerald-100 text-emerald-600">NEW</SidebarMenuBadge>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {finanzasOpen && (
+                <>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={activeTab === "rentabilidad"}
+                      tooltip="Rentabilidad Real"
+                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary"
+                    >
+                      <a href="/dashboard/rentabilidad">
+                        <TrendingUp className="opacity-70" />
+                        <span>Rentabilidad Real</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => handleNavigation("gastos")}
+                      isActive={activeTab === "gastos"}
+                      tooltip="Gastos"
+                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary"
+                    >
+                      <Receipt className="opacity-70" />
+                      <span>Gastos</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => handleNavigation("notas-credito")}
+                      isActive={activeTab === "notas-credito"}
+                      tooltip="Notas de Crédito"
+                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary relative"
+                    >
+                      <FileText className="opacity-70" />
+                      <span>Notas de Crédito</span>
+                      <SidebarMenuBadge className="bg-emerald-100 text-emerald-600">NEW</SidebarMenuBadge>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
