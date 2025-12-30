@@ -900,7 +900,6 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
               client_id: clientId,
               total_amount: totalAmount,
               notes: orderNotes,
-              vendor: orderVendor || null,
             })
             .eq("id", editingOrder.id)
 
@@ -943,7 +942,6 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
                 status: "pending",
                 total_amount: totalAmount,
                 notes: orderNotes,
-                vendor: orderVendor || null,
                 created_by: userId,
               },
             ])
@@ -2437,6 +2435,9 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>{editingOrder ? "Editar Pedido Mayorista" : "Nuevo Pedido Mayorista"}</DialogTitle>
+                    <DialogDescription>
+                      Complete los datos y confirme para guardar el pedido.
+                    </DialogDescription>
                   </DialogHeader>
 
                   <div className="grid grid-cols-2 gap-6">
