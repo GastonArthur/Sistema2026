@@ -8,16 +8,16 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { formatCurrency, convertScientificNotation } from "@/lib/utils"
 import { logError } from "@/lib/logger"
 import { read, utils, writeFile } from "xlsx"
-import { 
-  startOfMonth, 
-  endOfMonth, 
-  startOfWeek, 
-  endOfWeek, 
-  startOfDay, 
-  endOfDay, 
-  isWithinInterval, 
+import {
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  startOfDay,
+  endOfDay,
+  isWithinInterval,
   parseISO,
-  subMonths 
+  subMonths
 } from "date-fns"
 
 import { Button } from "@/components/ui/button"
@@ -98,6 +98,7 @@ import { VentasMinoristas } from "@/components/ventas-minoristas"
 import { ClientesManagement } from "@/components/clientes-management"
 import { ComprasManagement } from "@/components/compras-management"
 import { NotasCreditoManagement } from "@/components/notas-credito-management"
+import { MayoristasBullpadelManagement } from "@/components/mayoristas-bullpadel-management"
 
 type InventoryItem = {
   id: number
@@ -269,11 +270,11 @@ function InventoryManagementContent() {
   useEffect(() => {
     const tab = searchParams.get("tab")
     const section = searchParams.get("section")
-    
+
     if (tab) {
       setActiveTab(tab)
     }
-    
+
     if (section === "wholesale") {
       setActiveTab("wholesale")
     }
@@ -306,7 +307,7 @@ function InventoryManagementContent() {
       // Calcular gastos offline (simulados para coincidir con GastosManagement)
       const currentDate = new Date()
       const currentMonthStr = currentDate.toISOString().slice(0, 7) // YYYY-MM
-      
+
       const offlineExpenses = [
         {
           amount: 150000,
@@ -317,11 +318,11 @@ function InventoryManagementContent() {
           expense_date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
         }
       ]
-      
+
       const currentMonthExpensesTotal = offlineExpenses
         .filter(e => e.expense_date.startsWith(currentMonthStr))
         .reduce((sum, e) => sum + e.amount, 0)
-        
+
       setCurrentMonthExpenses(currentMonthExpensesTotal)
       setAllExpenses(offlineExpenses)
 
@@ -514,7 +515,7 @@ function InventoryManagementContent() {
     // Check for login param and remove it
     const loginParam = searchParams.get("login")
     const redirectParam = searchParams.get("redirect")
-    
+
     if (loginParam && redirectParam) {
       router.push(redirectParam)
     } else {
@@ -573,7 +574,7 @@ function InventoryManagementContent() {
   // Helper function to parse import dates
   const parseImportDate = (val: any) => {
     if (!val) return new Date().toISOString().split("T")[0]
-    
+
     // Si ya es una fecha válida ISO/Date object
     if (val instanceof Date) return val.toISOString().split("T")[0]
 
@@ -581,7 +582,7 @@ function InventoryManagementContent() {
     // Excel base date is 1899-12-30. 
     // 25569 is offset to 1970-01-01
     if (typeof val === 'number' && val > 20000) {
-        return new Date(Math.round((val - 25569) * 86400 * 1000)).toISOString().split("T")[0]
+      return new Date(Math.round((val - 25569) * 86400 * 1000)).toISOString().split("T")[0]
     }
 
     const strVal = String(val).trim()
@@ -589,29 +590,29 @@ function InventoryManagementContent() {
 
     // Formato DD/MM/YYYY o D/M/YYYY
     if (strVal.includes("/")) {
-        const parts = strVal.split("/")
-        if (parts.length === 3) {
-            const day = parseInt(parts[0], 10)
-            const month = parseInt(parts[1], 10) - 1 // JS months are 0-based
-            const year = parseInt(parts[2], 10)
-            
-            // Validar fecha
-            const d = new Date(year, month, day)
-            if (!isNaN(d.getTime()) && d.getDate() === day) {
-                // Ajustar zona horaria local a UTC para evitar desfases si es necesario, 
-                // pero split("T")[0] de ISO usa UTC. 
-                // Mejor construir string YYYY-MM-DD directo para evitar problemas de zona horaria
-                const pad = (n: number) => n < 10 ? '0' + n : n
-                return `${year}-${pad(month + 1)}-${pad(day)}`
-            }
+      const parts = strVal.split("/")
+      if (parts.length === 3) {
+        const day = parseInt(parts[0], 10)
+        const month = parseInt(parts[1], 10) - 1 // JS months are 0-based
+        const year = parseInt(parts[2], 10)
+
+        // Validar fecha
+        const d = new Date(year, month, day)
+        if (!isNaN(d.getTime()) && d.getDate() === day) {
+          // Ajustar zona horaria local a UTC para evitar desfases si es necesario, 
+          // pero split("T")[0] de ISO usa UTC. 
+          // Mejor construir string YYYY-MM-DD directo para evitar problemas de zona horaria
+          const pad = (n: number) => n < 10 ? '0' + n : n
+          return `${year}-${pad(month + 1)}-${pad(day)}`
         }
+      }
     }
 
     // Try standard parsing as fallback
     try {
-        const d = new Date(strVal)
-        if (!isNaN(d.getTime())) return d.toISOString().split("T")[0]
-    } catch (e) {}
+      const d = new Date(strVal)
+      if (!isNaN(d.getTime())) return d.toISOString().split("T")[0]
+    } catch (e) { }
 
     return new Date().toISOString().split("T")[0]
   }
@@ -649,11 +650,11 @@ function InventoryManagementContent() {
       // Mapeo de columnas flexible (insensitive case)
       const firstRow = jsonData[0] as any
       const availableKeys = Object.keys(firstRow)
-      
+
       const findKey = (targets: string[]) => {
         for (const target of targets) {
-           const found = availableKeys.find(k => k.toUpperCase().trim() === target)
-           if (found) return found
+          const found = availableKeys.find(k => k.toUpperCase().trim() === target)
+          if (found) return found
         }
         return targets[0]
       }
@@ -674,13 +675,13 @@ function InventoryManagementContent() {
 
       jsonData.forEach((row: any, index) => {
         const i = index + 1 // Row number for user (1-based index)
-        
+
         // Normalizar objeto usando el mapa de claves
         const normalizedRow: any = {}
         Object.entries(keyMap).forEach(([target, actualKey]) => {
           normalizedRow[target] = row[actualKey] !== undefined ? row[actualKey] : ""
         })
-        
+
         // Agregar cualquier otra columna que no esté en el mapa
         Object.keys(row).forEach(key => {
           if (!Object.values(keyMap).includes(key)) {
@@ -956,17 +957,17 @@ function InventoryManagementContent() {
         if (existingProduct) {
           // Actualizar producto existente (Manejo de Variantes de Precio)
           const updates: any = {
-             description: description,
-             quantity: quantity, // Reemplazar cantidad con la del archivo
-             date_entered: parseImportDate(row[columnMapping["FECHA"]]) || new Date().toISOString().split("T")[0],
-             stock_status: "normal", // Forzar estado normal en esta importación
-             ean: ean || existingProduct.ean,
-             invoice_number: invoiceNumber || existingProduct.invoice_number,
-             // Actualizar precios (calculando IVA)
-             cost_without_tax: cost,
-             cost_with_tax: calculateWithTax(cost),
-             pvp_without_tax: pvp,
-             pvp_with_tax: calculateWithTax(pvp)
+            description: description,
+            quantity: quantity, // Reemplazar cantidad con la del archivo
+            date_entered: parseImportDate(row[columnMapping["FECHA"]]) || new Date().toISOString().split("T")[0],
+            stock_status: "normal", // Forzar estado normal en esta importación
+            ean: ean || existingProduct.ean,
+            invoice_number: invoiceNumber || existingProduct.invoice_number,
+            // Actualizar precios (calculando IVA)
+            cost_without_tax: cost,
+            cost_with_tax: calculateWithTax(cost),
+            pvp_without_tax: pvp,
+            pvp_with_tax: calculateWithTax(pvp)
           }
 
           if (supplierId) updates.supplier_id = supplierId
@@ -976,13 +977,13 @@ function InventoryManagementContent() {
             .from("inventory")
             .update(updates)
             .eq("id", existingProduct.id)
-            
+
           if (updateError) {
-             logError(`❌ Error actualizando producto ${sku}:`, updateError)
-             errors.push(`Fila ${i + 1}: Error actualizando ${sku}`)
-             errorCount++
+            logError(`❌ Error actualizando producto ${sku}:`, updateError)
+            errors.push(`Fila ${i + 1}: Error actualizando ${sku}`)
+            errorCount++
           } else {
-             successCount++
+            successCount++
           }
           continue
         }
@@ -1245,8 +1246,8 @@ function InventoryManagementContent() {
       if (!overridePriceCheck && !skipPriceCheck) {
         const canProceed = await checkPriceChange(formData.sku, costWithoutTax)
         if (!canProceed) {
-            console.log("Price check failed (variation detected), waiting for user confirmation")
-            return
+          console.log("Price check failed (variation detected), waiting for user confirmation")
+          return
         }
       }
 
@@ -1265,10 +1266,10 @@ function InventoryManagementContent() {
       const { data, error } = await supabase.from("inventory").insert([inventoryItemWithUser]).select().single()
 
       if (error) {
-          logError("Supabase insert error:", error)
-          throw error
+        logError("Supabase insert error:", error)
+        throw error
       }
-      
+
       console.log("Item added successfully:", data)
 
       // Registrar log
@@ -1672,7 +1673,7 @@ function InventoryManagementContent() {
   }
 
   const filteredInventory = getFilteredInventory()
-  
+
   // Lógica de paginación
   const totalPages = Math.ceil(filteredInventory.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -1702,7 +1703,7 @@ function InventoryManagementContent() {
 
     const { updates } = bulkEditModal
     const updatesToApply: any = {}
-    
+
     if (updates.stock_status) updatesToApply.stock_status = updates.stock_status
     if (updates.company) updatesToApply.company = updates.company
     if (updates.channel) updatesToApply.channel = updates.channel
@@ -1723,15 +1724,15 @@ function InventoryManagementContent() {
       if (error) throw error
 
       toast({ title: "Actualización completada", description: `${selectedItems.length} items actualizados.` })
-      setBulkEditModal({ 
-        show: false, 
-        updates: { stock_status: "", supplier_id: "", brand_id: "", company: "", channel: "" } 
+      setBulkEditModal({
+        show: false,
+        updates: { stock_status: "", supplier_id: "", brand_id: "", company: "", channel: "" }
       })
       setSelectedItems([])
       loadData()
     } catch (error) {
-       logError("Bulk update error", error)
-       toast({ title: "Error", description: "Falló la actualización masiva", variant: "destructive" })
+      logError("Bulk update error", error)
+      toast({ title: "Error", description: "Falló la actualización masiva", variant: "destructive" })
     }
   }
 
@@ -1739,7 +1740,7 @@ function InventoryManagementContent() {
     if (!hasPermission("DELETE_ITEM")) return
 
     const skuGroups: { [key: string]: InventoryItem[] } = {}
-    
+
     // Agrupar por SKU
     inventory.forEach(item => {
       if (!skuGroups[item.sku]) {
@@ -1749,7 +1750,7 @@ function InventoryManagementContent() {
     })
 
     const duplicates = Object.values(skuGroups).filter(group => group.length > 1)
-    
+
     if (duplicates.length === 0) {
       toast({ title: "Sin duplicados", description: "No se encontraron SKUs duplicados." })
       return
@@ -1766,7 +1767,7 @@ function InventoryManagementContent() {
         const priceB = (b.cost_without_tax || 0) + (b.pvp_without_tax || 0)
         return priceB - priceA
       })
-      
+
       // El primero es el que conservamos, el resto se borra
       const toDelete = group.slice(1)
       toDelete.forEach(item => idsToDelete.push(item.id))
@@ -1787,8 +1788,8 @@ function InventoryManagementContent() {
 
       if (error) throw error
 
-      toast({ 
-        title: "Limpieza completada", 
+      toast({
+        title: "Limpieza completada",
         description: `Se eliminaron ${idsToDelete.length} registros duplicados.`,
         variant: "default"
       })
@@ -1904,9 +1905,9 @@ table {
 ${headers.map((h) => `<th class="header">${h}</th>`).join("")}
 </tr>
 ${csvRows
-  .map((row, index) => {
-    const item = filtered[index]
-    return `<tr>
+        .map((row, index) => {
+          const item = filtered[index]
+          return `<tr>
     <td class="data">${row[0]}</td>
     <td class="data-center">${row[1]}</td>
     <td class="data">${row[2]}</td>
@@ -1915,31 +1916,29 @@ ${csvRows
     <td class="data-number">${row[5]}</td>
     <td class="data-number">${row[6]}</td>
     <td class="data-number">${row[7]}</td>
-    <td class="data-center ${
-      priceVariations[item.id]?.hasVariation
-        ? priceVariations[item.id].isIncrease
-          ? "text-red-600"
-          : "text-green-600"
-        : "text-gray-400"
-    }">${row[8]}</td>
+    <td class="data-center ${priceVariations[item.id]?.hasVariation
+              ? priceVariations[item.id].isIncrease
+                ? "text-red-600"
+                : "text-green-600"
+              : "text-gray-400"
+            }">${row[8]}</td>
     <td class="data-center">${row[9]}</td>
     <td class="data-center empresa">${row[10]}</td>
     <td class="data-center">${row[11]}</td>
     <td class="data-center">${row[12]}</td>
-    <td class="data-center ${
-      item.stock_status === "normal"
-        ? "estado-normal"
-        : item.stock_status === "missing"
-          ? "estado-missing"
-          : "estado-excess"
-    }">${row[13]}</td>
+    <td class="data-center ${item.stock_status === "normal"
+              ? "estado-normal"
+              : item.stock_status === "missing"
+                ? "estado-missing"
+                : "estado-excess"
+            }">${row[13]}</td>
     <td class="data">${row[14]}</td>
     <td class="data">${row[15]}</td>
     <td class="data">${row[16]}</td>
     <td class="data">${row[17]}</td>
   </tr>`
-  })
-  .join("")}
+        })
+        .join("")}
 </table>
 </body>
 </html>`
@@ -2014,19 +2013,19 @@ ${csvRows
       // When we use new Date(dateStr), it might use UTC.
       // Let's use parseISO which is robust.
       // BUT, startOfMonth(now) uses local time.
-      
+
       const date = parseISO(dateStr)
       // Check if date is valid
       if (isNaN(date.getTime())) return false
-      
+
       return isWithinInterval(date, { start: startDate, end: endDate })
     }
 
     const currentMonthValue = inventory
       .filter((item) => {
-         // Some items might not have date_entered, or it might be invalid.
-         if (!item.date_entered) return false
-         return filterDate(item.date_entered)
+        // Some items might not have date_entered, or it might be invalid.
+        if (!item.date_entered) return false
+        return filterDate(item.date_entered)
       })
       .reduce((sum, item) => sum + item.cost_without_tax * item.quantity, 0)
 
@@ -2607,560 +2606,559 @@ ${csvRows
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <AppSidebar
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            onLogout={handleLogout}
-            userEmail={getCurrentUser()?.email}
-            isOnline={isOnline}
-            lastSync={lastSync}
-          />
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          onLogout={handleLogout}
+          userEmail={getCurrentUser()?.email}
+          isOnline={isOnline}
+          lastSync={lastSync}
+        />
         <div className="relative flex min-h-svh flex-1 flex-col bg-background peer-data-[variant=inset]:min-h-[calc(100svh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow">
           {/* Mobile Header */}
           <div className="md:hidden flex items-center gap-2 p-4 border-b bg-white shadow-sm">
-             <SidebarTrigger className="h-8 w-8" />
-             <span className="font-bold text-lg text-slate-800">Sistema Maycam</span>
+            <SidebarTrigger className="h-8 w-8" />
+            <span className="font-bold text-lg text-slate-800">Sistema Maycam</span>
           </div>
 
           {/* Zócalo de Anuncios - Solo visible si hay anuncios */}
           {announcement && (
-        <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg">
-          <div className="w-full max-w-[98%] mx-auto px-6 py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <AlertTriangle className="w-5 h-5 text-amber-200" />
-                <span className="font-medium">{announcement}</span>
-              </div>
-              {getCurrentUser()?.role === "admin" && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setAnnouncement("")}
-                  className="text-white hover:bg-white/20 h-8 px-2"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-               )}
-             </div>
-          </div>
-        </div>
-      )}
-      <div className="w-full px-4 py-6 space-y-6">
-        {/* Header con información del usuario */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="flex items-center gap-2">
-             <div>
-                <p className="text-slate-600 font-medium">Gestión Integral de Inventario</p>
-             </div>
-          </div>
-          <div className="flex items-center gap-4">
-            {/* Botón para gestionar anuncios - Solo administradores */}
-            {getCurrentUser()?.role === "admin" && (
-              <Button
-                onClick={() => setShowAnnouncementForm(true)}
-                variant="outline"
-                className="shadow-sm bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 hidden md:flex"
-              >
-                <AlertTriangle className="w-4 h-4 mr-2" />
-                Gestionar Anuncio
-              </Button>
-            )}
-
-            <UserHeader
-              onLogout={handleLogout}
-              setActiveTab={setActiveTab}
-            />
-          </div>
-        </div>
-
-        {activeTab === "inventory" && (
-          <>
-            {/* Filtros de Dashboard */}
-            <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-6">
-              <div className="flex items-center gap-2">
-                <Filter className="w-5 h-5 text-slate-500" />
-                <span className="font-medium text-slate-700">Filtro de Período:</span>
-              </div>
-              <Select value={dashboardFilter} onValueChange={setDashboardFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Seleccionar período" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="monthly">Mensual</SelectItem>
-                  <SelectItem value="weekly">Semanal</SelectItem>
-                  <SelectItem value="daily">Diario</SelectItem>
-                  <SelectItem value="historical">Histórico</SelectItem>
-                  <SelectItem value="custom">Personalizado</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              {dashboardFilter === "custom" && (
-                <div className="flex items-center gap-2">
-                  <Input 
-                    type="date" 
-                    value={customDateRange.from} 
-                    onChange={(e) => setCustomDateRange(prev => ({ ...prev, from: e.target.value }))}
-                    className="w-auto"
-                  />
-                  <span className="text-slate-400">-</span>
-                  <Input 
-                    type="date" 
-                    value={customDateRange.to} 
-                    onChange={(e) => setCustomDateRange(prev => ({ ...prev, to: e.target.value }))}
-                    className="w-auto"
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Stats Cards - Reorganizado y optimizado para diferentes pantallas */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {/* 1. Compras Filtradas */}
-              <Card 
-                className="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transform transition-all hover:scale-105 cursor-pointer"
-                onClick={() => setActiveTab("purchases")}
-              >
-                <CardContent className="p-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-blue-100 text-xs font-medium">
-                        Compras {dashboardFilter === "monthly" ? "Mes" : 
-                                dashboardFilter === "weekly" ? "Semana" : 
-                                dashboardFilter === "daily" ? "Hoy" : 
-                                dashboardFilter === "historical" ? "Histórico" : "Personalizado"}
-                      </p>
-                      <p className="text-lg font-bold">{formatCurrency(stats.currentMonthValue)}</p>
-                    </div>
-                    <TrendingUp className="w-5 h-5 text-blue-200" />
+            <div className="bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg">
+              <div className="w-full max-w-[98%] mx-auto px-6 py-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <AlertTriangle className="w-5 h-5 text-amber-200" />
+                    <span className="font-medium">{announcement}</span>
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* 2. Gastos Filtrados */}
-              <Card className="bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-lg transform transition-all hover:scale-105">
-                <CardContent className="p-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-pink-100 text-xs font-medium">
-                        Gastos {dashboardFilter === "monthly" ? "Mes" : 
-                                dashboardFilter === "weekly" ? "Semana" : 
-                                dashboardFilter === "daily" ? "Hoy" : 
-                                dashboardFilter === "historical" ? "Histórico" : "Personalizado"}
-                      </p>
-                      <p className="text-lg font-bold">{formatCurrency(stats.currentMonthExpenses)}</p>
-                    </div>
-                    <Receipt className="w-5 h-5 text-pink-200" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* 3. SKUs Únicos */}
-              <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg transform transition-all hover:scale-105">
-                <CardContent className="p-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-red-100 text-xs font-medium">SKUs Únicos</p>
-                      <p className="text-lg font-bold">{stats.uniqueSKUs}</p>
-                    </div>
-                    <Package className="w-5 h-5 text-red-200" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </>
-        )}
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-
-
-          <TabsContent value="inventory" className="space-y-6">
-            {/* IVA Config Section - Moved inside Inventory Tab */}
-            {hasPermission("EDIT_CONFIG") && (
-              <div className="mb-2 bg-gradient-to-r from-amber-100 to-yellow-100 p-2 rounded-md shadow-sm border border-amber-200 flex items-center gap-4 w-fit">
-                 <div className="flex items-center gap-2">
-                    <Settings className="w-4 h-4 text-amber-600" />
-                    <span className="font-bold text-sm text-amber-800">Configuración de IVA</span>
-                 </div>
-                 <div className="flex items-center gap-2">
-                    <span className="text-xs text-amber-700 font-medium">Porcentaje:</span>
-                    <div className="flex items-center gap-1">
-                      <Input
-                        type="number"
-                        value={ivaPercentage}
-                        onChange={(e) => updateIvaPercentage(Number(e.target.value))}
-                        className="w-16 h-7 text-right text-xs bg-white/80 border-amber-300 focus:border-amber-500 focus:ring-amber-500"
-                      />
-                      <span className="text-xs text-amber-700 font-medium">%</span>
-                    </div>
-                 </div>
-              </div>
-            )}
-            {/* Form */}
-            {hasPermission("CREATE_ITEM") && (
-              <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-                <CardHeader 
-                  className={`bg-gradient-to-r from-blue-50 to-indigo-50 cursor-pointer transition-colors hover:bg-blue-100/50 ${isAddItemExpanded ? "rounded-t-lg" : "rounded-lg"}`}
-                  onClick={() => setIsAddItemExpanded(!isAddItemExpanded)}
-                >
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 text-blue-800">
-                      <Plus className="w-5 h-5" />
-                      Agregar Mercadería
-                    </CardTitle>
-                    {isAddItemExpanded ? <ChevronUp className="w-5 h-5 text-blue-800" /> : <ChevronDown className="w-5 h-5 text-blue-800" />}
-                  </div>
-                  {isAddItemExpanded && (
-                    <CardDescription>
-                      Complete todos los campos para agregar un nuevo producto al inventario
-                    </CardDescription>
+                  {getCurrentUser()?.role === "admin" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAnnouncement("")}
+                      className="text-white hover:bg-white/20 h-8 px-2"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
                   )}
-                </CardHeader>
-                {isAddItemExpanded && (
-                <CardContent className="space-y-6 p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="sku" className="text-slate-700 font-medium">
-                        SKU *
-                      </Label>
-                      <div className="relative">
-                        <Input
-                          id="sku"
-                          value={formData.sku}
-                          onChange={(e) => handleInputChange("sku", e.target.value)}
-                          placeholder="Código SKU"
-                          className={`mt-1 ${
-                            formData.sku &&
-                            inventory.find((item) => item.sku.toLowerCase() === formData.sku.toLowerCase())
-                              ? "border-orange-300 bg-orange-50"
-                              : ""
-                          }`}
-                        />
-                        {formData.sku &&
-                          inventory.find((item) => item.sku.toLowerCase() === formData.sku.toLowerCase()) && (
-                            <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                              <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700">
-                                Existente
-                              </Badge>
-                            </div>
-                          )}
-                      </div>
-                      {formData.sku &&
-                        inventory.find((item) => item.sku.toLowerCase() === formData.sku.toLowerCase()) && (
-                          <p className="text-sm text-orange-600 mt-1">
-                            ⚠️ Este SKU ya existe. Descripción autocompletada.
-                          </p>
-                        )}
-                    </div>
-                    <div>
-                      <Label htmlFor="ean" className="text-slate-700 font-medium">
-                        EAN
-                      </Label>
-                      <Input
-                        id="ean"
-                        value={formData.ean}
-                        onChange={(e) => handleInputChange("ean", e.target.value)}
-                        placeholder="Código EAN"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="description" className="text-slate-700 font-medium">
-                        Nombre *
-                      </Label>
-                      <Input
-                        id="description"
-                        value={formData.description}
-                        onChange={(e) => handleInputChange("description", e.target.value)}
-                        placeholder="Nombre del producto"
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                      <Label htmlFor="cost_without_tax" className="text-slate-700 font-medium">
-                        Costo s/IVA *
-                      </Label>
-                      <Input
-                        id="cost_without_tax"
-                        type="number"
-                        step="0.01"
-                        value={formData.cost_without_tax}
-                        onChange={(e) => handleInputChange("cost_without_tax", e.target.value)}
-                        placeholder="0.00"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cost_with_tax" className="text-slate-700 font-medium">
-                        Costo c/IVA ({ivaPercentage}%)
-                      </Label>
-                      <Input
-                        id="cost_with_tax"
-                        type="number"
-                        step="0.01"
-                        value={
-                          formData.cost_without_tax
-                            ? calculateWithTax(Number.parseFloat(formData.cost_without_tax)).toFixed(2)
-                            : ""
-                        }
-                        disabled
-                        className="bg-gradient-to-r from-slate-50 to-slate-100 mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="pvp_without_tax" className="text-slate-700 font-medium">
-                        PVP s/IVA *
-                      </Label>
-                      <Input
-                        id="pvp_without_tax"
-                        type="number"
-                        step="0.01"
-                        value={formData.pvp_without_tax}
-                        onChange={(e) => handleInputChange("pvp_without_tax", e.target.value)}
-                        placeholder="0.00"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="pvp_with_tax" className="text-slate-700 font-medium">
-                        PVP c/IVA ({ivaPercentage}%)
-                      </Label>
-                      <Input
-                        id="pvp_with_tax"
-                        type="number"
-                        step="0.01"
-                        value={
-                          formData.pvp_without_tax
-                            ? calculateWithTax(Number.parseFloat(formData.pvp_without_tax)).toFixed(2)
-                            : ""
-                        }
-                        disabled
-                        className="bg-gradient-to-r from-slate-50 to-slate-100 mt-1"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                      <Label htmlFor="quantity" className="text-slate-700 font-medium">
-                        Cantidad *
-                      </Label>
-                      <Input
-                        id="quantity"
-                        type="number"
-                        value={formData.quantity}
-                        onChange={(e) => handleInputChange("quantity", e.target.value)}
-                        placeholder="0"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="company" className="text-slate-700 font-medium">
-                        Empresa *
-                      </Label>
-                      <Select
-                        value={formData.company || ""}
-                        onValueChange={(value) => handleInputChange("company", value)}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Seleccionar empresa" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="MAYCAM">MAYCAM</SelectItem>
-                          <SelectItem value="BLUE DOGO">BLUE DOGO</SelectItem>
-                          <SelectItem value="GLOBOBAZAAR">GLOBOBAZAAR</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="channel" className="text-slate-700 font-medium">
-                        Canal *
-                      </Label>
-                      <Select
-                        value={formData.channel || ""}
-                        onValueChange={(value) => handleInputChange("channel", value)}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Seleccionar canal" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="A">Canal A</SelectItem>
-                          <SelectItem value="B">Canal B</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="date_entered" className="text-slate-700 font-medium">
-                        Fecha *
-                      </Label>
-                      <Input
-                        id="date_entered"
-                        type="date"
-                        value={formData.date_entered}
-                        onChange={(e) => handleInputChange("date_entered", e.target.value)}
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                      <Label htmlFor="stock_status" className="text-slate-700 font-medium">
-                        Estado Stock
-                      </Label>
-                      <Select
-                        value={formData.stock_status}
-                        onValueChange={(value) => handleInputChange("stock_status", value)}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder={formData.stock_status} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="normal">Normal</SelectItem>
-                          <SelectItem value="missing">Faltó mercadería</SelectItem>
-                          <SelectItem value="excess">Sobró mercadería</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="supplier_id" className="text-slate-700 font-medium">
-                        Proveedor
-                      </Label>
-                      <Select
-                        value={formData.supplier_id || "none"}
-                        onValueChange={(value) => handleInputChange("supplier_id", value === "none" ? "" : value)}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Seleccionar proveedor" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Sin proveedor</SelectItem>
-                          {suppliers.map((supplier) => (
-                            <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                              {supplier.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="brand_id" className="text-slate-700 font-medium">
-                        Marca
-                      </Label>
-                      <Select
-                        value={formData.brand_id || "none"}
-                        onValueChange={(value) => handleInputChange("brand_id", value === "none" ? "" : value)}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Seleccionar marca" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">Sin marca</SelectItem>
-                          {brands.map((brand) => (
-                            <SelectItem key={brand.id} value={brand.id.toString()}>
-                              {brand.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="invoice_number" className="text-slate-700 font-medium">
-                        Nº Factura
-                      </Label>
-                      <Input
-                        id="invoice_number"
-                        value={formData.invoice_number}
-                        onChange={(e) => handleInputChange("invoice_number", e.target.value)}
-                        placeholder="Número de factura"
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="observations" className="text-slate-700 font-medium">
-                      Observaciones (Opcional)
-                    </Label>
-                    <Textarea
-                      id="observations"
-                      value={formData.observations}
-                      onChange={(e) => handleInputChange("observations", e.target.value)}
-                      placeholder="Observaciones adicionales..."
-                      rows={3}
-                      className="mt-1"
-                    />
-                  </div>
-
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="w-full px-4 py-6 space-y-6">
+            {/* Header con información del usuario */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div>
+                  <p className="text-slate-600 font-medium">Gestión Integral de Inventario</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                {/* Botón para gestionar anuncios - Solo administradores */}
+                {getCurrentUser()?.role === "admin" && (
                   <Button
-                    onClick={() => addInventoryItem()}
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg"
-                    disabled={
-                      !formData.sku?.trim() ||
-                      !formData.description?.trim() ||
-                      !formData.cost_without_tax ||
-                      !formData.pvp_without_tax ||
-                      !formData.quantity ||
-                      !formData.company ||
-                      !formData.channel
-                    }
+                    onClick={() => setShowAnnouncementForm(true)}
+                    variant="outline"
+                    className="shadow-sm bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 hidden md:flex"
                   >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Agregar Producto
+                    <AlertTriangle className="w-4 h-4 mr-2" />
+                    Gestionar Anuncio
                   </Button>
-                </CardContent>
                 )}
-              </Card>
+
+                <UserHeader
+                  onLogout={handleLogout}
+                  setActiveTab={setActiveTab}
+                />
+              </div>
+            </div>
+
+            {activeTab === "inventory" && (
+              <>
+                {/* Filtros de Dashboard */}
+                <div className="flex flex-wrap items-center gap-4 bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-6">
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-5 h-5 text-slate-500" />
+                    <span className="font-medium text-slate-700">Filtro de Período:</span>
+                  </div>
+                  <Select value={dashboardFilter} onValueChange={setDashboardFilter}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Seleccionar período" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">Mensual</SelectItem>
+                      <SelectItem value="weekly">Semanal</SelectItem>
+                      <SelectItem value="daily">Diario</SelectItem>
+                      <SelectItem value="historical">Histórico</SelectItem>
+                      <SelectItem value="custom">Personalizado</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {dashboardFilter === "custom" && (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="date"
+                        value={customDateRange.from}
+                        onChange={(e) => setCustomDateRange(prev => ({ ...prev, from: e.target.value }))}
+                        className="w-auto"
+                      />
+                      <span className="text-slate-400">-</span>
+                      <Input
+                        type="date"
+                        value={customDateRange.to}
+                        onChange={(e) => setCustomDateRange(prev => ({ ...prev, to: e.target.value }))}
+                        className="w-auto"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Stats Cards - Reorganizado y optimizado para diferentes pantallas */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {/* 1. Compras Filtradas */}
+                  <Card
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transform transition-all hover:scale-105 cursor-pointer"
+                    onClick={() => setActiveTab("purchases")}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-blue-100 text-xs font-medium">
+                            Compras {dashboardFilter === "monthly" ? "Mes" :
+                              dashboardFilter === "weekly" ? "Semana" :
+                                dashboardFilter === "daily" ? "Hoy" :
+                                  dashboardFilter === "historical" ? "Histórico" : "Personalizado"}
+                          </p>
+                          <p className="text-lg font-bold">{formatCurrency(stats.currentMonthValue)}</p>
+                        </div>
+                        <TrendingUp className="w-5 h-5 text-blue-200" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* 2. Gastos Filtrados */}
+                  <Card className="bg-gradient-to-r from-pink-500 to-rose-600 text-white shadow-lg transform transition-all hover:scale-105">
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-pink-100 text-xs font-medium">
+                            Gastos {dashboardFilter === "monthly" ? "Mes" :
+                              dashboardFilter === "weekly" ? "Semana" :
+                                dashboardFilter === "daily" ? "Hoy" :
+                                  dashboardFilter === "historical" ? "Histórico" : "Personalizado"}
+                          </p>
+                          <p className="text-lg font-bold">{formatCurrency(stats.currentMonthExpenses)}</p>
+                        </div>
+                        <Receipt className="w-5 h-5 text-pink-200" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* 3. SKUs Únicos */}
+                  <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg transform transition-all hover:scale-105">
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-red-100 text-xs font-medium">SKUs Únicos</p>
+                          <p className="text-lg font-bold">{stats.uniqueSKUs}</p>
+                        </div>
+                        <Package className="w-5 h-5 text-red-200" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
             )}
 
-            {/* Filters */}
-            <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
-              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
-                <Filter className="w-3.5 h-3.5 text-slate-500" />
-                <h3 className="text-sm font-semibold text-slate-700">Filtros de Búsqueda</h3>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      setFilters({
-                        period: "all",
-                        dateFrom: "",
-                        dateTo: "",
-                        supplier: "all",
-                        brand: "all",
-                        company: "all",
-                        duplicates: "all",
-                        sortBy: "date_desc",
-                        searchSku: "",
-                      })
-                    }
-                    className="ml-auto h-6 text-xs text-slate-400 hover:text-red-500 px-2"
-                  >
-                    <X className="w-3 h-3 mr-1" />
-                    Limpiar
-                </Button>
-              </div>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
 
-              <div className="space-y-3">
-                {/* Row 1: Search & Time/Sort */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
-                  {/* Search */}
-                  <div className="lg:col-span-4">
-                    <div className="relative">
-                      <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400" />
-                      <Input
-                        placeholder="Buscar SKU o descripción..."
-                        value={filters.searchSku}
-                        onChange={(e) => setFilters((prev) => ({ ...prev, searchSku: e.target.value }))}
-                        className="pl-8 h-8 text-sm"
-                      />
+
+              <TabsContent value="inventory" className="space-y-6">
+                {/* IVA Config Section - Moved inside Inventory Tab */}
+                {hasPermission("EDIT_CONFIG") && (
+                  <div className="mb-2 bg-gradient-to-r from-amber-100 to-yellow-100 p-2 rounded-md shadow-sm border border-amber-200 flex items-center gap-4 w-fit">
+                    <div className="flex items-center gap-2">
+                      <Settings className="w-4 h-4 text-amber-600" />
+                      <span className="font-bold text-sm text-amber-800">Configuración de IVA</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-amber-700 font-medium">Porcentaje:</span>
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="number"
+                          value={ivaPercentage}
+                          onChange={(e) => updateIvaPercentage(Number(e.target.value))}
+                          className="w-16 h-7 text-right text-xs bg-white/80 border-amber-300 focus:border-amber-500 focus:ring-amber-500"
+                        />
+                        <span className="text-xs text-amber-700 font-medium">%</span>
+                      </div>
                     </div>
                   </div>
-                  
-                  {/* Period */}
-                  <div className="lg:col-span-2">
-                    <Select
+                )}
+                {/* Form */}
+                {hasPermission("CREATE_ITEM") && (
+                  <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+                    <CardHeader
+                      className={`bg-gradient-to-r from-blue-50 to-indigo-50 cursor-pointer transition-colors hover:bg-blue-100/50 ${isAddItemExpanded ? "rounded-t-lg" : "rounded-lg"}`}
+                      onClick={() => setIsAddItemExpanded(!isAddItemExpanded)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-2 text-blue-800">
+                          <Plus className="w-5 h-5" />
+                          Agregar Mercadería
+                        </CardTitle>
+                        {isAddItemExpanded ? <ChevronUp className="w-5 h-5 text-blue-800" /> : <ChevronDown className="w-5 h-5 text-blue-800" />}
+                      </div>
+                      {isAddItemExpanded && (
+                        <CardDescription>
+                          Complete todos los campos para agregar un nuevo producto al inventario
+                        </CardDescription>
+                      )}
+                    </CardHeader>
+                    {isAddItemExpanded && (
+                      <CardContent className="space-y-6 p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <Label htmlFor="sku" className="text-slate-700 font-medium">
+                              SKU *
+                            </Label>
+                            <div className="relative">
+                              <Input
+                                id="sku"
+                                value={formData.sku}
+                                onChange={(e) => handleInputChange("sku", e.target.value)}
+                                placeholder="Código SKU"
+                                className={`mt-1 ${formData.sku &&
+                                    inventory.find((item) => item.sku.toLowerCase() === formData.sku.toLowerCase())
+                                    ? "border-orange-300 bg-orange-50"
+                                    : ""
+                                  }`}
+                              />
+                              {formData.sku &&
+                                inventory.find((item) => item.sku.toLowerCase() === formData.sku.toLowerCase()) && (
+                                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                                    <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-700">
+                                      Existente
+                                    </Badge>
+                                  </div>
+                                )}
+                            </div>
+                            {formData.sku &&
+                              inventory.find((item) => item.sku.toLowerCase() === formData.sku.toLowerCase()) && (
+                                <p className="text-sm text-orange-600 mt-1">
+                                  ⚠️ Este SKU ya existe. Descripción autocompletada.
+                                </p>
+                              )}
+                          </div>
+                          <div>
+                            <Label htmlFor="ean" className="text-slate-700 font-medium">
+                              EAN
+                            </Label>
+                            <Input
+                              id="ean"
+                              value={formData.ean}
+                              onChange={(e) => handleInputChange("ean", e.target.value)}
+                              placeholder="Código EAN"
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="description" className="text-slate-700 font-medium">
+                              Nombre *
+                            </Label>
+                            <Input
+                              id="description"
+                              value={formData.description}
+                              onChange={(e) => handleInputChange("description", e.target.value)}
+                              placeholder="Nombre del producto"
+                              className="mt-1"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          <div>
+                            <Label htmlFor="cost_without_tax" className="text-slate-700 font-medium">
+                              Costo s/IVA *
+                            </Label>
+                            <Input
+                              id="cost_without_tax"
+                              type="number"
+                              step="0.01"
+                              value={formData.cost_without_tax}
+                              onChange={(e) => handleInputChange("cost_without_tax", e.target.value)}
+                              placeholder="0.00"
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="cost_with_tax" className="text-slate-700 font-medium">
+                              Costo c/IVA ({ivaPercentage}%)
+                            </Label>
+                            <Input
+                              id="cost_with_tax"
+                              type="number"
+                              step="0.01"
+                              value={
+                                formData.cost_without_tax
+                                  ? calculateWithTax(Number.parseFloat(formData.cost_without_tax)).toFixed(2)
+                                  : ""
+                              }
+                              disabled
+                              className="bg-gradient-to-r from-slate-50 to-slate-100 mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="pvp_without_tax" className="text-slate-700 font-medium">
+                              PVP s/IVA *
+                            </Label>
+                            <Input
+                              id="pvp_without_tax"
+                              type="number"
+                              step="0.01"
+                              value={formData.pvp_without_tax}
+                              onChange={(e) => handleInputChange("pvp_without_tax", e.target.value)}
+                              placeholder="0.00"
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="pvp_with_tax" className="text-slate-700 font-medium">
+                              PVP c/IVA ({ivaPercentage}%)
+                            </Label>
+                            <Input
+                              id="pvp_with_tax"
+                              type="number"
+                              step="0.01"
+                              value={
+                                formData.pvp_without_tax
+                                  ? calculateWithTax(Number.parseFloat(formData.pvp_without_tax)).toFixed(2)
+                                  : ""
+                              }
+                              disabled
+                              className="bg-gradient-to-r from-slate-50 to-slate-100 mt-1"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          <div>
+                            <Label htmlFor="quantity" className="text-slate-700 font-medium">
+                              Cantidad *
+                            </Label>
+                            <Input
+                              id="quantity"
+                              type="number"
+                              value={formData.quantity}
+                              onChange={(e) => handleInputChange("quantity", e.target.value)}
+                              placeholder="0"
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="company" className="text-slate-700 font-medium">
+                              Empresa *
+                            </Label>
+                            <Select
+                              value={formData.company || ""}
+                              onValueChange={(value) => handleInputChange("company", value)}
+                            >
+                              <SelectTrigger className="mt-1">
+                                <SelectValue placeholder="Seleccionar empresa" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="MAYCAM">MAYCAM</SelectItem>
+                                <SelectItem value="BLUE DOGO">BLUE DOGO</SelectItem>
+                                <SelectItem value="GLOBOBAZAAR">GLOBOBAZAAR</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor="channel" className="text-slate-700 font-medium">
+                              Canal *
+                            </Label>
+                            <Select
+                              value={formData.channel || ""}
+                              onValueChange={(value) => handleInputChange("channel", value)}
+                            >
+                              <SelectTrigger className="mt-1">
+                                <SelectValue placeholder="Seleccionar canal" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="A">Canal A</SelectItem>
+                                <SelectItem value="B">Canal B</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor="date_entered" className="text-slate-700 font-medium">
+                              Fecha *
+                            </Label>
+                            <Input
+                              id="date_entered"
+                              type="date"
+                              value={formData.date_entered}
+                              onChange={(e) => handleInputChange("date_entered", e.target.value)}
+                              className="mt-1"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          <div>
+                            <Label htmlFor="stock_status" className="text-slate-700 font-medium">
+                              Estado Stock
+                            </Label>
+                            <Select
+                              value={formData.stock_status}
+                              onValueChange={(value) => handleInputChange("stock_status", value)}
+                            >
+                              <SelectTrigger className="mt-1">
+                                <SelectValue placeholder={formData.stock_status} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="normal">Normal</SelectItem>
+                                <SelectItem value="missing">Faltó mercadería</SelectItem>
+                                <SelectItem value="excess">Sobró mercadería</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor="supplier_id" className="text-slate-700 font-medium">
+                              Proveedor
+                            </Label>
+                            <Select
+                              value={formData.supplier_id || "none"}
+                              onValueChange={(value) => handleInputChange("supplier_id", value === "none" ? "" : value)}
+                            >
+                              <SelectTrigger className="mt-1">
+                                <SelectValue placeholder="Seleccionar proveedor" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">Sin proveedor</SelectItem>
+                                {suppliers.map((supplier) => (
+                                  <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                                    {supplier.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor="brand_id" className="text-slate-700 font-medium">
+                              Marca
+                            </Label>
+                            <Select
+                              value={formData.brand_id || "none"}
+                              onValueChange={(value) => handleInputChange("brand_id", value === "none" ? "" : value)}
+                            >
+                              <SelectTrigger className="mt-1">
+                                <SelectValue placeholder="Seleccionar marca" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">Sin marca</SelectItem>
+                                {brands.map((brand) => (
+                                  <SelectItem key={brand.id} value={brand.id.toString()}>
+                                    {brand.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor="invoice_number" className="text-slate-700 font-medium">
+                              Nº Factura
+                            </Label>
+                            <Input
+                              id="invoice_number"
+                              value={formData.invoice_number}
+                              onChange={(e) => handleInputChange("invoice_number", e.target.value)}
+                              placeholder="Número de factura"
+                              className="mt-1"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label htmlFor="observations" className="text-slate-700 font-medium">
+                            Observaciones (Opcional)
+                          </Label>
+                          <Textarea
+                            id="observations"
+                            value={formData.observations}
+                            onChange={(e) => handleInputChange("observations", e.target.value)}
+                            placeholder="Observaciones adicionales..."
+                            rows={3}
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <Button
+                          onClick={() => addInventoryItem()}
+                          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg"
+                          disabled={
+                            !formData.sku?.trim() ||
+                            !formData.description?.trim() ||
+                            !formData.cost_without_tax ||
+                            !formData.pvp_without_tax ||
+                            !formData.quantity ||
+                            !formData.company ||
+                            !formData.channel
+                          }
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Agregar Producto
+                        </Button>
+                      </CardContent>
+                    )}
+                  </Card>
+                )}
+
+                {/* Filters */}
+                <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
+                    <Filter className="w-3.5 h-3.5 text-slate-500" />
+                    <h3 className="text-sm font-semibold text-slate-700">Filtros de Búsqueda</h3>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        setFilters({
+                          period: "all",
+                          dateFrom: "",
+                          dateTo: "",
+                          supplier: "all",
+                          brand: "all",
+                          company: "all",
+                          duplicates: "all",
+                          sortBy: "date_desc",
+                          searchSku: "",
+                        })
+                      }
+                      className="ml-auto h-6 text-xs text-slate-400 hover:text-red-500 px-2"
+                    >
+                      <X className="w-3 h-3 mr-1" />
+                      Limpiar
+                    </Button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {/* Row 1: Search & Time/Sort */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+                      {/* Search */}
+                      <div className="lg:col-span-4">
+                        <div className="relative">
+                          <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400" />
+                          <Input
+                            placeholder="Buscar SKU o descripción..."
+                            value={filters.searchSku}
+                            onChange={(e) => setFilters((prev) => ({ ...prev, searchSku: e.target.value }))}
+                            className="pl-8 h-8 text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Period */}
+                      <div className="lg:col-span-2">
+                        <Select
                           value={itemsPerPage.toString()}
                           onValueChange={(value) => setItemsPerPage(Number(value))}
                         >
@@ -3175,1552 +3173,1560 @@ ${csvRows
                         </Select>
                         <Select
                           value={filters.period}
-                      onValueChange={(value) => setFilters((prev) => ({ ...prev, period: value }))}
-                    >
-                      <SelectTrigger className="h-8 text-sm">
-                        <SelectValue placeholder="Periodo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todo el historial</SelectItem>
-                        <SelectItem value="today">Hoy</SelectItem>
-                        <SelectItem value="week">Esta Semana</SelectItem>
-                        <SelectItem value="month">Este Mes</SelectItem>
-                        <SelectItem value="year">Este Año</SelectItem>
-                        <SelectItem value="custom">Personalizado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                          onValueChange={(value) => setFilters((prev) => ({ ...prev, period: value }))}
+                        >
+                          <SelectTrigger className="h-8 text-sm">
+                            <SelectValue placeholder="Periodo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Todo el historial</SelectItem>
+                            <SelectItem value="today">Hoy</SelectItem>
+                            <SelectItem value="week">Esta Semana</SelectItem>
+                            <SelectItem value="month">Este Mes</SelectItem>
+                            <SelectItem value="year">Este Año</SelectItem>
+                            <SelectItem value="custom">Personalizado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                  {/* Custom Dates */}
-                  {filters.period === "custom" ? (
-                    <div className="lg:col-span-4 flex gap-2">
-                       <Input
-                          type="date"
-                          value={filters.dateFrom}
-                          onChange={(e) => setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))}
-                          className="h-8 text-sm"
-                        />
-                        <Input
-                          type="date"
-                          value={filters.dateTo}
-                          onChange={(e) => setFilters((prev) => ({ ...prev, dateTo: e.target.value }))}
-                          className="h-8 text-sm"
-                        />
+                      {/* Custom Dates */}
+                      {filters.period === "custom" ? (
+                        <div className="lg:col-span-4 flex gap-2">
+                          <Input
+                            type="date"
+                            value={filters.dateFrom}
+                            onChange={(e) => setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))}
+                            className="h-8 text-sm"
+                          />
+                          <Input
+                            type="date"
+                            value={filters.dateTo}
+                            onChange={(e) => setFilters((prev) => ({ ...prev, dateTo: e.target.value }))}
+                            className="h-8 text-sm"
+                          />
+                        </div>
+                      ) : (
+                        <div className="hidden lg:block lg:col-span-4"></div>
+                      )}
+
+                      {/* Sort */}
+                      <div className="lg:col-span-2">
+                        <Select
+                          value={filters.sortBy}
+                          onValueChange={(value) => setFilters((prev) => ({ ...prev, sortBy: value }))}
+                        >
+                          <SelectTrigger className="h-8 text-sm">
+                            <span className="truncate">
+                              <span className="text-slate-400 mr-1">Orden:</span>
+                              <SelectValue placeholder="Ordenar" />
+                            </span>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="date_desc">Más recientes</SelectItem>
+                            <SelectItem value="date_asc">Más antiguos</SelectItem>
+                            <SelectItem value="price_asc">Menor precio</SelectItem>
+                            <SelectItem value="price_desc">Mayor precio</SelectItem>
+                            <SelectItem value="pvp_desc">PVP Mayor a Menor</SelectItem>
+                            <SelectItem value="cost_desc">Costo Mayor a Menor</SelectItem>
+                            <SelectItem value="sku_duplicates">Duplicados</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                  ) : (
-                    <div className="hidden lg:block lg:col-span-4"></div>
-                  )}
 
-                  {/* Sort */}
-                  <div className="lg:col-span-2">
-                    <Select
-                      value={filters.sortBy}
-                      onValueChange={(value) => setFilters((prev) => ({ ...prev, sortBy: value }))}
-                    >
-                      <SelectTrigger className="h-8 text-sm">
-                         <span className="truncate">
-                           <span className="text-slate-400 mr-1">Orden:</span>
-                           <SelectValue placeholder="Ordenar" />
-                         </span>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="date_desc">Más recientes</SelectItem>
-                        <SelectItem value="date_asc">Más antiguos</SelectItem>
-                        <SelectItem value="price_asc">Menor precio</SelectItem>
-                        <SelectItem value="price_desc">Mayor precio</SelectItem>
-                        <SelectItem value="pvp_desc">PVP Mayor a Menor</SelectItem>
-                        <SelectItem value="cost_desc">Costo Mayor a Menor</SelectItem>
-                        <SelectItem value="sku_duplicates">Duplicados</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    {/* Row 2: Secondary Filters */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <Select
+                        value={filters.supplier || "all"}
+                        onValueChange={(value) => setFilters((prev) => ({ ...prev, supplier: value }))}
+                      >
+                        <SelectTrigger className="h-8 text-sm">
+                          <span className="truncate">
+                            <span className="text-slate-400 mr-1">Prov:</span>
+                            <SelectValue placeholder="Todos" />
+                          </span>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos los proveedores</SelectItem>
+                          <SelectItem value="none">Sin proveedor</SelectItem>
+                          {suppliers.map((supplier) => (
+                            <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                              {supplier.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select
+                        value={filters.brand || "all"}
+                        onValueChange={(value) => setFilters((prev) => ({ ...prev, brand: value }))}
+                      >
+                        <SelectTrigger className="h-8 text-sm">
+                          <span className="truncate">
+                            <span className="text-slate-400 mr-1">Marca:</span>
+                            <SelectValue placeholder="Todas" />
+                          </span>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todas las marcas</SelectItem>
+                          <SelectItem value="none">Sin marca</SelectItem>
+                          {brands.map((brand) => (
+                            <SelectItem key={brand.id} value={brand.id.toString()}>
+                              {brand.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select
+                        value={filters.company}
+                        onValueChange={(value) => setFilters((prev) => ({ ...prev, company: value }))}
+                      >
+                        <SelectTrigger className="h-8 text-sm">
+                          <span className="truncate">
+                            <span className="text-slate-400 mr-1">Emp:</span>
+                            <SelectValue placeholder="Todas" />
+                          </span>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todas las empresas</SelectItem>
+                          <SelectItem value="MAYCAM">MAYCAM</SelectItem>
+                          <SelectItem value="BLUE DOGO">BLUE DOGO</SelectItem>
+                          <SelectItem value="GLOBOBAZAAR">GLOBOBAZAAR</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      <Select
+                        value={filters.duplicates || "all"}
+                        onValueChange={(value) => setFilters((prev) => ({ ...prev, duplicates: value }))}
+                      >
+                        <SelectTrigger className="h-8 text-sm">
+                          <span className="truncate">
+                            <span className="text-slate-400 mr-1">Dup:</span>
+                            <SelectValue placeholder="Todos" />
+                          </span>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos</SelectItem>
+                          <SelectItem value="duplicated">Solo Duplicados</SelectItem>
+                          <SelectItem value="unique">Solo Únicos</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
 
-                {/* Row 2: Secondary Filters */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <Select
-                    value={filters.supplier || "all"}
-                    onValueChange={(value) => setFilters((prev) => ({ ...prev, supplier: value }))}
-                  >
-                    <SelectTrigger className="h-8 text-sm">
-                       <span className="truncate">
-                         <span className="text-slate-400 mr-1">Prov:</span>
-                         <SelectValue placeholder="Todos" />
-                       </span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos los proveedores</SelectItem>
-                      <SelectItem value="none">Sin proveedor</SelectItem>
-                      {suppliers.map((supplier) => (
-                        <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                          {supplier.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <Select
-                    value={filters.brand || "all"}
-                    onValueChange={(value) => setFilters((prev) => ({ ...prev, brand: value }))}
-                  >
-                    <SelectTrigger className="h-8 text-sm">
-                       <span className="truncate">
-                         <span className="text-slate-400 mr-1">Marca:</span>
-                         <SelectValue placeholder="Todas" />
-                       </span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas las marcas</SelectItem>
-                      <SelectItem value="none">Sin marca</SelectItem>
-                      {brands.map((brand) => (
-                        <SelectItem key={brand.id} value={brand.id.toString()}>
-                          {brand.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <Select
-                    value={filters.company}
-                    onValueChange={(value) => setFilters((prev) => ({ ...prev, company: value }))}
-                  >
-                    <SelectTrigger className="h-8 text-sm">
-                       <span className="truncate">
-                         <span className="text-slate-400 mr-1">Emp:</span>
-                         <SelectValue placeholder="Todas" />
-                       </span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas las empresas</SelectItem>
-                      <SelectItem value="MAYCAM">MAYCAM</SelectItem>
-                      <SelectItem value="BLUE DOGO">BLUE DOGO</SelectItem>
-                      <SelectItem value="GLOBOBAZAAR">GLOBOBAZAAR</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select
-                    value={filters.duplicates || "all"}
-                    onValueChange={(value) => setFilters((prev) => ({ ...prev, duplicates: value }))}
-                  >
-                    <SelectTrigger className="h-8 text-sm">
-                       <span className="truncate">
-                         <span className="text-slate-400 mr-1">Dup:</span>
-                         <SelectValue placeholder="Todos" />
-                       </span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="duplicated">Solo Duplicados</SelectItem>
-                      <SelectItem value="unique">Solo Únicos</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-
-            {/* Inventory Table */}
-            <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-slate-50 via-blue-50 to-indigo-50 border-b border-blue-100">
-                <CardTitle className="flex items-center justify-between gap-3 text-slate-800">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-white rounded-lg shadow-sm border border-blue-100">
-                      <Package className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <span className="bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent font-bold text-xl">
-                        Lista de Inventario
-                      </span>
-                      <Badge variant="outline" className="ml-3 bg-blue-50 text-blue-700 border-blue-200">
-                        {filteredInventory.length} productos
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button onClick={exportToCSV} variant="outline" className="shadow-sm bg-white hover:bg-slate-50">
-                      <Download className="w-4 h-4 mr-2" />
-                      Exportar Excel
-                    </Button>
-                    {hasPermission("DELETE_ITEM") && (
-                      <Button onClick={handleRemoveDuplicates} variant="outline" className="shadow-sm bg-white hover:bg-red-50 text-red-600 border-red-200">
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Eliminar Duplicados
-                      </Button>
+                {/* Inventory Table */}
+                <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm overflow-hidden">
+                  <CardHeader className="bg-gradient-to-r from-slate-50 via-blue-50 to-indigo-50 border-b border-blue-100">
+                    <CardTitle className="flex items-center justify-between gap-3 text-slate-800">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-white rounded-lg shadow-sm border border-blue-100">
+                          <Package className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <span className="bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent font-bold text-xl">
+                            Lista de Inventario
+                          </span>
+                          <Badge variant="outline" className="ml-3 bg-blue-50 text-blue-700 border-blue-200">
+                            {filteredInventory.length} productos
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button onClick={exportToCSV} variant="outline" className="shadow-sm bg-white hover:bg-slate-50">
+                          <Download className="w-4 h-4 mr-2" />
+                          Exportar Excel
+                        </Button>
+                        {hasPermission("DELETE_ITEM") && (
+                          <Button onClick={handleRemoveDuplicates} variant="outline" className="shadow-sm bg-white hover:bg-red-50 text-red-600 border-red-200">
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Eliminar Duplicados
+                          </Button>
+                        )}
+                      </div>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    {/* Bulk Actions Bar */}
+                    {selectedItems.length > 0 && (
+                      <div className="sticky top-0 z-30 bg-blue-50 border-b border-blue-200 p-2 flex items-center justify-between shadow-sm animate-in slide-in-from-top duration-200">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-blue-800 text-sm">{selectedItems.length} seleccionados</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedItems([])}
+                            className="h-7 text-xs bg-white"
+                          >
+                            Cancelar
+                          </Button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => setBulkEditModal({ ...bulkEditModal, show: true })}
+                            className="h-7 text-xs bg-blue-600 hover:bg-blue-700"
+                          >
+                            <Edit className="w-3 h-3 mr-1" />
+                            Edición Masiva
+                          </Button>
+                        </div>
+                      </div>
                     )}
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                {/* Bulk Actions Bar */}
-                {selectedItems.length > 0 && (
-                  <div className="sticky top-0 z-30 bg-blue-50 border-b border-blue-200 p-2 flex items-center justify-between shadow-sm animate-in slide-in-from-top duration-200">
-                     <div className="flex items-center gap-2">
-                        <span className="font-semibold text-blue-800 text-sm">{selectedItems.length} seleccionados</span>
-                        <Button 
-                           variant="outline" 
-                           size="sm" 
-                           onClick={() => setSelectedItems([])}
-                           className="h-7 text-xs bg-white"
-                        >
-                           Cancelar
-                        </Button>
-                     </div>
-                     <div className="flex items-center gap-2">
-                        <Button 
-                           size="sm" 
-                           onClick={() => setBulkEditModal({ ...bulkEditModal, show: true })}
-                           className="h-7 text-xs bg-blue-600 hover:bg-blue-700"
-                        >
-                           <Edit className="w-3 h-3 mr-1" />
-                           Edición Masiva
-                        </Button>
-                     </div>
-                  </div>
-                )}
-                <div className="hidden md:block overflow-auto max-h-[65vh] relative w-full max-w-[calc(100vw-2rem)] md:max-w-full">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-gradient-to-r from-blue-600 to-indigo-700 border-b border-blue-800 sticky top-0 z-20 shadow-md">
-                        <TableHead className="w-[40px] px-2 h-8 border-r border-blue-400/30 text-center align-middle">
-                           <Checkbox 
-                              checked={selectedItems.length > 0 && selectedItems.length === currentItems.length}
-                              onCheckedChange={toggleSelectAll}
-                              className="border-white data-[state=checked]:bg-white data-[state=checked]:text-blue-600 translate-y-[2px]"
-                           />
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
-                          Fecha
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">SKU</TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">EAN</TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
-                          Nombre
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
-                          Cant.
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
-                          Costo s/IVA
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
-                          Costo c/IVA
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
-                          PVP s/IVA
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
-                          PVP c/IVA
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
-                          Var. Precio
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
-                          Empresa
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
-                          Canal
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
-                          Marca
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
-                          Estado
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
-                          Factura
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
-                          Observaciones
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
-                          Rep.
-                        </TableHead>
-                        <TableHead className="font-bold text-white text-center text-xs px-2 h-8">
-                          Acciones
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {currentItems.length > 0 ? (
-                        currentItems.map((item) => (
-                          <TableRow key={item.id} className="hover:bg-blue-100/40 transition-colors border-b border-slate-100 group h-8 even:bg-blue-50/10">
-                          <TableCell className="w-[40px] px-2 py-1 border-r border-slate-100 text-center align-middle">
-                              <Checkbox 
-                                checked={selectedItems.includes(item.id)}
-                                onCheckedChange={(checked) => toggleSelectItem(item.id, !!checked)}
+                    <div className="hidden md:block overflow-auto max-h-[65vh] relative w-full max-w-[calc(100vw-2rem)] md:max-w-full">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-gradient-to-r from-blue-600 to-indigo-700 border-b border-blue-800 sticky top-0 z-20 shadow-md">
+                            <TableHead className="w-[40px] px-2 h-8 border-r border-blue-400/30 text-center align-middle">
+                              <Checkbox
+                                checked={selectedItems.length > 0 && selectedItems.length === currentItems.length}
+                                onCheckedChange={toggleSelectAll}
+                                className="border-white data-[state=checked]:bg-white data-[state=checked]:text-blue-600 translate-y-[2px]"
                               />
-                          </TableCell>
-                          <TableCell className="border-r border-slate-100 text-center text-slate-500 py-1 px-2 text-[10px] whitespace-nowrap hidden md:table-cell">{item.date_entered}</TableCell>
-                          <TableCell className="font-medium min-w-[100px] max-w-[150px] border-r border-slate-100 py-1 px-2 text-xs">
-                            <div
-                              className="font-mono whitespace-nowrap overflow-hidden text-ellipsis text-blue-600 font-semibold"
-                              style={{
-                                fontVariantNumeric: "tabular-nums",
-                                wordBreak: "keep-all",
-                              }}
-                              title={String(item.sku)}
-                            >
-                              {String(item.sku)}
-                            </div>
-                          </TableCell>
-                          <TableCell className="border-r border-slate-100 py-1 px-2 text-xs max-w-[100px] truncate hidden md:table-cell" title={item.ean || ""}>{item.ean || "-"}</TableCell>
-                          <TableCell className="border-r border-slate-100 py-1 px-2 text-xs max-w-[150px] truncate" title={item.description}>{item.description}</TableCell>
-                          <TableCell className="border-r border-slate-100 text-center font-medium py-1 px-2 text-xs">{item.quantity}</TableCell>
-                          <TableCell className="border-r border-slate-100 text-right font-mono text-slate-600 py-1 px-2 text-xs">${item.cost_without_tax.toFixed(2)}</TableCell>
-                          <TableCell className="border-r border-slate-100 text-right font-mono text-slate-600 py-1 px-2 text-xs">${item.cost_with_tax.toFixed(2)}</TableCell>
-                          <TableCell className="border-r border-slate-100 text-right font-mono font-medium text-slate-800 py-1 px-2 text-xs hidden md:table-cell">${item.pvp_without_tax.toFixed(2)}</TableCell>
-                          <TableCell className="border-r border-slate-100 text-right font-mono font-bold text-slate-900 py-1 px-2 text-xs">${item.pvp_with_tax.toFixed(2)}</TableCell>
-                          <TableCell className="border-r border-slate-100 py-1 px-2 text-xs hidden md:table-cell">
-                            {priceVariations[item.id]?.hasVariation ? (
-                              <div className="flex items-center justify-center gap-1">
-                                {priceVariations[item.id].isIncrease ? (
-                                  <TrendingUp className="w-3 h-3 text-red-500" />
-                                ) : (
-                                  <TrendingDown className="w-3 h-3 text-green-500" />
-                                )}
-                                <span
-                                  className={`text-[10px] font-medium ${
-                                    priceVariations[item.id].isIncrease ? "text-red-600" : "text-green-600"
-                                  }`}
-                                >
-                                  {priceVariations[item.id].percentage.toFixed(1)}%
-                                </span>
+                            </TableHead>
+                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
+                              Fecha
+                            </TableHead>
+                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">SKU</TableHead>
+                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">EAN</TableHead>
+                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                              Nombre
+                            </TableHead>
+                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                              Cant.
+                            </TableHead>
+                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
+                              Costo s/IVA
+                            </TableHead>
+                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
+                              Costo c/IVA
+                            </TableHead>
+                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
+                              PVP s/IVA
+                            </TableHead>
+                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                              PVP c/IVA
+                            </TableHead>
+                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
+                              Var. Precio
+                            </TableHead>
+                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
+                              Empresa
+                            </TableHead>
+                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
+                              Canal
+                            </TableHead>
+                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
+                              Marca
+                            </TableHead>
+                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                              Estado
+                            </TableHead>
+                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
+                              Factura
+                            </TableHead>
+                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
+                              Observaciones
+                            </TableHead>
+                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
+                              Rep.
+                            </TableHead>
+                            <TableHead className="font-bold text-white text-center text-xs px-2 h-8">
+                              Acciones
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {currentItems.length > 0 ? (
+                            currentItems.map((item) => (
+                              <TableRow key={item.id} className="hover:bg-blue-100/40 transition-colors border-b border-slate-100 group h-8 even:bg-blue-50/10">
+                                <TableCell className="w-[40px] px-2 py-1 border-r border-slate-100 text-center align-middle">
+                                  <Checkbox
+                                    checked={selectedItems.includes(item.id)}
+                                    onCheckedChange={(checked) => toggleSelectItem(item.id, !!checked)}
+                                  />
+                                </TableCell>
+                                <TableCell className="border-r border-slate-100 text-center text-slate-500 py-1 px-2 text-[10px] whitespace-nowrap hidden md:table-cell">{item.date_entered}</TableCell>
+                                <TableCell className="font-medium min-w-[100px] max-w-[150px] border-r border-slate-100 py-1 px-2 text-xs">
+                                  <div
+                                    className="font-mono whitespace-nowrap overflow-hidden text-ellipsis text-blue-600 font-semibold"
+                                    style={{
+                                      fontVariantNumeric: "tabular-nums",
+                                      wordBreak: "keep-all",
+                                    }}
+                                    title={String(item.sku)}
+                                  >
+                                    {String(item.sku)}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="border-r border-slate-100 py-1 px-2 text-xs max-w-[100px] truncate hidden md:table-cell" title={item.ean || ""}>{item.ean || "-"}</TableCell>
+                                <TableCell className="border-r border-slate-100 py-1 px-2 text-xs max-w-[150px] truncate" title={item.description}>{item.description}</TableCell>
+                                <TableCell className="border-r border-slate-100 text-center font-medium py-1 px-2 text-xs">{item.quantity}</TableCell>
+                                <TableCell className="border-r border-slate-100 text-right font-mono text-slate-600 py-1 px-2 text-xs">${item.cost_without_tax.toFixed(2)}</TableCell>
+                                <TableCell className="border-r border-slate-100 text-right font-mono text-slate-600 py-1 px-2 text-xs">${item.cost_with_tax.toFixed(2)}</TableCell>
+                                <TableCell className="border-r border-slate-100 text-right font-mono font-medium text-slate-800 py-1 px-2 text-xs hidden md:table-cell">${item.pvp_without_tax.toFixed(2)}</TableCell>
+                                <TableCell className="border-r border-slate-100 text-right font-mono font-bold text-slate-900 py-1 px-2 text-xs">${item.pvp_with_tax.toFixed(2)}</TableCell>
+                                <TableCell className="border-r border-slate-100 py-1 px-2 text-xs hidden md:table-cell">
+                                  {priceVariations[item.id]?.hasVariation ? (
+                                    <div className="flex items-center justify-center gap-1">
+                                      {priceVariations[item.id].isIncrease ? (
+                                        <TrendingUp className="w-3 h-3 text-red-500" />
+                                      ) : (
+                                        <TrendingDown className="w-3 h-3 text-green-500" />
+                                      )}
+                                      <span
+                                        className={`text-[10px] font-medium ${priceVariations[item.id].isIncrease ? "text-red-600" : "text-green-600"
+                                          }`}
+                                      >
+                                        {priceVariations[item.id].percentage.toFixed(1)}%
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center justify-center">
+                                      <Minus className="w-3 h-3 text-slate-300" />
+                                    </div>
+                                  )}
+                                </TableCell>
+                                <TableCell className="border-r border-slate-100 text-center py-1 px-2 text-xs hidden md:table-cell">
+                                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 h-5 px-1 text-[10px]">
+                                    {item.company.substring(0, 3)}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="border-r border-slate-100 text-center py-1 px-2 text-xs hidden md:table-cell">{item.channel}</TableCell>
+                                <TableCell className="border-r border-slate-100 py-1 px-2 text-xs truncate max-w-[80px] hidden md:table-cell" title={item.brands?.name}>{item.brands?.name}</TableCell>
+                                <TableCell className="border-r border-slate-100 text-center py-1 px-2">
+                                  <Badge
+                                    variant={
+                                      item.stock_status === "normal"
+                                        ? "default"
+                                        : item.stock_status === "missing"
+                                          ? "destructive"
+                                          : "secondary"
+                                    }
+                                    className={`h-5 px-1 text-[10px] ${item.stock_status === "normal"
+                                        ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-200"
+                                        : ""
+                                      }`}
+                                  >
+                                    {item.stock_status === "normal"
+                                      ? "Ok"
+                                      : item.stock_status === "missing"
+                                        ? "Faltó"
+                                        : "Sobró"}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="border-r border-slate-100 font-mono text-[10px] py-1 px-2 truncate max-w-[80px] hidden md:table-cell" title={item.invoice_number || undefined}>{item.invoice_number}</TableCell>
+                                <TableCell className="max-w-[100px] truncate border-r border-slate-100 text-slate-500 italic py-1 px-2 text-[10px] hidden md:table-cell" title={item.observations || undefined}>
+                                  {item.observations}
+                                </TableCell>
+                                <TableCell className="border-r border-slate-100 py-1 px-2 text-xs hidden md:table-cell">
+                                  <div className="flex items-center gap-1 justify-center">
+                                    <span className="font-medium text-slate-600">{skuStats.skuCounts[item.sku]}x</span>
+                                    {skuStats.skuCounts[item.sku] > 1 && (
+                                      <Badge
+                                        variant="destructive"
+                                        className="cursor-pointer hover:bg-red-600 shadow-sm h-5 px-1 text-[10px]"
+                                        onClick={() =>
+                                          setSKUHistoryModal({
+                                            show: true,
+                                            sku: item.sku,
+                                            history: skuStats.skuHistory[item.sku],
+                                          })
+                                        }
+                                      >
+                                        Ver
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="py-1 px-2">
+                                  <div className="flex gap-1 justify-center">
+                                    {hasPermission("EDIT_ITEM") && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => editInventoryItem(item)}
+                                        className="h-6 w-6 p-0 text-blue-600 hover:bg-blue-50"
+                                      >
+                                        <Edit className="w-3 h-3" />
+                                      </Button>
+                                    )}
+                                    {hasPermission("DELETE_ITEM") && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                          setDeleteConfirm({
+                                            show: true,
+                                            type: "item",
+                                            id: item.id,
+                                            name: item.sku,
+                                          })
+                                        }
+                                        className="h-6 w-6 p-0 text-red-600 hover:bg-red-50"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          ) : (
+                            <TableRow>
+                              <TableCell colSpan={17} className="h-32 text-center">
+                                <div className="flex flex-col items-center justify-center text-slate-500">
+                                  <Package className="w-12 h-12 mb-3 text-slate-300" />
+                                  <p className="text-lg font-medium text-slate-600">No se encontraron productos</p>
+                                  <p className="text-sm text-slate-400">Intenta ajustar los filtros de búsqueda</p>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden space-y-4">
+                      {getFilteredInventory().length > 0 ? (
+                        getFilteredInventory().map((item) => (
+                          <Card key={item.id} className="shadow-sm border-l-4 border-l-blue-500">
+                            <CardHeader className="p-3 pb-1">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <CardTitle className="text-sm font-bold text-blue-800 line-clamp-2">{item.description}</CardTitle>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Badge variant="outline" className="text-[10px] h-5">{item.sku}</Badge>
+                                    {item.brands?.name && <Badge variant="secondary" className="text-[10px] h-5">{item.brands.name}</Badge>}
+                                  </div>
+                                </div>
+                                <div className="flex flex-col items-end gap-1">
+                                  <Badge className={item.quantity > 0 ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200" : "bg-red-100 text-red-800 hover:bg-red-200"}>
+                                    {item.quantity} un.
+                                  </Badge>
+                                </div>
                               </div>
-                            ) : (
-                              <div className="flex items-center justify-center">
-                                <Minus className="w-3 h-3 text-slate-300" />
+                            </CardHeader>
+                            <CardContent className="p-3 pt-2 text-xs">
+                              <div className="grid grid-cols-2 gap-2 mb-3 bg-slate-50 p-2 rounded-md">
+                                <div>
+                                  <span className="text-slate-500 block">Costo s/IVA</span>
+                                  <span className="font-mono font-medium">${item.cost_without_tax.toFixed(2)}</span>
+                                </div>
+                                <div className="text-right">
+                                  <span className="text-slate-500 block">PVP c/IVA</span>
+                                  <span className="font-mono font-bold text-base text-blue-700">${item.pvp_with_tax.toFixed(2)}</span>
+                                </div>
                               </div>
-                            )}
-                          </TableCell>
-                          <TableCell className="border-r border-slate-100 text-center py-1 px-2 text-xs hidden md:table-cell">
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 h-5 px-1 text-[10px]">
-                              {item.company.substring(0, 3)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="border-r border-slate-100 text-center py-1 px-2 text-xs hidden md:table-cell">{item.channel}</TableCell>
-                          <TableCell className="border-r border-slate-100 py-1 px-2 text-xs truncate max-w-[80px] hidden md:table-cell" title={item.brands?.name}>{item.brands?.name}</TableCell>
-                          <TableCell className="border-r border-slate-100 text-center py-1 px-2">
-                            <Badge
-                              variant={
-                                item.stock_status === "normal"
-                                  ? "default"
-                                  : item.stock_status === "missing"
-                                    ? "destructive"
-                                    : "secondary"
-                              }
-                              className={`h-5 px-1 text-[10px] ${
-                                item.stock_status === "normal"
-                                  ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-200"
-                                  : ""
-                              }`}
-                            >
-                              {item.stock_status === "normal"
-                                ? "Ok"
-                                : item.stock_status === "missing"
-                                  ? "Faltó"
-                                  : "Sobró"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="border-r border-slate-100 font-mono text-[10px] py-1 px-2 truncate max-w-[80px] hidden md:table-cell" title={item.invoice_number || undefined}>{item.invoice_number}</TableCell>
-                          <TableCell className="max-w-[100px] truncate border-r border-slate-100 text-slate-500 italic py-1 px-2 text-[10px] hidden md:table-cell" title={item.observations || undefined}>
-                            {item.observations}
-                          </TableCell>
-                          <TableCell className="border-r border-slate-100 py-1 px-2 text-xs hidden md:table-cell">
-                            <div className="flex items-center gap-1 justify-center">
-                              <span className="font-medium text-slate-600">{skuStats.skuCounts[item.sku]}x</span>
-                              {skuStats.skuCounts[item.sku] > 1 && (
-                                <Badge
-                                  variant="destructive"
-                                  className="cursor-pointer hover:bg-red-600 shadow-sm h-5 px-1 text-[10px]"
-                                  onClick={() =>
-                                    setSKUHistoryModal({
-                                      show: true,
-                                      sku: item.sku,
-                                      history: skuStats.skuHistory[item.sku],
-                                    })
-                                  }
-                                >
-                                  Ver
-                                </Badge>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-1 px-2">
-                            <div className="flex gap-1 justify-center">
-                              {hasPermission("EDIT_ITEM") && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => editInventoryItem(item)}
-                                  className="h-6 w-6 p-0 text-blue-600 hover:bg-blue-50"
-                                >
-                                  <Edit className="w-3 h-3" />
-                                </Button>
-                              )}
-                              {hasPermission("DELETE_ITEM") && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    setDeleteConfirm({
-                                      show: true,
-                                      type: "item",
-                                      id: item.id,
-                                      name: item.sku,
-                                    })
-                                  }
-                                  className="h-6 w-6 p-0 text-red-600 hover:bg-red-50"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                              <div className="flex items-center justify-between gap-2 border-t pt-2">
+                                <span className="text-slate-400 text-[10px]">{item.date_entered}</span>
+                                <div className="flex gap-2">
+                                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleEdit(item)}>Editar</Button>
+                                  <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => setDeleteConfirm({ show: true, type: "item", id: item.id, name: item.description })}>
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
                         ))
                       ) : (
-                        <TableRow>
-                          <TableCell colSpan={17} className="h-32 text-center">
-                            <div className="flex flex-col items-center justify-center text-slate-500">
-                              <Package className="w-12 h-12 mb-3 text-slate-300" />
-                              <p className="text-lg font-medium text-slate-600">No se encontraron productos</p>
-                              <p className="text-sm text-slate-400">Intenta ajustar los filtros de búsqueda</p>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                        <div className="text-center py-8 bg-slate-50 rounded-lg">
+                          <Package className="w-12 h-12 text-slate-300 mx-auto mb-2" />
+                          <p className="text-slate-500 font-medium">No se encontraron productos</p>
+                        </div>
                       )}
-                    </TableBody>
-                  </Table>
-                </div>
+                    </div>
 
-                {/* Mobile Card View */}
-                <div className="md:hidden space-y-4">
-                  {getFilteredInventory().length > 0 ? (
-                    getFilteredInventory().map((item) => (
-                      <Card key={item.id} className="shadow-sm border-l-4 border-l-blue-500">
-                        <CardHeader className="p-3 pb-1">
-                          <div className="flex justify-between items-start">
-                             <div className="flex-1">
-                                <CardTitle className="text-sm font-bold text-blue-800 line-clamp-2">{item.description}</CardTitle>
-                                <div className="flex items-center gap-2 mt-1">
-                                   <Badge variant="outline" className="text-[10px] h-5">{item.sku}</Badge>
-                                   {item.brands?.name && <Badge variant="secondary" className="text-[10px] h-5">{item.brands.name}</Badge>}
+                    {/* Controles de Paginación */}
+                    <div className="flex items-center justify-between px-4 py-4 border-t border-slate-200 bg-slate-50 rounded-b-lg">
+                      <div className="text-sm text-slate-500">
+                        Mostrando {filteredInventory.length > 0 ? startIndex + 1 : 0} a {Math.min(endIndex, filteredInventory.length)} de {filteredInventory.length} productos
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(1)}
+                          disabled={currentPage === 1}
+                          className="h-8 w-8 p-0"
+                        >
+                          <ChevronsLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                          className="h-8 w-8 p-0"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <div className="text-sm font-medium text-slate-700">
+                          Página {currentPage} de {totalPages || 1}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                          disabled={currentPage === totalPages || totalPages === 0}
+                          className="h-8 w-8 p-0"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(totalPages)}
+                          disabled={currentPage === totalPages || totalPages === 0}
+                          className="h-8 w-8 p-0"
+                        >
+                          <ChevronsRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="import">
+                {hasPermission("IMPORT") ? (
+                  <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+                    <CardHeader className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-t-lg">
+                      <CardTitle className="flex items-center gap-2 text-emerald-800">
+                        <FileSpreadsheet className="w-5 h-5" />
+                        Importar desde Excel
+                      </CardTitle>
+                      <CardDescription>
+                        Importe productos desde un archivo CSV. Descarga la plantilla para ver el formato exacto requerido.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-6 space-y-6">
+                      <div className="border-2 border-dashed border-emerald-200 rounded-lg p-8 text-center bg-gradient-to-br from-emerald-50 to-green-50 hover:border-emerald-300 transition-colors">
+                        <FileSpreadsheet className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-emerald-800 mb-2">Seleccionar archivo CSV</h3>
+                        <p className="text-emerald-600 mb-4">Formatos soportados: .csv (recomendado), .xls, .xlsx</p>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".csv,.xlsx,.xls"
+                          onChange={handleFileUpload}
+                          className="hidden"
+                          id="file-upload"
+                        />
+                        <Button
+                          onClick={() => {
+                            fileInputRef.current?.click()
+                          }}
+                          className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 shadow-lg transform hover:scale-105 transition-all"
+                        >
+                          <Upload className="w-4 h-4 mr-2" />
+                          Seleccionar Archivo
+                        </Button>
+                        <p className="text-xs text-emerald-500 mt-2">Haz clic para seleccionar tu archivo CSV</p>
+                      </div>
+
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h4 className="font-semibold text-blue-800 mb-2">Formato EXACTO requerido del CSV:</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
+                          <div className="bg-yellow-100 p-2 rounded border border-yellow-300">
+                            <strong>A: SKU</strong> (Obligatorio)
+                          </div>
+                          <div className="bg-green-100 p-2 rounded border border-green-300">
+                            <strong>B: EAN</strong> (Opcional)
+                          </div>
+                          <div className="bg-yellow-100 p-2 rounded border border-yellow-300">
+                            <strong>C: DESCRIPCION</strong> (Obligatorio)
+                          </div>
+                          <div className="bg-green-100 p-2 rounded border border-green-300">
+                            <strong>D: CANTIDAD</strong> (Opcional, default 0)
+                          </div>
+                          <div className="bg-yellow-100 p-2 rounded border border-yellow-300">
+                            <strong>E: COSTO</strong> (Sin IVA) (Obligatorio)
+                          </div>
+                          <div className="bg-yellow-100 p-2 rounded border border-yellow-300">
+                            <strong>F: PVP</strong> (Sin IVA) (Obligatorio)
+                          </div>
+                          <div className="bg-green-100 p-2 rounded border border-green-300">
+                            <strong>G: FACTURA</strong> (Opcional)
+                          </div>
+                          <div className="bg-green-100 p-2 rounded border border-green-300">
+                            <strong>H: PROVEEDOR</strong> (Opcional)
+                          </div>
+                          <div className="bg-yellow-100 p-2 rounded border border-yellow-300">
+                            <strong>I: MARCA</strong> (Obligatorio)
+                          </div>
+                        </div>
+                        <p className="text-blue-600 mt-4">
+                          <strong>Ejemplo:</strong> PALETA22;45435435;PALETA FORMATO 22;3;100;170;1000-224586;ONYX;BULLPADEL
+                        </p>
+                      </div>
+
+                      <Button variant="link" onClick={downloadTemplate} className="shadow-sm">
+                        <Download className="w-4 h-4 mr-2" />
+                        Descargar Plantilla CSV de Ejemplo
+                      </Button>
+
+                      {importProgress.show && (
+                        <div className="space-y-2">
+                          <h4 className="text-lg font-semibold text-emerald-700">Importando...</h4>
+                          <Progress value={(importProgress.current / importProgress.total) * 100} />
+                          <p className="text-sm text-emerald-500">
+                            {importProgress.current} de {importProgress.total} filas procesadas
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+                    <CardContent className="p-6 text-center">
+                      <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-slate-800 mb-2">Sin permisos</h3>
+                      <p className="text-slate-600">No tiene permisos para importar datos.</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+
+              <TabsContent value="suppliers">
+                <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+                  <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-t-lg">
+                    <CardTitle className="flex items-center gap-2 text-orange-800">
+                      <Building2 className="w-5 h-5" />
+                      Proveedores
+                    </CardTitle>
+                    <CardDescription>Administre sus proveedores</CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-6 space-y-4">
+                    {hasPermission("CREATE_SUPPLIER") && (
+                      <div className="flex items-center gap-4">
+                        <Input
+                          type="text"
+                          placeholder="Nuevo proveedor"
+                          value={newSupplier}
+                          onChange={(e) => setNewSupplier(e.target.value)}
+                        />
+                        <Button onClick={addSupplier} className="bg-orange-500 hover:bg-orange-600 text-white shadow-sm">
+                          Agregar
+                        </Button>
+                      </div>
+                    )}
+                    <div className="hidden md:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-slate-50">
+                            <TableHead className="font-semibold">Nombre</TableHead>
+                            <TableHead className="font-semibold">Acciones</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {suppliers.map((supplier) => (
+                            <TableRow key={supplier.id} className="hover:bg-slate-50/50">
+                              <TableCell>
+                                {editingSupplier?.id === supplier.id ? (
+                                  <Input
+                                    value={editingSupplier.name}
+                                    onChange={(e) => setEditingSupplier({ ...editingSupplier, name: e.target.value })}
+                                    className="w-full"
+                                  />
+                                ) : (
+                                  supplier.name
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-2">
+                                  {editingSupplier?.id === supplier.id ? (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        onClick={() => updateSupplier(editingSupplier)}
+                                        className="h-8 px-3 text-xs bg-green-600 hover:bg-green-700 text-white"
+                                      >
+                                        Guardar
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => setEditingSupplier(null)}
+                                        className="h-8 px-3 text-xs text-gray-600 hover:bg-gray-100"
+                                      >
+                                        Cancelar
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      {hasPermission("EDIT_SUPPLIER") && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => editSupplier(supplier)}
+                                          className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-100"
+                                        >
+                                          <Edit className="w-3 h-3" />
+                                        </Button>
+                                      )}
+                                      {hasPermission("DELETE_SUPPLIER") && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() =>
+                                            setDeleteConfirm({
+                                              show: true,
+                                              type: "supplier",
+                                              id: supplier.id,
+                                              name: supplier.name,
+                                            })
+                                          }
+                                          className="h-8 w-8 p-0 text-red-600 hover:bg-red-100"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </Button>
+                                      )}
+                                    </>
+                                  )}
                                 </div>
-                             </div>
-                             <div className="flex flex-col items-end gap-1">
-                                <Badge className={item.quantity > 0 ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200" : "bg-red-100 text-red-800 hover:bg-red-200"}>
-                                   {item.quantity} un.
-                                </Badge>
-                             </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="p-3 pt-2 text-xs">
-                          <div className="grid grid-cols-2 gap-2 mb-3 bg-slate-50 p-2 rounded-md">
-                             <div>
-                                <span className="text-slate-500 block">Costo s/IVA</span>
-                                <span className="font-mono font-medium">${item.cost_without_tax.toFixed(2)}</span>
-                             </div>
-                             <div className="text-right">
-                                <span className="text-slate-500 block">PVP c/IVA</span>
-                                <span className="font-mono font-bold text-base text-blue-700">${item.pvp_with_tax.toFixed(2)}</span>
-                             </div>
-                          </div>
-                          <div className="flex items-center justify-between gap-2 border-t pt-2">
-                             <span className="text-slate-400 text-[10px]">{item.date_entered}</span>
-                             <div className="flex gap-2">
-                                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleEdit(item)}>Editar</Button>
-                                <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={() => setDeleteConfirm({ show: true, type: "item", id: item.id, name: item.description })}>
-                                   <Trash2 className="w-3 h-3" />
-                                </Button>
-                             </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  ) : (
-                    <div className="text-center py-8 bg-slate-50 rounded-lg">
-                      <Package className="w-12 h-12 text-slate-300 mx-auto mb-2" />
-                      <p className="text-slate-500 font-medium">No se encontraron productos</p>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
                     </div>
-                  )}
-                </div>
 
-                {/* Controles de Paginación */}
-                <div className="flex items-center justify-between px-4 py-4 border-t border-slate-200 bg-slate-50 rounded-b-lg">
-                  <div className="text-sm text-slate-500">
-                    Mostrando {filteredInventory.length > 0 ? startIndex + 1 : 0} a {Math.min(endIndex, filteredInventory.length)} de {filteredInventory.length} productos
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(1)}
-                      disabled={currentPage === 1}
-                      className="h-8 w-8 p-0"
-                    >
-                      <ChevronsLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="h-8 w-8 p-0"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <div className="text-sm font-medium text-slate-700">
-                      Página {currentPage} de {totalPages || 1}
+                    {/* Mobile Suppliers Card View */}
+                    <div className="md:hidden space-y-3">
+                      {suppliers.map((supplier) => (
+                        <Card key={supplier.id} className="shadow-sm">
+                          <CardContent className="p-4 flex items-center justify-between">
+                            <div className="flex-1">
+                              {editingSupplier?.id === supplier.id ? (
+                                <Input
+                                  value={editingSupplier.name}
+                                  onChange={(e) => setEditingSupplier({ ...editingSupplier, name: e.target.value })}
+                                  className="mb-2 h-8 text-sm"
+                                />
+                              ) : (
+                                <span className="font-medium text-slate-700">{supplier.name}</span>
+                              )}
+                            </div>
+                            <div className="flex gap-2 ml-4">
+                              {editingSupplier?.id === supplier.id ? (
+                                <>
+                                  <Button size="sm" onClick={() => updateSupplier(editingSupplier)} className="h-8 w-8 p-0 bg-green-600"><Check className="h-4 w-4" /></Button>
+                                  <Button size="sm" variant="ghost" onClick={() => setEditingSupplier(null)} className="h-8 w-8 p-0"><X className="h-4 w-4" /></Button>
+                                </>
+                              ) : (
+                                <>
+                                  {hasPermission("EDIT_SUPPLIER") && (
+                                    <Button size="sm" variant="outline" onClick={() => setEditingSupplier(supplier)} className="h-8 w-8 p-0"><Edit className="h-4 w-4" /></Button>
+                                  )}
+                                  {hasPermission("DELETE_SUPPLIER") && (
+                                    <Button size="sm" variant="destructive" onClick={() => setDeleteConfirm({ show: true, type: "supplier", id: supplier.id, name: supplier.name })} className="h-8 w-8 p-0"><Trash2 className="h-4 w-4" /></Button>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages || totalPages === 0}
-                      className="h-8 w-8 p-0"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(totalPages)}
-                      disabled={currentPage === totalPages || totalPages === 0}
-                      className="h-8 w-8 p-0"
-                    >
-                      <ChevronsRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-          <TabsContent value="import">
-            {hasPermission("IMPORT") ? (
-              <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-                <CardHeader className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-t-lg">
-                  <CardTitle className="flex items-center gap-2 text-emerald-800">
-                    <FileSpreadsheet className="w-5 h-5" />
-                    Importar desde Excel
-                  </CardTitle>
-                  <CardDescription>
-                    Importe productos desde un archivo CSV. Descarga la plantilla para ver el formato exacto requerido.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-6 space-y-6">
-                  <div className="border-2 border-dashed border-emerald-200 rounded-lg p-8 text-center bg-gradient-to-br from-emerald-50 to-green-50 hover:border-emerald-300 transition-colors">
-                    <FileSpreadsheet className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-emerald-800 mb-2">Seleccionar archivo CSV</h3>
-                    <p className="text-emerald-600 mb-4">Formatos soportados: .csv (recomendado), .xls, .xlsx</p>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".csv,.xlsx,.xls"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                      id="file-upload"
-                    />
+              <TabsContent value="brands">
+                <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+                  <CardHeader className="bg-gradient-to-r from-purple-50 to-violet-50 rounded-t-lg">
+                    <CardTitle className="flex items-center gap-2 text-purple-800">
+                      <Tag className="w-5 h-5" />
+                      Marcas
+                    </CardTitle>
+                    <CardDescription>Administre las marcas de sus productos</CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-6 space-y-4">
+                    {hasPermission("CREATE_BRAND") && (
+                      <div className="flex items-center gap-4">
+                        <Input
+                          type="text"
+                          placeholder="Nueva marca"
+                          value={newBrand}
+                          onChange={(e) => setNewBrand(e.target.value)}
+                        />
+                        <Button onClick={addBrand} className="bg-purple-500 hover:bg-purple-600 text-white shadow-sm">
+                          Agregar
+                        </Button>
+                      </div>
+                    )}
+                    <div className="hidden md:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-slate-50">
+                            <TableHead className="font-semibold">Nombre</TableHead>
+                            <TableHead className="font-semibold">Acciones</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {brands.map((brand) => (
+                            <TableRow key={brand.id} className="hover:bg-slate-50/50">
+                              <TableCell>
+                                {editingBrand?.id === brand.id ? (
+                                  <Input
+                                    value={editingBrand.name}
+                                    onChange={(e) => setEditingBrand({ ...editingBrand, name: e.target.value })}
+                                    className="w-full"
+                                  />
+                                ) : (
+                                  brand.name
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-2">
+                                  {editingBrand?.id === brand.id ? (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        onClick={() => updateBrand(editingBrand)}
+                                        className="h-8 px-3 text-xs bg-green-600 hover:bg-green-700 text-white"
+                                      >
+                                        Guardar
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => setEditingBrand(null)}
+                                        className="h-8 px-3 text-xs text-gray-600 hover:bg-gray-100"
+                                      >
+                                        Cancelar
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      {hasPermission("EDIT_BRAND") && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => editBrand(brand)}
+                                          className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-100"
+                                        >
+                                          <Edit className="w-3 h-3" />
+                                        </Button>
+                                      )}
+                                      {hasPermission("DELETE_BRAND") && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() =>
+                                            setDeleteConfirm({
+                                              show: true,
+                                              type: "brand",
+                                              id: brand.id,
+                                              name: brand.name,
+                                            })
+                                          }
+                                          className="h-8 w-8 p-0 text-red-600 hover:bg-red-100"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </Button>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Mobile Brands Card View */}
+                    <div className="md:hidden space-y-3">
+                      {brands.map((brand) => (
+                        <Card key={brand.id} className="shadow-sm">
+                          <CardContent className="p-4 flex items-center justify-between">
+                            <div className="flex-1">
+                              {editingBrand?.id === brand.id ? (
+                                <Input
+                                  value={editingBrand.name}
+                                  onChange={(e) => setEditingBrand({ ...editingBrand, name: e.target.value })}
+                                  className="mb-2 h-8 text-sm"
+                                />
+                              ) : (
+                                <span className="font-medium text-slate-700">{brand.name}</span>
+                              )}
+                            </div>
+                            <div className="flex gap-2 ml-4">
+                              {editingBrand?.id === brand.id ? (
+                                <>
+                                  <Button size="sm" onClick={() => updateBrand(editingBrand)} className="h-8 w-8 p-0 bg-green-600"><Check className="h-4 w-4" /></Button>
+                                  <Button size="sm" variant="ghost" onClick={() => setEditingBrand(null)} className="h-8 w-8 p-0"><X className="h-4 w-4" /></Button>
+                                </>
+                              ) : (
+                                <>
+                                  {hasPermission("EDIT_BRAND") && (
+                                    <Button size="sm" variant="outline" onClick={() => setEditingBrand(brand)} className="h-8 w-8 p-0"><Edit className="h-4 w-4" /></Button>
+                                  )}
+                                  {hasPermission("DELETE_BRAND") && (
+                                    <Button size="sm" variant="destructive" onClick={() => setDeleteConfirm({ show: true, type: "brand", id: brand.id, name: brand.name })} className="h-8 w-8 p-0"><Trash2 className="h-4 w-4" /></Button>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="config">
+                <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+                  <CardHeader className="bg-gradient-to-r from-zinc-50 to-stone-50 rounded-t-lg">
+                    <CardTitle className="flex items-center gap-2 text-stone-800">
+                      <Settings className="w-5 h-5" />
+                      Configuración General
+                    </CardTitle>
+                    <CardDescription>Ajustes generales del sistema</CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-6 space-y-4">
+                    {hasPermission("EDIT_CONFIG") ? (
+                      <div>
+                        <Label htmlFor="ivaPercentage" className="text-slate-700 font-medium">
+                          Porcentaje de IVA
+                        </Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            id="ivaPercentage"
+                            type="number"
+                            value={ivaPercentage}
+                            onChange={(e) => updateIvaPercentage(Number(e.target.value))}
+                            className="w-24 mt-1"
+                          />
+                          <span className="text-slate-700">%</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold text-slate-800 mb-2">Sin permisos</h3>
+                        <p className="text-slate-600">No tiene permisos para modificar la configuración.</p>
+                        <p className="text-slate-500 mt-2">IVA actual: {ivaPercentage}%</p>
+                      </div>
+                    )}
+
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="precios">
+                <PreciosPublicar
+                  inventory={inventory}
+                  suppliers={suppliers}
+                  brands={brands}
+                  cuotasConfig={cuotasConfig}
+                  onUpdateCuotasConfig={updateCuotasPercentages}
+                />
+              </TabsContent>
+              <TabsContent value="zentor">
+                <ZentorList inventory={inventory} suppliers={suppliers} brands={brands} />
+              </TabsContent>
+              <TabsContent value="wholesale">
+                {hasPermission("VIEW_WHOLESALE") && (
+                  <MayoristasManagement
+                    inventory={inventory}
+                    suppliers={suppliers}
+                    brands={brands}
+                  />
+                )}
+              </TabsContent>
+
+              <TabsContent value="wholesale-bullpadel">
+                {hasPermission("VIEW_WHOLESALE") && (
+                  <MayoristasBullpadelManagement
+                    inventory={inventory}
+                    suppliers={suppliers}
+                    brands={brands}
+                  />
+                )}
+              </TabsContent>
+
+              <TabsContent value="retail">
+                <VentasMinoristas
+                  inventory={inventory}
+                />
+              </TabsContent>
+
+              <TabsContent value="purchases">
+                <ComprasManagement />
+              </TabsContent>
+
+              <TabsContent value="gastos">
+                <GastosManagement
+                  onUpdateExpenses={updateCurrentMonthExpenses}
+                />
+              </TabsContent>
+
+              <TabsContent value="notas-credito">
+                <NotasCreditoManagement />
+              </TabsContent>
+
+              <TabsContent value="clients">
+                <ClientesManagement />
+              </TabsContent>
+
+              <TabsContent value="logs">
+                <ActivityLogs />
+              </TabsContent>
+
+              <TabsContent value="users">
+                <UserManagement />
+              </TabsContent>
+            </Tabs>
+
+            {/* Modal de confirmación de eliminación */}
+            {deleteConfirm.show && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+                  <h2 className="text-lg font-semibold mb-4 text-red-600">Confirmar Eliminación</h2>
+                  <p className="text-gray-700 mb-6">
+                    ¿Está seguro de que desea eliminar{" "}
+                    {deleteConfirm.type === "item"
+                      ? `el producto "${deleteConfirm.name}"`
+                      : deleteConfirm.type === "supplier"
+                        ? `el proveedor "${deleteConfirm.name}"`
+                        : `la marca "${deleteConfirm.name}"`}
+                    ?
+                  </p>
+                  <p className="text-sm text-red-500 mb-4">Esta acción no se puede deshacer.</p>
+                  <div className="flex justify-end space-x-2">
                     <Button
+                      variant="secondary"
+                      onClick={() => setDeleteConfirm({ show: false, type: "item", id: 0, name: "" })}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      variant="destructive"
                       onClick={() => {
-                        fileInputRef.current?.click()
+                        if (deleteConfirm.type === "item") {
+                          deleteInventoryItem(deleteConfirm.id)
+                        } else if (deleteConfirm.type === "supplier") {
+                          deleteSupplier(deleteConfirm.id)
+                        } else if (deleteConfirm.type === "brand") {
+                          deleteBrand(deleteConfirm.id)
+                        }
                       }}
-                      className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 shadow-lg transform hover:scale-105 transition-all"
                     >
-                      <Upload className="w-4 h-4 mr-2" />
-                      Seleccionar Archivo
+                      Eliminar
                     </Button>
-                    <p className="text-xs text-emerald-500 mt-2">Haz clic para seleccionar tu archivo CSV</p>
                   </div>
+                </div>
+              </div>
+            )}
 
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-blue-800 mb-2">Formato EXACTO requerido del CSV:</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
-                      <div className="bg-yellow-100 p-2 rounded border border-yellow-300">
-                        <strong>A: SKU</strong> (Obligatorio)
-                      </div>
-                      <div className="bg-green-100 p-2 rounded border border-green-300">
-                        <strong>B: EAN</strong> (Opcional)
-                      </div>
-                      <div className="bg-yellow-100 p-2 rounded border border-yellow-300">
-                        <strong>C: DESCRIPCION</strong> (Obligatorio)
-                      </div>
-                      <div className="bg-green-100 p-2 rounded border border-green-300">
-                        <strong>D: CANTIDAD</strong> (Opcional, default 0)
-                      </div>
-                      <div className="bg-yellow-100 p-2 rounded border border-yellow-300">
-                        <strong>E: COSTO</strong> (Sin IVA) (Obligatorio)
-                      </div>
-                      <div className="bg-yellow-100 p-2 rounded border border-yellow-300">
-                        <strong>F: PVP</strong> (Sin IVA) (Obligatorio)
-                      </div>
-                      <div className="bg-green-100 p-2 rounded border border-green-300">
-                        <strong>G: FACTURA</strong> (Opcional)
-                      </div>
-                      <div className="bg-green-100 p-2 rounded border border-green-300">
-                        <strong>H: PROVEEDOR</strong> (Opcional)
-                      </div>
-                      <div className="bg-yellow-100 p-2 rounded border border-yellow-300">
-                        <strong>I: MARCA</strong> (Obligatorio)
-                      </div>
+            {/* Modal de edición de producto */}
+            {editingItem && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white p-6 rounded-lg shadow-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                  <h2 className="text-lg font-semibold mb-4 text-blue-600">Editar Producto</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="edit-sku">SKU</Label>
+                      <Input
+                        id="edit-sku"
+                        value={editingItem.sku}
+                        onChange={(e) => setEditingItem({ ...editingItem, sku: e.target.value })}
+                      />
                     </div>
-                    <p className="text-blue-600 mt-4">
-                      <strong>Ejemplo:</strong> PALETA22;45435435;PALETA FORMATO 22;3;100;170;1000-224586;ONYX;BULLPADEL
-                    </p>
+                    <div>
+                      <Label htmlFor="edit-ean">EAN</Label>
+                      <Input
+                        id="edit-ean"
+                        value={editingItem.ean || ""}
+                        onChange={(e) => setEditingItem({ ...editingItem, ean: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-description">Nombre</Label>
+                      <Input
+                        id="edit-description"
+                        value={editingItem.description}
+                        onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-cost">Costo s/IVA</Label>
+                      <Input
+                        id="edit-cost"
+                        type="number"
+                        step="0.01"
+                        value={editingItem.cost_without_tax}
+                        onChange={(e) => {
+                          const cost = Number.parseFloat(e.target.value)
+                          setEditingItem({
+                            ...editingItem,
+                            cost_without_tax: cost,
+                            cost_with_tax: calculateWithTax(cost),
+                          })
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-pvp">PVP s/IVA</Label>
+                      <Input
+                        id="edit-pvp"
+                        type="number"
+                        step="0.01"
+                        value={editingItem.pvp_without_tax}
+                        onChange={(e) => {
+                          const pvp = Number.parseFloat(e.target.value)
+                          setEditingItem({
+                            ...editingItem,
+                            pvp_without_tax: pvp,
+                            pvp_with_tax: calculateWithTax(pvp),
+                          })
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-quantity">Cantidad</Label>
+                      <Input
+                        id="edit-quantity"
+                        type="number"
+                        value={editingItem.quantity}
+                        onChange={(e) => setEditingItem({ ...editingItem, quantity: Number.parseInt(e.target.value) })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-company">Empresa</Label>
+                      <Select
+                        value={editingItem.company}
+                        onValueChange={(value: "MAYCAM" | "BLUE DOGO" | "GLOBOBAZAAR") =>
+                          setEditingItem({ ...editingItem, company: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="MAYCAM">MAYCAM</SelectItem>
+                          <SelectItem value="BLUE DOGO">BLUE DOGO</SelectItem>
+                          <SelectItem value="GLOBOBAZAAR">GLOBOBAZAAR</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-channel">Canal</Label>
+                      <Select
+                        value={editingItem.channel}
+                        onValueChange={(value: "A" | "B") => setEditingItem({ ...editingItem, channel: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="A">Canal A</SelectItem>
+                          <SelectItem value="B">Canal B</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-supplier">Proveedor</Label>
+                      <Select
+                        value={editingItem.supplier_id?.toString() || "none"}
+                        onValueChange={(value) =>
+                          setEditingItem({ ...editingItem, supplier_id: value === "none" ? null : Number.parseInt(value) })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar proveedor" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Sin proveedor</SelectItem>
+                          {suppliers.map((supplier) => (
+                            <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                              {supplier.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-brand">Marca</Label>
+                      <Select
+                        value={editingItem.brand_id?.toString() || "none"}
+                        onValueChange={(value) =>
+                          setEditingItem({ ...editingItem, brand_id: value === "none" ? null : Number.parseInt(value) })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar marca" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Sin marca</SelectItem>
+                          {brands.map((brand) => (
+                            <SelectItem key={brand.id} value={brand.id.toString()}>
+                              {brand.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-invoice">Nº Factura</Label>
+                      <Input
+                        id="edit-invoice"
+                        value={editingItem.invoice_number || ""}
+                        onChange={(e) => setEditingItem({ ...editingItem, invoice_number: e.target.value })}
+                      />
+                    </div>
+                    <div className="md:col-span-3">
+                      <Label htmlFor="edit-observations">Observaciones</Label>
+                      <Textarea
+                        id="edit-observations"
+                        value={editingItem.observations || ""}
+                        onChange={(e) => setEditingItem({ ...editingItem, observations: e.target.value })}
+                      />
+                    </div>
                   </div>
+                  <div className="flex justify-end space-x-2 mt-6">
+                    <Button variant="secondary" onClick={() => setEditingItem(null)}>
+                      Cancelar
+                    </Button>
+                    <Button onClick={() => updateInventoryItem(editingItem)}>Guardar Cambios</Button>
+                  </div>
+                </div>
+              </div>
+            )}
 
-                  <Button variant="link" onClick={downloadTemplate} className="shadow-sm">
-                    <Download className="w-4 h-4 mr-2" />
-                    Descargar Plantilla CSV de Ejemplo
-                  </Button>
-
-                  {importProgress.show && (
-                    <div className="space-y-2">
-                      <h4 className="text-lg font-semibold text-emerald-700">Importando...</h4>
-                      <Progress value={(importProgress.current / importProgress.total) * 100} />
-                      <p className="text-sm text-emerald-500">
-                        {importProgress.current} de {importProgress.total} filas procesadas
+            {/* Modal para gestionar anuncios */}
+            {showAnnouncementForm && getCurrentUser()?.role === "admin" && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+                  <h2 className="text-lg font-semibold mb-4 text-amber-700">Gestionar Anuncio del Sistema</h2>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="announcement-text" className="text-slate-700 font-medium">
+                        Mensaje del Anuncio
+                      </Label>
+                      <Textarea
+                        id="announcement-text"
+                        value={announcement}
+                        onChange={(e) => setAnnouncement(e.target.value)}
+                        placeholder="Escriba el mensaje que desea mostrar a todos los usuarios..."
+                        rows={3}
+                        className="mt-1"
+                      />
+                      <p className="text-xs text-slate-500 mt-1">
+                        Deje vacío para ocultar el anuncio. Solo los administradores pueden ver y editar este mensaje.
                       </p>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-                <CardContent className="p-6 text-center">
-                  <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-slate-800 mb-2">Sin permisos</h3>
-                  <p className="text-slate-600">No tiene permisos para importar datos.</p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="suppliers">
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-t-lg">
-                <CardTitle className="flex items-center gap-2 text-orange-800">
-                  <Building2 className="w-5 h-5" />
-                  Proveedores
-                </CardTitle>
-                <CardDescription>Administre sus proveedores</CardDescription>
-              </CardHeader>
-              <CardContent className="p-6 space-y-4">
-                {hasPermission("CREATE_SUPPLIER") && (
-                  <div className="flex items-center gap-4">
-                    <Input
-                      type="text"
-                      placeholder="Nuevo proveedor"
-                      value={newSupplier}
-                      onChange={(e) => setNewSupplier(e.target.value)}
-                    />
-                    <Button onClick={addSupplier} className="bg-orange-500 hover:bg-orange-600 text-white shadow-sm">
-                      Agregar
+                  </div>
+                  <div className="flex justify-end space-x-2 mt-6">
+                    <Button variant="secondary" onClick={() => setShowAnnouncementForm(false)}>
+                      Cancelar
+                    </Button>
+                    <Button
+                      onClick={async () => {
+                        await logActivity(
+                          "UPDATE_ANNOUNCEMENT",
+                          null,
+                          null,
+                          null,
+                          { announcement },
+                          `Anuncio del sistema ${announcement ? "actualizado" : "eliminado"}: ${announcement || "Sin mensaje"}`,
+                        )
+                        setShowAnnouncementForm(false)
+                        toast({
+                          title: "Anuncio actualizado",
+                          description: announcement
+                            ? "El anuncio se ha publicado correctamente"
+                            : "El anuncio se ha eliminado",
+                        })
+                      }}
+                      className="bg-amber-600 hover:bg-amber-700 text-white"
+                    >
+                      {announcement ? "Publicar Anuncio" : "Eliminar Anuncio"}
                     </Button>
                   </div>
-                )}
-                <div className="hidden md:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-slate-50">
-                      <TableHead className="font-semibold">Nombre</TableHead>
-                      <TableHead className="font-semibold">Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {suppliers.map((supplier) => (
-                      <TableRow key={supplier.id} className="hover:bg-slate-50/50">
-                        <TableCell>
-                          {editingSupplier?.id === supplier.id ? (
-                            <Input
-                              value={editingSupplier.name}
-                              onChange={(e) => setEditingSupplier({ ...editingSupplier, name: e.target.value })}
-                              className="w-full"
-                            />
-                          ) : (
-                            supplier.name
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            {editingSupplier?.id === supplier.id ? (
-                              <>
-                                <Button
-                                  size="sm"
-                                  onClick={() => updateSupplier(editingSupplier)}
-                                  className="h-8 px-3 text-xs bg-green-600 hover:bg-green-700 text-white"
-                                >
-                                  Guardar
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => setEditingSupplier(null)}
-                                  className="h-8 px-3 text-xs text-gray-600 hover:bg-gray-100"
-                                >
-                                  Cancelar
-                                </Button>
-                              </>
-                            ) : (
-                              <>
-                                {hasPermission("EDIT_SUPPLIER") && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => editSupplier(supplier)}
-                                    className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-100"
-                                  >
-                                    <Edit className="w-3 h-3" />
-                                  </Button>
-                                )}
-                                {hasPermission("DELETE_SUPPLIER") && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() =>
-                                      setDeleteConfirm({
-                                        show: true,
-                                        type: "supplier",
-                                        id: supplier.id,
-                                        name: supplier.name,
-                                      })
-                                    }
-                                    className="h-8 w-8 p-0 text-red-600 hover:bg-red-100"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </Button>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
                 </div>
-                
-                {/* Mobile Suppliers Card View */}
-                <div className="md:hidden space-y-3">
-                  {suppliers.map((supplier) => (
-                    <Card key={supplier.id} className="shadow-sm">
-                      <CardContent className="p-4 flex items-center justify-between">
-                         <div className="flex-1">
-                             {editingSupplier?.id === supplier.id ? (
-                                 <Input
-                                     value={editingSupplier.name}
-                                     onChange={(e) => setEditingSupplier({ ...editingSupplier, name: e.target.value })}
-                                     className="mb-2 h-8 text-sm"
-                                 />
-                             ) : (
-                                 <span className="font-medium text-slate-700">{supplier.name}</span>
-                             )}
-                         </div>
-                         <div className="flex gap-2 ml-4">
-                             {editingSupplier?.id === supplier.id ? (
-                                 <>
-                                    <Button size="sm" onClick={() => updateSupplier(editingSupplier)} className="h-8 w-8 p-0 bg-green-600"><Check className="h-4 w-4" /></Button>
-                                    <Button size="sm" variant="ghost" onClick={() => setEditingSupplier(null)} className="h-8 w-8 p-0"><X className="h-4 w-4" /></Button>
-                                 </>
-                             ) : (
-                                 <>
-                                    {hasPermission("EDIT_SUPPLIER") && (
-                                        <Button size="sm" variant="outline" onClick={() => setEditingSupplier(supplier)} className="h-8 w-8 p-0"><Edit className="h-4 w-4" /></Button>
-                                    )}
-                                    {hasPermission("DELETE_SUPPLIER") && (
-                                        <Button size="sm" variant="destructive" onClick={() => setDeleteConfirm({ show: true, type: "supplier", id: supplier.id, name: supplier.name })} className="h-8 w-8 p-0"><Trash2 className="h-4 w-4" /></Button>
-                                    )}
-                                 </>
-                             )}
-                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="brands">
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader className="bg-gradient-to-r from-purple-50 to-violet-50 rounded-t-lg">
-                <CardTitle className="flex items-center gap-2 text-purple-800">
-                  <Tag className="w-5 h-5" />
-                  Marcas
-                </CardTitle>
-                <CardDescription>Administre las marcas de sus productos</CardDescription>
-              </CardHeader>
-              <CardContent className="p-6 space-y-4">
-                {hasPermission("CREATE_BRAND") && (
-                  <div className="flex items-center gap-4">
-                    <Input
-                      type="text"
-                      placeholder="Nueva marca"
-                      value={newBrand}
-                      onChange={(e) => setNewBrand(e.target.value)}
-                    />
-                    <Button onClick={addBrand} className="bg-purple-500 hover:bg-purple-600 text-white shadow-sm">
-                      Agregar
-                    </Button>
-                  </div>
-                )}
-                <div className="hidden md:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-slate-50">
-                      <TableHead className="font-semibold">Nombre</TableHead>
-                      <TableHead className="font-semibold">Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {brands.map((brand) => (
-                      <TableRow key={brand.id} className="hover:bg-slate-50/50">
-                        <TableCell>
-                          {editingBrand?.id === brand.id ? (
-                            <Input
-                              value={editingBrand.name}
-                              onChange={(e) => setEditingBrand({ ...editingBrand, name: e.target.value })}
-                              className="w-full"
-                            />
-                          ) : (
-                            brand.name
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            {editingBrand?.id === brand.id ? (
-                              <>
-                                <Button
-                                  size="sm"
-                                  onClick={() => updateBrand(editingBrand)}
-                                  className="h-8 px-3 text-xs bg-green-600 hover:bg-green-700 text-white"
-                                >
-                                  Guardar
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => setEditingBrand(null)}
-                                  className="h-8 px-3 text-xs text-gray-600 hover:bg-gray-100"
-                                >
-                                  Cancelar
-                                </Button>
-                              </>
-                            ) : (
-                              <>
-                                {hasPermission("EDIT_BRAND") && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => editBrand(brand)}
-                                    className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-100"
-                                  >
-                                    <Edit className="w-3 h-3" />
-                                  </Button>
-                                )}
-                                {hasPermission("DELETE_BRAND") && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() =>
-                                      setDeleteConfirm({
-                                        show: true,
-                                        type: "brand",
-                                        id: brand.id,
-                                        name: brand.name,
-                                      })
-                                    }
-                                    className="h-8 w-8 p-0 text-red-600 hover:bg-red-100"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </Button>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                </div>
-                
-                {/* Mobile Brands Card View */}
-                <div className="md:hidden space-y-3">
-                  {brands.map((brand) => (
-                    <Card key={brand.id} className="shadow-sm">
-                      <CardContent className="p-4 flex items-center justify-between">
-                         <div className="flex-1">
-                             {editingBrand?.id === brand.id ? (
-                                 <Input
-                                     value={editingBrand.name}
-                                     onChange={(e) => setEditingBrand({ ...editingBrand, name: e.target.value })}
-                                     className="mb-2 h-8 text-sm"
-                                 />
-                             ) : (
-                                 <span className="font-medium text-slate-700">{brand.name}</span>
-                             )}
-                         </div>
-                         <div className="flex gap-2 ml-4">
-                             {editingBrand?.id === brand.id ? (
-                                 <>
-                                    <Button size="sm" onClick={() => updateBrand(editingBrand)} className="h-8 w-8 p-0 bg-green-600"><Check className="h-4 w-4" /></Button>
-                                    <Button size="sm" variant="ghost" onClick={() => setEditingBrand(null)} className="h-8 w-8 p-0"><X className="h-4 w-4" /></Button>
-                                 </>
-                             ) : (
-                                 <>
-                                    {hasPermission("EDIT_BRAND") && (
-                                        <Button size="sm" variant="outline" onClick={() => setEditingBrand(brand)} className="h-8 w-8 p-0"><Edit className="h-4 w-4" /></Button>
-                                    )}
-                                    {hasPermission("DELETE_BRAND") && (
-                                        <Button size="sm" variant="destructive" onClick={() => setDeleteConfirm({ show: true, type: "brand", id: brand.id, name: brand.name })} className="h-8 w-8 p-0"><Trash2 className="h-4 w-4" /></Button>
-                                    )}
-                                 </>
-                             )}
-                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="config">
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader className="bg-gradient-to-r from-zinc-50 to-stone-50 rounded-t-lg">
-                <CardTitle className="flex items-center gap-2 text-stone-800">
-                  <Settings className="w-5 h-5" />
-                  Configuración General
-                </CardTitle>
-                <CardDescription>Ajustes generales del sistema</CardDescription>
-              </CardHeader>
-              <CardContent className="p-6 space-y-4">
-                {hasPermission("EDIT_CONFIG") ? (
-                  <div>
-                    <Label htmlFor="ivaPercentage" className="text-slate-700 font-medium">
-                      Porcentaje de IVA
-                    </Label>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        id="ivaPercentage"
-                        type="number"
-                        value={ivaPercentage}
-                        onChange={(e) => updateIvaPercentage(Number(e.target.value))}
-                        className="w-24 mt-1"
-                      />
-                      <span className="text-slate-700">%</span>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-slate-800 mb-2">Sin permisos</h3>
-                    <p className="text-slate-600">No tiene permisos para modificar la configuración.</p>
-                    <p className="text-slate-500 mt-2">IVA actual: {ivaPercentage}%</p>
-                  </div>
-                )}
-
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="precios">
-            <PreciosPublicar
-              inventory={inventory}
-              suppliers={suppliers}
-              brands={brands}
-              cuotasConfig={cuotasConfig}
-              onUpdateCuotasConfig={updateCuotasPercentages}
-            />
-          </TabsContent>
-          <TabsContent value="zentor">
-            <ZentorList inventory={inventory} suppliers={suppliers} brands={brands} />
-          </TabsContent>
-          <TabsContent value="wholesale">
-            {hasPermission("VIEW_WHOLESALE") && (
-              <MayoristasManagement
-                inventory={inventory}
-                suppliers={suppliers}
-                brands={brands}
-              />
+              </div>
             )}
-          </TabsContent>
 
-          <TabsContent value="retail">
-            <VentasMinoristas
-              inventory={inventory}
-            />
-          </TabsContent>
+            {/* Modal de alerta de cambio de precio */}
+            <AlertDialog open={priceAlert.show} onOpenChange={(open) => !open && setPriceAlert(prev => ({ ...prev, show: false }))}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Cambio de Precio Detectado</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {priceAlert.message}
+                    <div className="mt-4 flex flex-col gap-4 p-4 bg-slate-50 rounded-md">
+                      <div className="flex justify-center items-center gap-8">
+                        <div className="text-center">
+                          <p className="text-sm text-gray-500 mb-1">Precio Anterior</p>
+                          <p className="text-xl font-bold text-gray-600">${priceAlert.oldPrice?.toFixed(2)}</p>
+                        </div>
 
-          <TabsContent value="purchases">
-            <ComprasManagement />
-          </TabsContent>
+                        <div className="flex flex-col items-center">
+                          {priceAlert.newPrice > priceAlert.oldPrice ? (
+                            <TrendingUp className="w-6 h-6 text-red-500 mb-1" />
+                          ) : (
+                            <TrendingDown className="w-6 h-6 text-green-500 mb-1" />
+                          )}
+                          <ArrowRight className="w-4 h-4 text-gray-400" />
+                        </div>
 
-          <TabsContent value="gastos">
-            <GastosManagement
-              onUpdateExpenses={updateCurrentMonthExpenses}
-            />
-          </TabsContent>
+                        <div className="text-center">
+                          <p className="text-sm text-gray-500 mb-1">Nuevo Precio</p>
+                          <p className="text-xl font-bold text-blue-600">{priceAlert.newPrice ? formatCurrency(priceAlert.newPrice) : "-"}</p>
+                        </div>
+                      </div>
 
-          <TabsContent value="notas-credito">
-            <NotasCreditoManagement />
-          </TabsContent>
-
-          <TabsContent value="clients">
-            <ClientesManagement />
-          </TabsContent>
-
-          <TabsContent value="logs">
-            <ActivityLogs />
-          </TabsContent>
-
-          <TabsContent value="users">
-            <UserManagement />
-          </TabsContent>
-        </Tabs>
-
-        {/* Modal de confirmación de eliminación */}
-        {deleteConfirm.show && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
-              <h2 className="text-lg font-semibold mb-4 text-red-600">Confirmar Eliminación</h2>
-              <p className="text-gray-700 mb-6">
-                ¿Está seguro de que desea eliminar{" "}
-                {deleteConfirm.type === "item"
-                  ? `el producto "${deleteConfirm.name}"`
-                  : deleteConfirm.type === "supplier"
-                    ? `el proveedor "${deleteConfirm.name}"`
-                    : `la marca "${deleteConfirm.name}"`}
-                ?
-              </p>
-              <p className="text-sm text-red-500 mb-4">Esta acción no se puede deshacer.</p>
-              <div className="flex justify-end space-x-2">
-                <Button
-                  variant="secondary"
-                  onClick={() => setDeleteConfirm({ show: false, type: "item", id: 0, name: "" })}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    if (deleteConfirm.type === "item") {
-                      deleteInventoryItem(deleteConfirm.id)
-                    } else if (deleteConfirm.type === "supplier") {
-                      deleteSupplier(deleteConfirm.id)
-                    } else if (deleteConfirm.type === "brand") {
-                      deleteBrand(deleteConfirm.id)
-                    }
-                  }}
-                >
-                  Eliminar
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Modal de edición de producto */}
-        {editingItem && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-              <h2 className="text-lg font-semibold mb-4 text-blue-600">Editar Producto</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="edit-sku">SKU</Label>
-                  <Input
-                    id="edit-sku"
-                    value={editingItem.sku}
-                    onChange={(e) => setEditingItem({ ...editingItem, sku: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-ean">EAN</Label>
-                  <Input
-                    id="edit-ean"
-                    value={editingItem.ean || ""}
-                    onChange={(e) => setEditingItem({ ...editingItem, ean: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-description">Nombre</Label>
-                  <Input
-                    id="edit-description"
-                    value={editingItem.description}
-                    onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-cost">Costo s/IVA</Label>
-                  <Input
-                    id="edit-cost"
-                    type="number"
-                    step="0.01"
-                    value={editingItem.cost_without_tax}
-                    onChange={(e) => {
-                      const cost = Number.parseFloat(e.target.value)
-                      setEditingItem({
-                        ...editingItem,
-                        cost_without_tax: cost,
-                        cost_with_tax: calculateWithTax(cost),
-                      })
-                    }}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-pvp">PVP s/IVA</Label>
-                  <Input
-                    id="edit-pvp"
-                    type="number"
-                    step="0.01"
-                    value={editingItem.pvp_without_tax}
-                    onChange={(e) => {
-                      const pvp = Number.parseFloat(e.target.value)
-                      setEditingItem({
-                        ...editingItem,
-                        pvp_without_tax: pvp,
-                        pvp_with_tax: calculateWithTax(pvp),
-                      })
-                    }}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-quantity">Cantidad</Label>
-                  <Input
-                    id="edit-quantity"
-                    type="number"
-                    value={editingItem.quantity}
-                    onChange={(e) => setEditingItem({ ...editingItem, quantity: Number.parseInt(e.target.value) })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-company">Empresa</Label>
-                  <Select
-                    value={editingItem.company}
-                    onValueChange={(value: "MAYCAM" | "BLUE DOGO" | "GLOBOBAZAAR") =>
-                      setEditingItem({ ...editingItem, company: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="MAYCAM">MAYCAM</SelectItem>
-                      <SelectItem value="BLUE DOGO">BLUE DOGO</SelectItem>
-                      <SelectItem value="GLOBOBAZAAR">GLOBOBAZAAR</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="edit-channel">Canal</Label>
-                  <Select
-                    value={editingItem.channel}
-                    onValueChange={(value: "A" | "B") => setEditingItem({ ...editingItem, channel: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="A">Canal A</SelectItem>
-                      <SelectItem value="B">Canal B</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="edit-supplier">Proveedor</Label>
-                  <Select
-                    value={editingItem.supplier_id?.toString() || "none"}
-                    onValueChange={(value) =>
-                      setEditingItem({ ...editingItem, supplier_id: value === "none" ? null : Number.parseInt(value) })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar proveedor" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Sin proveedor</SelectItem>
-                      {suppliers.map((supplier) => (
-                        <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                          {supplier.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="edit-brand">Marca</Label>
-                  <Select
-                    value={editingItem.brand_id?.toString() || "none"}
-                    onValueChange={(value) =>
-                      setEditingItem({ ...editingItem, brand_id: value === "none" ? null : Number.parseInt(value) })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar marca" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Sin marca</SelectItem>
-                      {brands.map((brand) => (
-                        <SelectItem key={brand.id} value={brand.id.toString()}>
-                          {brand.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="edit-invoice">Nº Factura</Label>
-                  <Input
-                    id="edit-invoice"
-                    value={editingItem.invoice_number || ""}
-                    onChange={(e) => setEditingItem({ ...editingItem, invoice_number: e.target.value })}
-                  />
-                </div>
-                <div className="md:col-span-3">
-                  <Label htmlFor="edit-observations">Observaciones</Label>
-                  <Textarea
-                    id="edit-observations"
-                    value={editingItem.observations || ""}
-                    onChange={(e) => setEditingItem({ ...editingItem, observations: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end space-x-2 mt-6">
-                <Button variant="secondary" onClick={() => setEditingItem(null)}>
-                  Cancelar
-                </Button>
-                <Button onClick={() => updateInventoryItem(editingItem)}>Guardar Cambios</Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Modal para gestionar anuncios */}
-        {showAnnouncementForm && getCurrentUser()?.role === "admin" && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
-              <h2 className="text-lg font-semibold mb-4 text-amber-700">Gestionar Anuncio del Sistema</h2>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="announcement-text" className="text-slate-700 font-medium">
-                    Mensaje del Anuncio
-                  </Label>
-                  <Textarea
-                    id="announcement-text"
-                    value={announcement}
-                    onChange={(e) => setAnnouncement(e.target.value)}
-                    placeholder="Escriba el mensaje que desea mostrar a todos los usuarios..."
-                    rows={3}
-                    className="mt-1"
-                  />
-                  <p className="text-xs text-slate-500 mt-1">
-                    Deje vacío para ocultar el anuncio. Solo los administradores pueden ver y editar este mensaje.
-                  </p>
-                </div>
-              </div>
-              <div className="flex justify-end space-x-2 mt-6">
-                <Button variant="secondary" onClick={() => setShowAnnouncementForm(false)}>
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={async () => {
-                    await logActivity(
-                      "UPDATE_ANNOUNCEMENT",
-                      null,
-                      null,
-                      null,
-                      { announcement },
-                      `Anuncio del sistema ${announcement ? "actualizado" : "eliminado"}: ${announcement || "Sin mensaje"}`,
-                    )
-                    setShowAnnouncementForm(false)
-                    toast({
-                      title: "Anuncio actualizado",
-                      description: announcement
-                        ? "El anuncio se ha publicado correctamente"
-                        : "El anuncio se ha eliminado",
-                    })
-                  }}
-                  className="bg-amber-600 hover:bg-amber-700 text-white"
-                >
-                  {announcement ? "Publicar Anuncio" : "Eliminar Anuncio"}
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Modal de alerta de cambio de precio */}
-        <AlertDialog open={priceAlert.show} onOpenChange={(open) => !open && setPriceAlert(prev => ({ ...prev, show: false }))}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Cambio de Precio Detectado</AlertDialogTitle>
-              <AlertDialogDescription>
-                {priceAlert.message}
-                <div className="mt-4 flex flex-col gap-4 p-4 bg-slate-50 rounded-md">
-                  <div className="flex justify-center items-center gap-8">
-                    <div className="text-center">
-                      <p className="text-sm text-gray-500 mb-1">Precio Anterior</p>
-                      <p className="text-xl font-bold text-gray-600">${priceAlert.oldPrice?.toFixed(2)}</p>
+                      <div className="flex justify-between items-center pt-2 border-t">
+                        <span className="text-slate-500">Variación:</span>
+                        <Badge variant={priceAlert.newPrice > priceAlert.oldPrice ? "destructive" : "default"} className={priceAlert.newPrice > priceAlert.oldPrice ? "bg-red-500" : "bg-green-500"}>
+                          {priceAlert.oldPrice > 0 ? (
+                            <>
+                              {priceAlert.newPrice > priceAlert.oldPrice ? "+" : "-"}
+                              {Math.abs(((priceAlert.newPrice - priceAlert.oldPrice) / priceAlert.oldPrice) * 100).toFixed(2)}%
+                            </>
+                          ) : "N/A"}
+                        </Badge>
+                      </div>
                     </div>
-                    
-                    <div className="flex flex-col items-center">
-                       {priceAlert.newPrice > priceAlert.oldPrice ? (
-                          <TrendingUp className="w-6 h-6 text-red-500 mb-1" />
-                        ) : (
-                          <TrendingDown className="w-6 h-6 text-green-500 mb-1" />
-                        )}
-                        <ArrowRight className="w-4 h-4 text-gray-400" />
-                    </div>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={() => setPriceAlert({ ...priceAlert, show: false })}>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={confirmPriceChange}>Confirmar y Guardar</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
 
-                    <div className="text-center">
-                      <p className="text-sm text-gray-500 mb-1">Nuevo Precio</p>
-                      <p className="text-xl font-bold text-blue-600">{priceAlert.newPrice ? formatCurrency(priceAlert.newPrice) : "-"}</p>
-                    </div>
+            {/* Modal de historial de SKU */}
+            {skuHistoryModal.show && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white p-6 rounded-lg shadow-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                  <h2 className="text-lg font-semibold mb-4 text-blue-600">Historial del SKU: {skuHistoryModal.sku}</h2>
+                  <div className="overflow-x-auto hidden md:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gradient-to-r from-blue-500 to-blue-600">
+                          <TableHead className="font-bold text-white text-center">Fecha</TableHead>
+                          <TableHead className="font-bold text-white text-center">Costo s/IVA</TableHead>
+                          <TableHead className="font-bold text-white text-center">PVP s/IVA</TableHead>
+                          <TableHead className="font-bold text-white text-center">Cantidad</TableHead>
+                          <TableHead className="font-bold text-white text-center">Proveedor</TableHead>
+                          <TableHead className="font-bold text-white text-center">Factura</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {skuHistoryModal.history.map((item, index) => (
+                          <TableRow key={index} className="hover:bg-slate-50/50">
+                            <TableCell>{item.date_entered}</TableCell>
+                            <TableCell>{formatCurrency(item.cost_without_tax)}</TableCell>
+                            <TableCell>{formatCurrency(item.pvp_without_tax)}</TableCell>
+                            <TableCell>{item.quantity}</TableCell>
+                            <TableCell>{item.suppliers?.name || "-"}</TableCell>
+                            <TableCell>{item.invoice_number || "-"}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
 
-                  <div className="flex justify-between items-center pt-2 border-t">
-                    <span className="text-slate-500">Variación:</span>
-                    <Badge variant={priceAlert.newPrice > priceAlert.oldPrice ? "destructive" : "default"} className={priceAlert.newPrice > priceAlert.oldPrice ? "bg-red-500" : "bg-green-500"}>
-                      {priceAlert.oldPrice > 0 ? (
-                        <>
-                          {priceAlert.newPrice > priceAlert.oldPrice ? "+" : "-"}
-                          {Math.abs(((priceAlert.newPrice - priceAlert.oldPrice) / priceAlert.oldPrice) * 100).toFixed(2)}%
-                        </>
-                      ) : "N/A"}
-                    </Badge>
-                  </div>
-                </div>
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setPriceAlert({ ...priceAlert, show: false })}>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={confirmPriceChange}>Confirmar y Guardar</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
-        {/* Modal de historial de SKU */}
-        {skuHistoryModal.show && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-              <h2 className="text-lg font-semibold mb-4 text-blue-600">Historial del SKU: {skuHistoryModal.sku}</h2>
-              <div className="overflow-x-auto hidden md:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gradient-to-r from-blue-500 to-blue-600">
-                      <TableHead className="font-bold text-white text-center">Fecha</TableHead>
-                      <TableHead className="font-bold text-white text-center">Costo s/IVA</TableHead>
-                      <TableHead className="font-bold text-white text-center">PVP s/IVA</TableHead>
-                      <TableHead className="font-bold text-white text-center">Cantidad</TableHead>
-                      <TableHead className="font-bold text-white text-center">Proveedor</TableHead>
-                      <TableHead className="font-bold text-white text-center">Factura</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                  <div className="md:hidden space-y-2">
                     {skuHistoryModal.history.map((item, index) => (
-                      <TableRow key={index} className="hover:bg-slate-50/50">
-                        <TableCell>{item.date_entered}</TableCell>
-                        <TableCell>{formatCurrency(item.cost_without_tax)}</TableCell>
-                        <TableCell>{formatCurrency(item.pvp_without_tax)}</TableCell>
-                        <TableCell>{item.quantity}</TableCell>
-                        <TableCell>{item.suppliers?.name || "-"}</TableCell>
-                        <TableCell>{item.invoice_number || "-"}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              
-              <div className="md:hidden space-y-2">
-                 {skuHistoryModal.history.map((item, index) => (
-                    <div key={index} className="border rounded-md p-3 bg-slate-50">
-                       <div className="flex justify-between text-xs text-slate-500 mb-1">
+                      <div key={index} className="border rounded-md p-3 bg-slate-50">
+                        <div className="flex justify-between text-xs text-slate-500 mb-1">
                           <span>{item.date_entered}</span>
                           <span>Fac: {item.invoice_number || "-"}</span>
-                       </div>
-                       <div className="flex justify-between items-center mb-2">
+                        </div>
+                        <div className="flex justify-between items-center mb-2">
                           <span className="font-medium text-sm text-slate-700">{item.suppliers?.name || "Sin proveedor"}</span>
                           <Badge variant="outline">{item.quantity} un.</Badge>
-                       </div>
-                       <div className="grid grid-cols-2 gap-2 text-xs border-t pt-2 border-slate-200">
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-xs border-t pt-2 border-slate-200">
                           <div>
-                             <span className="block text-slate-500">Costo</span>
-                             <span className="font-mono">{formatCurrency(item.cost_without_tax)}</span>
+                            <span className="block text-slate-500">Costo</span>
+                            <span className="font-mono">{formatCurrency(item.cost_without_tax)}</span>
                           </div>
                           <div className="text-right">
-                             <span className="block text-slate-500">PVP</span>
-                             <span className="font-mono">{formatCurrency(item.pvp_without_tax)}</span>
+                            <span className="block text-slate-500">PVP</span>
+                            <span className="font-mono">{formatCurrency(item.pvp_without_tax)}</span>
                           </div>
-                       </div>
-                    </div>
-                 ))}
-              </div>
-
-              <div className="flex justify-end mt-6">
-                <Button onClick={() => setSKUHistoryModal({ show: false, sku: "", history: [] })}>Cerrar</Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Modal de vista previa de importación */}
-        {importPreview.show && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full mx-4 max-h-[90vh] overflow-hidden">
-              <div className="bg-gradient-to-r from-emerald-50 to-green-50 p-6 border-b">
-                <h2 className="text-xl font-semibold text-emerald-800 mb-2">Vista Previa de Importación</h2>
-                <p className="text-emerald-600">
-                  Archivo: <strong>{importPreview.fileName}</strong>
-                </p>
-                <div className="flex gap-4 mt-3">
-                  <div className="bg-blue-100 px-3 py-1 rounded-full">
-                    <span className="text-blue-800 font-medium">Total: {importPreview.summary.total}</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="bg-green-100 px-3 py-1 rounded-full">
-                    <span className="text-green-800 font-medium">Válidos: {importPreview.summary.valid}</span>
-                  </div>
-                  <div className="bg-red-100 px-3 py-1 rounded-full">
-                    <span className="text-red-800 font-medium">Errores: {importPreview.summary.errors.length}</span>
+
+                  <div className="flex justify-end mt-6">
+                    <Button onClick={() => setSKUHistoryModal({ show: false, sku: "", history: [] })}>Cerrar</Button>
                   </div>
                 </div>
               </div>
+            )}
 
-              <div className="p-6 overflow-y-auto max-h-[60vh]">
-                {/* Mostrar errores si los hay */}
-                {importPreview.summary.errors.length > 0 && (
-                  <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <h3 className="font-semibold text-red-800 mb-2">⚠️ Errores encontrados:</h3>
-                    <div className="max-h-32 overflow-y-auto">
-                      {importPreview.summary.errors.slice(0, 10).map((error, index) => (
-                        <p key={index} className="text-sm text-red-600 mb-1">
-                          • {error}
-                        </p>
-                      ))}
-                      {importPreview.summary.errors.length > 10 && (
-                        <p className="text-sm text-red-500 font-medium">
-                          ... y {importPreview.summary.errors.length - 10} errores más
-                        </p>
+            {/* Modal de vista previa de importación */}
+            {importPreview.show && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg shadow-lg max-w-6xl w-full mx-4 max-h-[90vh] overflow-hidden">
+                  <div className="bg-gradient-to-r from-emerald-50 to-green-50 p-6 border-b">
+                    <h2 className="text-xl font-semibold text-emerald-800 mb-2">Vista Previa de Importación</h2>
+                    <p className="text-emerald-600">
+                      Archivo: <strong>{importPreview.fileName}</strong>
+                    </p>
+                    <div className="flex gap-4 mt-3">
+                      <div className="bg-blue-100 px-3 py-1 rounded-full">
+                        <span className="text-blue-800 font-medium">Total: {importPreview.summary.total}</span>
+                      </div>
+                      <div className="bg-green-100 px-3 py-1 rounded-full">
+                        <span className="text-green-800 font-medium">Válidos: {importPreview.summary.valid}</span>
+                      </div>
+                      <div className="bg-red-100 px-3 py-1 rounded-full">
+                        <span className="text-red-800 font-medium">Errores: {importPreview.summary.errors.length}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 overflow-y-auto max-h-[60vh]">
+                    {/* Mostrar errores si los hay */}
+                    {importPreview.summary.errors.length > 0 && (
+                      <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <h3 className="font-semibold text-red-800 mb-2">⚠️ Errores encontrados:</h3>
+                        <div className="max-h-32 overflow-y-auto">
+                          {importPreview.summary.errors.slice(0, 10).map((error, index) => (
+                            <p key={index} className="text-sm text-red-600 mb-1">
+                              • {error}
+                            </p>
+                          ))}
+                          {importPreview.summary.errors.length > 10 && (
+                            <p className="text-sm text-red-500 font-medium">
+                              ... y {importPreview.summary.errors.length - 10} errores más
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Tabla de vista previa */}
+                    <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Fecha</th>
+                            <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">SKU</th>
+                            <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">EAN</th>
+                            <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Nombre</th>
+                            <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Cantidad</th>
+                            <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Costo</th>
+                            <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">PVP</th>
+                            <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Factura</th>
+                            <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Proveedor</th>
+                            <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Marca</th>
+                            <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Estado</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {importPreview.data.slice(0, 50).map((row, index) => {
+                            const sku = row.SKU?.toString().trim()
+                            const description = row.DESCRIPCION?.toString().trim()
+                            const cost = row.COSTO?.toString().trim()
+                            const pvp = row.PVP?.toString().trim()
+                            const brand = row.MARCA?.toString().trim()
+
+                            const isValid =
+                              sku &&
+                              description &&
+                              cost &&
+                              pvp &&
+                              brand &&
+                              !isNaN(Number.parseFloat(cost)) &&
+                              !isNaN(Number.parseFloat(pvp))
+
+                            return (
+                              <tr
+                                key={index}
+                                className={`${isValid ? "bg-green-50" : "bg-red-50"} border-b hover:bg-opacity-75`}
+                              >
+                                <td className="px-3 py-2">{row.FECHA || "-"}</td>
+                                <td className="px-3 py-2 font-medium min-w-[150px]">
+                                  <div
+                                    className="font-mono whitespace-nowrap overflow-hidden text-ellipsis"
+                                    title={String(row.SKU || "")}
+                                  >
+                                    {String(row.SKU || "")}
+                                  </div>
+                                </td>
+                                <td className="px-3 py-2">{row.EAN || "-"}</td>
+                                <td className="px-3 py-2 max-w-xs truncate">{row.DESCRIPCION || "-"}</td>
+                                <td className="px-3 py-2">{row.CANTIDAD || "0"}</td>
+                                <td className="px-3 py-2">${row.COSTO || "0"}</td>
+                                <td className="px-3 py-2">${row.PVP || "0"}</td>
+                                <td className="px-3 py-2">{row.FACTURA || "-"}</td>
+                                <td className="px-3 py-2">{row.PROVEEDOR || "-"}</td>
+                                <td className="px-3 py-2">{row.MARCA || "-"}</td>
+
+                                <td className="px-3 py-2">
+                                  {isValid ? (
+                                    <span className="text-green-600 font-medium">✓ Válido</span>
+                                  ) : (
+                                    <span className="text-red-600 font-medium">✗ Error</span>
+                                  )}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                      {importPreview.data.length > 50 && (
+                        <div className="p-3 bg-gray-50 text-center text-sm text-gray-600">
+                          Mostrando primeras 50 filas de {importPreview.data.length} total
+                        </div>
                       )}
                     </div>
                   </div>
-                )}
 
-                {/* Tabla de vista previa */}
-                <div className="overflow-x-auto border border-gray-200 rounded-lg">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Fecha</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">SKU</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">EAN</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Nombre</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Cantidad</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Costo</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">PVP</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Factura</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Proveedor</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Marca</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700 border-b">Estado</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {importPreview.data.slice(0, 50).map((row, index) => {
-                        const sku = row.SKU?.toString().trim()
-                        const description = row.DESCRIPCION?.toString().trim()
-                        const cost = row.COSTO?.toString().trim()
-                        const pvp = row.PVP?.toString().trim()
-                        const brand = row.MARCA?.toString().trim()
-
-                        const isValid =
-                          sku &&
-                          description &&
-                          cost &&
-                          pvp &&
-                          brand &&
-                          !isNaN(Number.parseFloat(cost)) &&
-                          !isNaN(Number.parseFloat(pvp))
-
-                        return (
-                          <tr
-                            key={index}
-                            className={`${isValid ? "bg-green-50" : "bg-red-50"} border-b hover:bg-opacity-75`}
-                          >
-                            <td className="px-3 py-2">{row.FECHA || "-"}</td>
-                            <td className="px-3 py-2 font-medium min-w-[150px]">
-                              <div
-                                className="font-mono whitespace-nowrap overflow-hidden text-ellipsis"
-                                title={String(row.SKU || "")}
-                              >
-                                {String(row.SKU || "")}
-                              </div>
-                            </td>
-                            <td className="px-3 py-2">{row.EAN || "-"}</td>
-                            <td className="px-3 py-2 max-w-xs truncate">{row.DESCRIPCION || "-"}</td>
-                            <td className="px-3 py-2">{row.CANTIDAD || "0"}</td>
-                            <td className="px-3 py-2">${row.COSTO || "0"}</td>
-                            <td className="px-3 py-2">${row.PVP || "0"}</td>
-                            <td className="px-3 py-2">{row.FACTURA || "-"}</td>
-                            <td className="px-3 py-2">{row.PROVEEDOR || "-"}</td>
-                            <td className="px-3 py-2">{row.MARCA || "-"}</td>
-
-                            <td className="px-3 py-2">
-                              {isValid ? (
-                                <span className="text-green-600 font-medium">✓ Válido</span>
-                              ) : (
-                                <span className="text-red-600 font-medium">✗ Error</span>
-                              )}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                  {importPreview.data.length > 50 && (
-                    <div className="p-3 bg-gray-50 text-center text-sm text-gray-600">
-                      Mostrando primeras 50 filas de {importPreview.data.length} total
+                  <div className="bg-gray-50 px-6 py-4 border-t flex justify-between items-center">
+                    <div className="text-sm text-gray-600">
+                      {importPreview.summary.valid > 0 ? (
+                        <span className="text-green-600 font-medium">
+                          ✓ {importPreview.summary.valid} productos listos para importar
+                        </span>
+                      ) : (
+                        <span className="text-red-600 font-medium">✗ No hay productos válidos para importar</span>
+                      )}
                     </div>
-                  )}
+                    <div className="flex gap-3">
+                      <Button
+                        variant="secondary"
+                        onClick={() =>
+                          setImportPreview({
+                            show: false,
+                            data: [],
+                            fileName: "",
+                            summary: { total: 0, valid: 0, errors: [] },
+                          })
+                        }
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        onClick={confirmImport}
+                        disabled={importPreview.summary.valid === 0}
+                        className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700"
+                      >
+                        Confirmar Importación ({importPreview.summary.valid} productos)
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              <div className="bg-gray-50 px-6 py-4 border-t flex justify-between items-center">
-                <div className="text-sm text-gray-600">
-                  {importPreview.summary.valid > 0 ? (
-                    <span className="text-green-600 font-medium">
-                      ✓ {importPreview.summary.valid} productos listos para importar
-                    </span>
-                  ) : (
-                    <span className="text-red-600 font-medium">✗ No hay productos válidos para importar</span>
-                  )}
-                </div>
-                <div className="flex gap-3">
-                  <Button
-                    variant="secondary"
-                    onClick={() =>
-                      setImportPreview({
-                        show: false,
-                        data: [],
-                        fileName: "",
-                        summary: { total: 0, valid: 0, errors: [] },
-                      })
-                    }
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    onClick={confirmImport}
-                    disabled={importPreview.summary.valid === 0}
-                    className="bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700"
-                  >
-                    Confirmar Importación ({importPreview.summary.valid} productos)
-                  </Button>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
-        )}
         </div>
-      </div>
       </div>
 
       {/* Bulk Edit Modal */}
@@ -4734,79 +4740,79 @@ ${csvRows
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-             <div className="grid grid-cols-2 gap-4">
-               <div>
-                  <Label>Estado Stock</Label>
-                  <Select
-                    value={bulkEditModal.updates.stock_status}
-                    onValueChange={(val) => setBulkEditModal(prev => ({ ...prev, updates: { ...prev.updates, stock_status: val } }))}
-                  >
-                    <SelectTrigger><SelectValue placeholder="No cambiar" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="normal">Normal</SelectItem>
-                      <SelectItem value="missing">Faltó mercadería</SelectItem>
-                      <SelectItem value="excess">Sobró mercadería</SelectItem>
-                    </SelectContent>
-                  </Select>
-               </div>
-               <div>
-                  <Label>Empresa</Label>
-                  <Select
-                    value={bulkEditModal.updates.company}
-                    onValueChange={(val) => setBulkEditModal(prev => ({ ...prev, updates: { ...prev.updates, company: val } }))}
-                  >
-                    <SelectTrigger><SelectValue placeholder="No cambiar" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="MAYCAM">MAYCAM</SelectItem>
-                      <SelectItem value="BLUE DOGO">BLUE DOGO</SelectItem>
-                      <SelectItem value="GLOBOBAZAAR">GLOBOBAZAAR</SelectItem>
-                    </SelectContent>
-                  </Select>
-               </div>
-             </div>
-             
-             <div className="grid grid-cols-2 gap-4">
-               <div>
-                  <Label>Canal</Label>
-                  <Select
-                    value={bulkEditModal.updates.channel}
-                    onValueChange={(val) => setBulkEditModal(prev => ({ ...prev, updates: { ...prev.updates, channel: val } }))}
-                  >
-                    <SelectTrigger><SelectValue placeholder="No cambiar" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="A">Canal A</SelectItem>
-                      <SelectItem value="B">Canal B</SelectItem>
-                    </SelectContent>
-                  </Select>
-               </div>
-               <div>
-                  <Label>Proveedor</Label>
-                  <Select
-                    value={bulkEditModal.updates.supplier_id}
-                    onValueChange={(val) => setBulkEditModal(prev => ({ ...prev, updates: { ...prev.updates, supplier_id: val } }))}
-                  >
-                    <SelectTrigger><SelectValue placeholder="No cambiar" /></SelectTrigger>
-                    <SelectContent>
-                       <SelectItem value="none">Sin proveedor</SelectItem>
-                       {suppliers.map(s => <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-               </div>
-             </div>
-
-             <div>
-                <Label>Marca</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Estado Stock</Label>
                 <Select
-                  value={bulkEditModal.updates.brand_id}
-                  onValueChange={(val) => setBulkEditModal(prev => ({ ...prev, updates: { ...prev.updates, brand_id: val } }))}
+                  value={bulkEditModal.updates.stock_status}
+                  onValueChange={(val) => setBulkEditModal(prev => ({ ...prev, updates: { ...prev.updates, stock_status: val } }))}
                 >
                   <SelectTrigger><SelectValue placeholder="No cambiar" /></SelectTrigger>
                   <SelectContent>
-                     <SelectItem value="none">Sin marca</SelectItem>
-                     {brands.map(b => <SelectItem key={b.id} value={b.id.toString()}>{b.name}</SelectItem>)}
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="missing">Faltó mercadería</SelectItem>
+                    <SelectItem value="excess">Sobró mercadería</SelectItem>
                   </SelectContent>
                 </Select>
-             </div>
+              </div>
+              <div>
+                <Label>Empresa</Label>
+                <Select
+                  value={bulkEditModal.updates.company}
+                  onValueChange={(val) => setBulkEditModal(prev => ({ ...prev, updates: { ...prev.updates, company: val } }))}
+                >
+                  <SelectTrigger><SelectValue placeholder="No cambiar" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="MAYCAM">MAYCAM</SelectItem>
+                    <SelectItem value="BLUE DOGO">BLUE DOGO</SelectItem>
+                    <SelectItem value="GLOBOBAZAAR">GLOBOBAZAAR</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Canal</Label>
+                <Select
+                  value={bulkEditModal.updates.channel}
+                  onValueChange={(val) => setBulkEditModal(prev => ({ ...prev, updates: { ...prev.updates, channel: val } }))}
+                >
+                  <SelectTrigger><SelectValue placeholder="No cambiar" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="A">Canal A</SelectItem>
+                    <SelectItem value="B">Canal B</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Proveedor</Label>
+                <Select
+                  value={bulkEditModal.updates.supplier_id}
+                  onValueChange={(val) => setBulkEditModal(prev => ({ ...prev, updates: { ...prev.updates, supplier_id: val } }))}
+                >
+                  <SelectTrigger><SelectValue placeholder="No cambiar" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin proveedor</SelectItem>
+                    {suppliers.map(s => <SelectItem key={s.id} value={s.id.toString()}>{s.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <Label>Marca</Label>
+              <Select
+                value={bulkEditModal.updates.brand_id}
+                onValueChange={(val) => setBulkEditModal(prev => ({ ...prev, updates: { ...prev.updates, brand_id: val } }))}
+              >
+                <SelectTrigger><SelectValue placeholder="No cambiar" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin marca</SelectItem>
+                  {brands.map(b => <SelectItem key={b.id} value={b.id.toString()}>{b.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setBulkEditModal({ ...bulkEditModal, show: false })}>Cancelar</Button>

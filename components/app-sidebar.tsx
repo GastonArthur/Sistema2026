@@ -81,10 +81,10 @@ export function AppSidebar({
               </span>
             </div>
             {lastSync && (
-               <span className="text-[10px] text-muted-foreground/80 font-mono">
-                 Sync: {lastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-               </span>
-             )}
+              <span className="text-[10px] text-muted-foreground/80 font-mono">
+                Sync: {lastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
           </div>
         </div>
       </SidebarHeader>
@@ -94,8 +94,8 @@ export function AppSidebar({
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton 
-                  isActive={activeTab === "inventory"} 
+                <SidebarMenuButton
+                  isActive={activeTab === "inventory"}
                   onClick={() => handleNavigation("inventory")}
                   tooltip="Inventario"
                   className="group/btn hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 ease-in-out data-[active=true]:bg-blue-100 data-[active=true]:text-blue-800"
@@ -105,7 +105,7 @@ export function AppSidebar({
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton 
+                <SidebarMenuButton
                   isActive={activeTab === "import"}
                   onClick={() => handleNavigation("import")}
                   tooltip="Importar"
@@ -124,7 +124,7 @@ export function AppSidebar({
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton 
+                <SidebarMenuButton
                   onClick={() => handleNavigation("clients")}
                   isActive={activeTab === "clients"}
                   tooltip="Clientes"
@@ -135,7 +135,7 @@ export function AppSidebar({
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton 
+                <SidebarMenuButton
                   onClick={() => handleNavigation("brands")}
                   isActive={activeTab === "brands"}
                   tooltip="Marcas"
@@ -146,7 +146,7 @@ export function AppSidebar({
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton 
+                <SidebarMenuButton
                   onClick={() => handleNavigation("suppliers")}
                   isActive={activeTab === "suppliers"}
                   tooltip="Proveedores"
@@ -157,7 +157,7 @@ export function AppSidebar({
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton 
+                <SidebarMenuButton
                   onClick={() => handleNavigation("precios")}
                   isActive={activeTab === "precios"}
                   tooltip="Precios a Publicar"
@@ -168,7 +168,7 @@ export function AppSidebar({
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton 
+                <SidebarMenuButton
                   onClick={() => handleNavigation("zentor")}
                   isActive={activeTab === "zentor"}
                   tooltip="Lista ZENTOR"
@@ -187,8 +187,8 @@ export function AppSidebar({
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton 
-                  asChild 
+                <SidebarMenuButton
+                  asChild
                   isActive={activeTab === "rentabilidad"}
                   tooltip="Rentabilidad Real"
                   className="group/btn hover:bg-emerald-50 hover:text-emerald-700 transition-all duration-200 ease-in-out data-[active=true]:bg-emerald-100 data-[active=true]:text-emerald-800"
@@ -200,7 +200,7 @@ export function AppSidebar({
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton 
+                <SidebarMenuButton
                   onClick={() => handleNavigation("wholesale")}
                   isActive={activeTab === "wholesale"}
                   tooltip="Mayoristas"
@@ -210,9 +210,20 @@ export function AppSidebar({
                   <span className="font-medium">Mayoristas</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              
               <SidebarMenuItem>
-                <SidebarMenuButton 
+                <SidebarMenuButton
+                  onClick={() => handleNavigation("wholesale-bullpadel")}
+                  isActive={activeTab === "wholesale-bullpadel"}
+                  tooltip="Mayoristas Bullpadel"
+                  className="group/btn hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 ease-in-out data-[active=true]:bg-purple-100 data-[active=true]:text-purple-800"
+                >
+                  <ShoppingCart className="group-hover/btn:scale-110 transition-transform text-purple-500/80 group-hover/btn:text-purple-600 group-data-[active=true]:text-purple-700" />
+                  <span className="font-medium">Mayoristas Bullpadel</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+
+              <SidebarMenuItem>
+                <SidebarMenuButton
                   onClick={() => handleNavigation("retail")}
                   isActive={activeTab === "retail"}
                   tooltip="Minoristas"
@@ -222,9 +233,9 @@ export function AppSidebar({
                   <span className="font-medium">Minoristas</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              
+
               <SidebarMenuItem>
-                <SidebarMenuButton 
+                <SidebarMenuButton
                   onClick={() => handleNavigation("gastos")}
                   isActive={activeTab === "gastos"}
                   tooltip="Gastos"
@@ -236,7 +247,7 @@ export function AppSidebar({
               </SidebarMenuItem>
 
               <SidebarMenuItem>
-                <SidebarMenuButton 
+                <SidebarMenuButton
                   onClick={() => handleNavigation("notas-credito")}
                   isActive={activeTab === "notas-credito"}
                   tooltip="Notas de Crédito"
@@ -261,8 +272,8 @@ export function AppSidebar({
             </div>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton 
-              onClick={onLogout} 
+            <SidebarMenuButton
+              onClick={onLogout}
               tooltip="Cerrar Sesión"
               className="group/logout text-red-500 hover:text-red-600 hover:bg-red-50 hover:border-red-100 border border-transparent transition-all duration-200"
             >
