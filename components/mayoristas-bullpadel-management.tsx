@@ -103,6 +103,7 @@ type WholesaleOrder = {
   total_amount: number
   items: WholesaleOrderItem[]
   notes: string
+  vendor?: string
   created_at: string
   client?: WholesaleClient
 }
@@ -188,6 +189,7 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
   const [currentUnitPrice, setCurrentUnitPrice] = useState(0)
   const [currentQuantity, setCurrentQuantity] = useState(1)
   const [orderNotes, setOrderNotes] = useState("")
+  const [orderVendor, setOrderVendor] = useState("")
   const [orderDate, setOrderDate] = useState(new Date().toISOString().split("T")[0])
   const [editingOrder, setEditingOrder] = useState<WholesaleOrder | null>(null)
   const [viewingClient, setViewingClient] = useState<WholesaleClient | null>(null)
@@ -903,6 +905,7 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
               client_id: clientId,
               total_amount: totalAmount,
               notes: orderNotes,
+              vendor: orderVendor || null,
             })
             .eq("id", editingOrder.id)
 
@@ -945,6 +948,7 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
                 status: "pending",
                 total_amount: totalAmount,
                 notes: orderNotes,
+                vendor: orderVendor || null,
                 created_by: userId,
               },
             ])
@@ -983,6 +987,7 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
             total_amount: totalAmount,
             items: orderItems,
             notes: orderNotes,
+            vendor: orderVendor || undefined,
           }
           setOrders((prev) => prev.map((o) => (o.id === editingOrder.id ? updatedOrder : o)))
           toast({
@@ -999,6 +1004,7 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
             total_amount: totalAmount,
             items: orderItems,
             notes: orderNotes,
+            vendor: orderVendor || undefined,
             created_at: new Date().toISOString(),
           }
           setOrders((prev) => [newOrder, ...prev])
@@ -1014,6 +1020,7 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
       setOrderItems([])
       setSelectedClient("")
       setOrderNotes("")
+      setOrderVendor("")
       setOrderDate(new Date().toISOString().split("T")[0])
       setEditingOrder(null)
     } catch (error) {
@@ -1099,6 +1106,7 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
     setEditingOrder(order)
     setSelectedClient(order.client_id.toString())
     setOrderNotes(order.notes || "")
+    setOrderVendor(order.vendor || "")
     setOrderDate(order.order_date.split("T")[0])
     setOrderItems(order.items || [])
     setShowOrderForm(true)
@@ -2150,6 +2158,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                   setOrderItems([])
                   setSelectedClient("")
                   setOrderNotes("")
+                  setOrderVendor("")
                   setOrderDate(new Date().toISOString().split("T")[0])
                 }
               }}>
