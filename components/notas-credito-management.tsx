@@ -31,6 +31,7 @@ import {
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { formatCurrency } from "@/lib/utils"
+import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 
 // Tipos de datos
 type CreditNoteStatus = "disponible" | "utilizada"
@@ -45,6 +46,7 @@ interface CreditNote {
   status: CreditNoteStatus
   description?: string
   imageUrl?: string
+  created_at?: string
 }
 
 // Datos de ejemplo
@@ -74,7 +76,7 @@ const MOCK_DATA: CreditNote[] = [
 ]
 
 export function NotasCreditoManagement() {
-  const [notes, setNotes] = useState<CreditNote[]>(MOCK_DATA)
+  const [notes, setNotes] = useState<CreditNote[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [supplierFilter, setSupplierFilter] = useState<string>("all")
@@ -92,6 +94,31 @@ export function NotasCreditoManagement() {
     date: new Date().toISOString().split('T')[0],
     imageUrl: ""
   })
+
+  useEffect(() => {
+    loadNotes()
+  }, [])
+
+  const loadNotes = async () => {
+    if (!isSupabaseConfigured) {
+      setNotes(MOCK_DATA)
+      return
+    }
+    try {
+      const { data, error } = await supabase
+        .from("credit_notes")
+        .select("*")
+        .order("created_at", { ascending: false })
+      if (error) throw error
+      setNotes(data || [])
+    } catch (err) {
+      toast({
+        title: "Error al cargar",
+        description: "No se pudieron cargar las notas de crédito.",
+        variant: "destructive",
+      })
+    }
+  }
 
   // Estadísticas
   const totalNotes = notes.length
@@ -114,13 +141,19 @@ export function NotasCreditoManagement() {
   })
 
   // Manejadores
-  const handleUseNote = (id: number) => {
-    setNotes(notes.map(note => {
-      if (note.id === id) {
-        return { ...note, status: "utilizada" }
+  const handleUseNote = async (id: number) => {
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase.from("credit_notes").update({ status: "utilizada" }).eq("id", id)
+        if (error) throw error
+        await loadNotes()
+      } catch {
+        toast({ title: "Error", description: "No se pudo marcar como utilizada", variant: "destructive" })
+        return
       }
-      return note
-    }))
+    } else {
+      setNotes(notes.map(note => (note.id === id ? { ...note, status: "utilizada" } : note)))
+    }
     toast({
       title: "Nota de crédito utilizada",
       description: "La nota de crédito ha sido marcada como utilizada.",
@@ -128,70 +161,98 @@ export function NotasCreditoManagement() {
     })
   }
 
-  const handleDeleteNote = (id: number) => {
-    setNotes(notes.filter(note => note.id !== id))
+  const handleDeleteNote = async (id: number) => {
+    if (isSupabaseConfigured) {
+      try {
+        const { error } = await supabase.from("credit_notes").delete().eq("id", id)
+        if (error) throw error
+        await loadNotes()
+      } catch {
+        toast({ title: "Error", description: "No se pudo eliminar la nota", variant: "destructive" })
+        return
+      }
+    } else {
+      setNotes(notes.filter(note => note.id !== id))
+    }
     toast({
       title: "Nota eliminada",
       description: "La nota de crédito ha sido eliminada correctamente.",
     })
   }
 
-  const handleSaveNote = () => {
-    // Validar imagen obligatoria
-    if (!imageFile && !newNote.imageUrl) {
-      toast({
-        title: "Error",
-        description: "Debe cargar una imagen de la nota de crédito.",
-        variant: "destructive",
-      })
-      return
+  const handleSaveNote = async () => {
+    // Imagen opcional de momento (sin storage integrado)
+    const finalImageUrl = imageFile ? imageFile.name : newNote.imageUrl
+
+    const payload = {
+      number: newNote.number || `NC-${Date.now()}`,
+      supplier: newNote.supplier || "Sin proveedor",
+      items_count: newNote.items_count || 1,
+      total: newNote.total || 0,
+      date: newNote.date || new Date().toISOString().split('T')[0],
+      status: newNote.status || "disponible",
+      description: newNote.description || null,
+      image_url: finalImageUrl || null,
     }
 
-    // Simular URL de imagen si hay archivo nuevo
-    const finalImageUrl = imageFile ? URL.createObjectURL(imageFile) : newNote.imageUrl
-
-    if (editingId) {
-      // Modificar existente
-      setNotes(notes.map(note => {
-        if (note.id === editingId) {
-          return {
-            ...note,
-            number: newNote.number || note.number,
-            supplier: newNote.supplier || note.supplier,
-            items_count: newNote.items_count || note.items_count,
-            total: newNote.total || note.total,
-            date: newNote.date || note.date,
-            description: newNote.description,
-            imageUrl: finalImageUrl
-          }
+    try {
+      if (isSupabaseConfigured) {
+        if (editingId) {
+          const { error } = await supabase
+            .from("credit_notes")
+            .update({
+              number: payload.number,
+              supplier: payload.supplier,
+              items_count: payload.items_count,
+              total: payload.total,
+              date: payload.date,
+              status: payload.status,
+              description: payload.description,
+              image_url: payload.image_url,
+            })
+            .eq("id", editingId)
+          if (error) throw error
+          toast({ title: "Nota actualizada", description: "La nota de crédito ha sido modificada correctamente." })
+        } else {
+          const { error } = await supabase.from("credit_notes").insert([payload])
+          if (error) throw error
+          toast({ title: "Nota creada", description: "La nueva nota de crédito ha sido registrada." })
         }
-        return note
-      }))
-      toast({
-        title: "Nota actualizada",
-        description: "La nota de crédito ha sido modificada correctamente.",
-      })
-    } else {
-      // Crear nueva
-      const note: CreditNote = {
-        id: Math.max(...notes.map(n => n.id), 0) + 1,
-        number: newNote.number || `NC-${Date.now()}`,
-        supplier: newNote.supplier || "Sin proveedor",
-        items_count: newNote.items_count || 1,
-        total: newNote.total || 0,
-        date: newNote.date || new Date().toISOString().split('T')[0],
-        status: "disponible",
-        description: newNote.description,
-        imageUrl: finalImageUrl
+        await loadNotes()
+      } else {
+        if (editingId) {
+          setNotes(notes.map(note => (note.id === editingId ? {
+            ...note,
+            number: payload.number,
+            supplier: payload.supplier,
+            items_count: payload.items_count,
+            total: payload.total,
+            date: payload.date,
+            status: payload.status as CreditNoteStatus,
+            description: payload.description || undefined,
+            imageUrl: payload.image_url || undefined,
+          } : note)))
+          toast({ title: "Nota actualizada", description: "La nota de crédito ha sido modificada correctamente." })
+        } else {
+          const note: CreditNote = {
+            id: Math.max(...notes.map(n => n.id), 0) + 1,
+            number: payload.number,
+            supplier: payload.supplier,
+            items_count: payload.items_count,
+            total: payload.total,
+            date: payload.date,
+            status: payload.status as CreditNoteStatus,
+            description: payload.description || undefined,
+            imageUrl: payload.image_url || undefined,
+          }
+          setNotes([...notes, note])
+          toast({ title: "Nota creada", description: "La nueva nota de crédito ha sido registrada." })
+        }
       }
-      setNotes([...notes, note])
-      toast({
-        title: "Nota creada",
-        description: "La nueva nota de crédito ha sido registrada.",
-      })
+      handleCloseDialog()
+    } catch (err) {
+      toast({ title: "Error", description: "No se pudo guardar la nota de crédito.", variant: "destructive" })
     }
-
-    handleCloseDialog()
   }
 
   const handleCloseDialog = () => {
