@@ -906,6 +906,8 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
               client_id: clientId,
               total_amount: totalAmount,
               notes: orderNotes,
+              order_date: orderDate,
+              vendor: orderVendor || null,
             })
             .eq("id", editingOrder.id)
 
@@ -987,6 +989,7 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
             items: orderItems,
             notes: orderNotes,
             vendor: orderVendor || undefined,
+            order_date: orderDate,
           }
           setOrders((prev) => prev.map((o) => (o.id === editingOrder.id ? updatedOrder : o)))
           toast({

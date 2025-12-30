@@ -901,6 +901,8 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
               client_id: clientId,
               total_amount: totalAmount,
               notes: orderNotes,
+              order_date: orderDate,
+              vendor: orderVendor || null,
             })
             .eq("id", editingOrder.id)
 
@@ -982,6 +984,7 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
             items: orderItems,
             notes: orderNotes,
             vendor: orderVendor || undefined,
+            order_date: orderDate,
           }
           setOrders((prev) => prev.map((o) => (o.id === editingOrder.id ? updatedOrder : o)))
           toast({
