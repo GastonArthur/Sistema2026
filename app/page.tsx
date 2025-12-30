@@ -4133,6 +4133,16 @@ ${csvRows
                 <ZentorList inventory={inventory} suppliers={suppliers} brands={brands} />
               </TabsContent>
               <TabsContent value="wholesale">
+                <div className="mb-4">
+                  <Card className="shadow-lg border-0 bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+                    <CardHeader className="py-3">
+                      <CardTitle className="flex items-center gap-2">
+                        <ShoppingCart className="w-5 h-5" />
+                        Mayoristas
+                      </CardTitle>
+                    </CardHeader>
+                  </Card>
+                </div>
                 {hasPermission("VIEW_WHOLESALE") && (
                   <MayoristasManagement
                     inventory={inventory}
@@ -4143,6 +4153,16 @@ ${csvRows
               </TabsContent>
 
               <TabsContent value="wholesale-bullpadel">
+                <div className="mb-4">
+                  <Card className="shadow-lg border-0 bg-gradient-to-r from-orange-500 to-amber-600 text-white">
+                    <CardHeader className="py-3">
+                      <CardTitle className="flex items-center gap-2">
+                        <ShoppingCart className="w-5 h-5" />
+                        Mayoristas Bullpadel
+                      </CardTitle>
+                    </CardHeader>
+                  </Card>
+                </div>
                 {hasPermission("VIEW_WHOLESALE") && (
                   <MayoristasBullpadelManagement
                     inventory={inventory}
@@ -4153,12 +4173,32 @@ ${csvRows
               </TabsContent>
 
               <TabsContent value="retail">
+                <div className="mb-4">
+                  <Card className="shadow-lg border-0 bg-gradient-to-r from-emerald-500 to-green-600 text-white">
+                    <CardHeader className="py-3">
+                      <CardTitle className="flex items-center gap-2">
+                        <ShoppingBag className="w-5 h-5" />
+                        Minoristas
+                      </CardTitle>
+                    </CardHeader>
+                  </Card>
+                </div>
                 <VentasMinoristas
                   inventory={inventory}
                 />
               </TabsContent>
 
               <TabsContent value="purchases">
+                <div className="mb-4">
+                  <Card className="shadow-lg border-0 bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+                    <CardHeader className="py-3">
+                      <CardTitle className="flex items-center gap-2">
+                        <Package className="w-5 h-5" />
+                        Compras
+                      </CardTitle>
+                    </CardHeader>
+                  </Card>
+                </div>
                 <ComprasManagement />
               </TabsContent>
 
@@ -4169,18 +4209,58 @@ ${csvRows
               </TabsContent>
 
               <TabsContent value="notas-credito">
+                <div className="mb-4">
+                  <Card className="shadow-lg border-0 bg-gradient-to-r from-rose-500 to-red-600 text-white">
+                    <CardHeader className="py-3">
+                      <CardTitle className="flex items-center gap-2">
+                        <FileText className="w-5 h-5" />
+                        Notas de Crédito
+                      </CardTitle>
+                    </CardHeader>
+                  </Card>
+                </div>
                 <NotasCreditoManagement />
               </TabsContent>
 
               <TabsContent value="clients">
+                <div className="mb-4">
+                  <Card className="shadow-lg border-0 bg-gradient-to-r from-sky-500 to-blue-600 text-white">
+                    <CardHeader className="py-3">
+                      <CardTitle className="flex items-center gap-2">
+                        <Users className="w-5 h-5" />
+                        Clientes
+                      </CardTitle>
+                    </CardHeader>
+                  </Card>
+                </div>
                 <ClientesManagement />
               </TabsContent>
 
               <TabsContent value="logs">
+                <div className="mb-4">
+                  <Card className="shadow-lg border-0 bg-gradient-to-r from-slate-700 to-gray-800 text-white">
+                    <CardHeader className="py-3">
+                      <CardTitle className="flex items-center gap-2">
+                        <FileText className="w-5 h-5" />
+                        Registros de Actividad
+                      </CardTitle>
+                    </CardHeader>
+                  </Card>
+                </div>
                 <ActivityLogs />
               </TabsContent>
 
               <TabsContent value="users">
+                <div className="mb-4">
+                  <Card className="shadow-lg border-0 bg-gradient-to-r from-violet-500 to-indigo-600 text-white">
+                    <CardHeader className="py-3">
+                      <CardTitle className="flex items-center gap-2">
+                        <UserCircle className="w-5 h-5" />
+                        Usuarios
+                      </CardTitle>
+                    </CardHeader>
+                  </Card>
+                </div>
                 <UserManagement />
               </TabsContent>
             </Tabs>
