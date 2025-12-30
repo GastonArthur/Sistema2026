@@ -152,6 +152,21 @@ const getStatusLabel = (status: string) => {
   return labels[status] || status
 }
 
+const formatDate = (value: string) => {
+  if (!value) return ""
+  const s = value.slice(0, 10)
+  const parts = s.split("-")
+  if (parts.length === 3) {
+    const [y, m, d] = parts
+    return `${Number(d)}/${Number(m)}/${y}`
+  }
+  try {
+    return new Date(value).toLocaleDateString()
+  } catch {
+    return value
+  }
+}
+
 export function MayoristasManagement({ inventory, suppliers, brands }: MayoristasManagementProps) {
   const currentUser = getCurrentUser()
   const isReadOnly = currentUser?.role === "viewer"
@@ -2277,7 +2292,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                           <>
                             <TableRow key={order.id}>
                               <TableCell className="font-medium">#{order.id}</TableCell>
-                              <TableCell className="hidden md:table-cell">{new Date(order.order_date).toLocaleDateString()}</TableCell>
+                              <TableCell className="hidden md:table-cell">{formatDate(order.order_date)}</TableCell>
                               <TableCell>{clientName}</TableCell>
                               <TableCell>
                                 <DropdownMenu>
