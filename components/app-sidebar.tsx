@@ -15,8 +15,11 @@ import {
   UserCircle,
   TrendingUp,
   ShieldCheck,
-  FileText
+  FileText,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react"
+import { useState } from "react"
 
 import {
   Sidebar,
@@ -28,6 +31,7 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
+  SidebarMenuBadge,
   SidebarMenuItem,
   SidebarSeparator,
   SidebarRail,
@@ -56,10 +60,12 @@ export function AppSidebar({
   const handleNavigation = (tab: string) => {
     setActiveTab(tab)
   }
+  const [gestionOpen, setGestionOpen] = useState(true)
+  const [ventasOpen, setVentasOpen] = useState(true)
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border/50 pb-4 mb-2 bg-gradient-to-r from-sidebar-background to-sidebar-accent/30">
+      <SidebarHeader className="border-b border-sidebar-border/50 pb-4 mb-2">
         <div className="flex flex-col px-4 py-2 gap-1 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0">
           <div className="flex items-center justify-between w-full group-data-[collapsible=icon]:justify-center">
             <div className="flex items-center gap-3 group-data-[collapsible=icon]:hidden">
@@ -124,16 +130,73 @@ export function AppSidebar({
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => handleNavigation("clients")}
-                  isActive={activeTab === "clients"}
-                  tooltip="Clientes"
-                  className="group/btn hover:bg-violet-50 hover:text-violet-700 transition-all duration-200 ease-in-out data-[active=true]:bg-violet-100 data-[active=true]:text-violet-800"
+                <button
+                  className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                  onClick={() => setGestionOpen((v) => !v)}
                 >
-                  <Users className="group-hover/btn:scale-110 transition-transform text-violet-500/80 group-hover/btn:text-violet-600 group-data-[active=true]:text-violet-700" />
-                  <span className="font-medium">Clientes</span>
-                </SidebarMenuButton>
+                  {gestionOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                  <span className="font-medium">Sección Gestión</span>
+                </button>
               </SidebarMenuItem>
+              {gestionOpen && (
+                <>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => handleNavigation("clients")}
+                      isActive={activeTab === "clients"}
+                      tooltip="Clientes"
+                      className="group/btn hover:bg-violet-50 hover:text-violet-700 transition-all duration-200 ease-in-out data-[active=true]:bg-violet-100 data-[active=true]:text-violet-800"
+                    >
+                      <Users className="group-hover/btn:scale-110 transition-transform text-violet-500/80 group-hover/btn:text-violet-600 group-data-[active=true]:text-violet-700" />
+                      <span className="font-medium">Clientes</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => handleNavigation("brands")}
+                      isActive={activeTab === "brands"}
+                      tooltip="Marcas"
+                      className="group/btn hover:bg-violet-50 hover:text-violet-700 transition-all duration-200 ease-in-out data-[active=true]:bg-violet-100 data-[active=true]:text-violet-800"
+                    >
+                      <Tag className="group-hover/btn:scale-110 transition-transform text-violet-500/80 group-hover/btn:text-violet-600 group-data-[active=true]:text-violet-700" />
+                      <span className="font-medium">Marcas</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => handleNavigation("suppliers")}
+                      isActive={activeTab === "suppliers"}
+                      tooltip="Proveedores"
+                      className="group/btn hover:bg-violet-50 hover:text-violet-700 transition-all duration-200 ease-in-out data-[active=true]:bg-violet-100 data-[active=true]:text-violet-800"
+                    >
+                      <Users className="group-hover/btn:scale-110 transition-transform text-violet-500/80 group-hover/btn:text-violet-600 group-data-[active=true]:text-violet-700" />
+                      <span className="font-medium">Proveedores</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => handleNavigation("precios")}
+                      isActive={activeTab === "precios"}
+                      tooltip="Precios a Publicar"
+                      className="group/btn hover:bg-violet-50 hover:text-violet-700 transition-all duration-200 ease-in-out data-[active=true]:bg-violet-100 data-[active=true]:text-violet-800"
+                    >
+                      <DollarSign className="group-hover/btn:scale-110 transition-transform text-violet-500/80 group-hover/btn:text-violet-600 group-data-[active=true]:text-violet-700" />
+                      <span className="font-medium">Precios a Publicar</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => handleNavigation("zentor")}
+                      isActive={activeTab === "zentor"}
+                      tooltip="Lista ZENTOR"
+                      className="group/btn hover:bg-violet-50 hover:text-violet-700 transition-all duration-200 ease-in-out data-[active=true]:bg-violet-100 data-[active=true]:text-violet-800"
+                    >
+                      <Package className="group-hover/btn:scale-110 transition-transform text-violet-500/80 group-hover/btn:text-violet-600 group-data-[active=true]:text-violet-700" />
+                      <span className="font-medium">Lista ZENTOR</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
+              )}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   onClick={() => handleNavigation("brands")}
@@ -200,39 +263,51 @@ export function AppSidebar({
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => handleNavigation("wholesale")}
-                  isActive={activeTab === "wholesale"}
-                  tooltip="Mayoristas"
-                  className="group/btn hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 ease-in-out data-[active=true]:bg-purple-100 data-[active=true]:text-purple-800"
+                <button
+                  className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                  onClick={() => setVentasOpen((v) => !v)}
                 >
-                  <ShoppingCart className="group-hover/btn:scale-110 transition-transform text-purple-500/80 group-hover/btn:text-purple-600 group-data-[active=true]:text-purple-700" />
-                  <span className="font-medium">Mayoristas</span>
-                </SidebarMenuButton>
+                  {ventasOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                  <span className="font-medium">Sección Ventas</span>
+                </button>
               </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => handleNavigation("wholesale-bullpadel")}
-                  isActive={activeTab === "wholesale-bullpadel"}
-                  tooltip="Mayoristas Bullpadel"
-                  className="group/btn hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 ease-in-out data-[active=true]:bg-blue-100 data-[active=true]:text-blue-800"
-                >
-                  <ShoppingCart className="group-hover/btn:scale-110 transition-transform text-blue-500/80 group-hover/btn:text-blue-600 group-data-[active=true]:text-blue-700" />
-                  <span className="font-medium">Mayoristas Bullpadel</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={() => handleNavigation("retail")}
-                  isActive={activeTab === "retail"}
-                  tooltip="Minoristas"
-                  className="group/btn hover:bg-green-50 hover:text-green-700 transition-all duration-200 ease-in-out data-[active=true]:bg-green-100 data-[active=true]:text-green-800"
-                >
-                  <ShoppingBag className="group-hover/btn:scale-110 transition-transform text-green-500/80 group-hover/btn:text-green-600 group-data-[active=true]:text-green-700" />
-                  <span className="font-medium">Minoristas</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {ventasOpen && (
+                <>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => handleNavigation("wholesale")}
+                      isActive={activeTab === "wholesale"}
+                      tooltip="Mayoristas"
+                      className="group/btn hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 ease-in-out data-[active=true]:bg-purple-100 data-[active=true]:text-purple-800"
+                    >
+                      <ShoppingCart className="group-hover/btn:scale-110 transition-transform text-purple-500/80 group-hover/btn:text-purple-600 group-data-[active=true]:text-purple-700" />
+                      <span className="font-medium">Mayoristas</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => handleNavigation("wholesale-bullpadel")}
+                      isActive={activeTab === "wholesale-bullpadel"}
+                      tooltip="Mayoristas Bullpadel"
+                      className="group/btn hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 ease-in-out data-[active=true]:bg-blue-100 data-[active=true]:text-blue-800"
+                    >
+                      <ShoppingCart className="group-hover/btn:scale-110 transition-transform text-blue-500/80 group-hover/btn:text-blue-600 group-data-[active=true]:text-blue-700" />
+                      <span className="font-medium">Mayoristas Bullpadel</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => handleNavigation("retail")}
+                      isActive={activeTab === "retail"}
+                      tooltip="Minoristas"
+                      className="group/btn hover:bg-green-50 hover:text-green-700 transition-all duration-200 ease-in-out data-[active=true]:bg-green-100 data-[active=true]:text-green-800"
+                    >
+                      <ShoppingBag className="group-hover/btn:scale-110 transition-transform text-green-500/80 group-hover/btn:text-green-600 group-data-[active=true]:text-green-700" />
+                      <span className="font-medium">Minoristas</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </>
+              )}
 
               <SidebarMenuItem>
                 <SidebarMenuButton
@@ -251,10 +326,11 @@ export function AppSidebar({
                   onClick={() => handleNavigation("notas-credito")}
                   isActive={activeTab === "notas-credito"}
                   tooltip="Notas de Crédito"
-                  className="group/btn hover:bg-pink-50 hover:text-pink-700 transition-all duration-200 ease-in-out data-[active=true]:bg-pink-100 data-[active=true]:text-pink-800"
+                  className="group/btn hover:bg-pink-50 hover:text-pink-700 transition-all duration-200 ease-in-out data-[active=true]:bg-pink-100 data-[active=true]:text-pink-800 relative"
                 >
                   <FileText className="group-hover/btn:scale-110 transition-transform text-pink-500/80 group-hover/btn:text-pink-600 group-data-[active=true]:text-pink-700" />
                   <span className="font-medium">Notas de Crédito</span>
+                  <SidebarMenuBadge className="bg-emerald-100 text-emerald-600">NEW</SidebarMenuBadge>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
