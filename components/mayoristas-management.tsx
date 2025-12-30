@@ -188,12 +188,13 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
   const [currentUnitPrice, setCurrentUnitPrice] = useState(0)
   const [currentQuantity, setCurrentQuantity] = useState(1)
   const [orderNotes, setOrderNotes] = useState("")
+  const [orderDate, setOrderDate] = useState(new Date().toISOString().split("T")[0])
   const [editingOrder, setEditingOrder] = useState<WholesaleOrder | null>(null)
   const [viewingClient, setViewingClient] = useState<WholesaleClient | null>(null)
   const [expandedOrders, setExpandedOrders] = useState<number[]>([])
 
   const toggleOrderExpansion = (orderId: number) => {
-    setExpandedOrders(prev => 
+    setExpandedOrders(prev =>
       prev.includes(orderId) ? prev.filter(id => id !== orderId) : [...prev, orderId]
     )
   }
@@ -248,33 +249,33 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
 
     // Filter valid orders (confirmed, shipped, delivered)
     const validOrders = orders.filter(o => {
-        const d = new Date(o.order_date)
-        // Correct date parsing often requires handling timezone, but assuming ISO string YYYY-MM-DD is local or UTC consistent
-        // For simplicity, let's treat string comparison or Date object comparison
-        return ["confirmed", "shipped", "delivered"].includes(o.status)
+      const d = new Date(o.order_date)
+      // Correct date parsing often requires handling timezone, but assuming ISO string YYYY-MM-DD is local or UTC consistent
+      // For simplicity, let's treat string comparison or Date object comparison
+      return ["confirmed", "shipped", "delivered"].includes(o.status)
     })
-    
+
     const currentPeriodOrders = validOrders.filter(o => {
-        const d = new Date(o.order_date)
-        const dateInRange = d >= from && d <= to
-        const clientMatch = reportFilters.clientId === "all" || o.client_id.toString() === reportFilters.clientId
-        return dateInRange && clientMatch
+      const d = new Date(o.order_date)
+      const dateInRange = d >= from && d <= to
+      const clientMatch = reportFilters.clientId === "all" || o.client_id.toString() === reportFilters.clientId
+      return dateInRange && clientMatch
     })
 
     const prevPeriodOrders = validOrders.filter(o => {
-        const d = new Date(o.order_date)
-        const dateInRange = d >= prevFrom && d <= prevTo
-        const clientMatch = reportFilters.clientId === "all" || o.client_id.toString() === reportFilters.clientId
-        return dateInRange && clientMatch
+      const d = new Date(o.order_date)
+      const dateInRange = d >= prevFrom && d <= prevTo
+      const clientMatch = reportFilters.clientId === "all" || o.client_id.toString() === reportFilters.clientId
+      return dateInRange && clientMatch
     })
-    
+
     // Total Sales
     const totalSales = currentPeriodOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0)
     const prevTotalSales = prevPeriodOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0)
-    
+
     // Total Orders
     const totalOrdersCount = currentPeriodOrders.length
-    
+
     // Average Ticket
     const averageTicket = totalOrdersCount > 0 ? totalSales / totalOrdersCount : 0
 
@@ -292,62 +293,62 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
     // Let's stick to "Repeat Buyers in Period" or similar.
     // Original logic was: Clients with > 1 order.
     const clientOrderCounts = currentPeriodOrders.reduce((acc, order) => {
-        acc[order.client_id] = (acc[order.client_id] || 0) + 1
-        return acc
+      acc[order.client_id] = (acc[order.client_id] || 0) + 1
+      return acc
     }, {} as Record<number, number>)
-    
+
     const repeatClients = Object.values(clientOrderCounts).filter(count => count > 1).length
     const retention = activeClients > 0 ? (repeatClients / activeClients) * 100 : 0
 
     // Top Clients
     const clientSales = Object.entries(clientOrderCounts).map(([clientId, count]) => {
-        const id = parseInt(clientId)
-        const client = clients.find(c => c.id === id)
-        const sales = currentPeriodOrders.filter(o => o.client_id === id).reduce((sum, o) => sum + (o.total_amount || 0), 0)
-        return {
-            id,
-            name: client?.name || "Desconocido",
-            businessName: client?.business_name || "",
-            province: client?.province || "N/A",
-            sales,
-            orders: count,
-            percentage: totalSales > 0 ? (sales / totalSales) * 100 : 0
-        }
+      const id = parseInt(clientId)
+      const client = clients.find(c => c.id === id)
+      const sales = currentPeriodOrders.filter(o => o.client_id === id).reduce((sum, o) => sum + (o.total_amount || 0), 0)
+      return {
+        id,
+        name: client?.name || "Desconocido",
+        businessName: client?.business_name || "",
+        province: client?.province || "N/A",
+        sales,
+        orders: count,
+        percentage: totalSales > 0 ? (sales / totalSales) * 100 : 0
+      }
     }).sort((a, b) => b.sales - a.sales)
 
     // Active Products & Top Products
     const productSalesMap = new Map<string, { quantity: number, revenue: number, description: string }>()
-    
+
     currentPeriodOrders.forEach(order => {
-        if (order.items && Array.isArray(order.items)) {
-            order.items.forEach(item => {
-                const current = productSalesMap.get(item.sku) || { quantity: 0, revenue: 0, description: item.description }
-                productSalesMap.set(item.sku, {
-                    quantity: current.quantity + (item.quantity || 0),
-                    revenue: current.revenue + (item.total_price || 0),
-                    description: item.description
-                })
-            })
-        }
+      if (order.items && Array.isArray(order.items)) {
+        order.items.forEach(item => {
+          const current = productSalesMap.get(item.sku) || { quantity: 0, revenue: 0, description: item.description }
+          productSalesMap.set(item.sku, {
+            quantity: current.quantity + (item.quantity || 0),
+            revenue: current.revenue + (item.total_price || 0),
+            description: item.description
+          })
+        })
+      }
     })
 
     const activeProducts = productSalesMap.size
-    
+
     const topProducts = Array.from(productSalesMap.entries()).map(([sku, data]) => ({
-        sku,
-        ...data
+      sku,
+      ...data
     })).sort((a, b) => b.quantity - a.quantity)
 
     setStatistics({
-        totalSales,
-        totalOrders: totalOrdersCount,
-        averageTicket,
-        activeClients,
-        growth,
-        retention,
-        activeProducts,
-        topClients: clientSales,
-        topProducts
+      totalSales,
+      totalOrders: totalOrdersCount,
+      averageTicket,
+      activeClients,
+      growth,
+      retention,
+      activeProducts,
+      topClients: clientSales,
+      topProducts
     })
   }
 
@@ -410,6 +411,7 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
       const { data: clientsData, error: clientsError } = await supabase
         .from("wholesale_clients")
         .select("*")
+        .neq('section', 'bullpadel')
         .order("name")
 
       if (clientsError) throw clientsError
@@ -589,7 +591,7 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
             whatsapp: updatedClient.whatsapp,
           })
           .eq("id", updatedClient.id)
-          
+
         if (error) throw error
       } catch (error) {
         logError("Error updating client:", error)
@@ -847,7 +849,7 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
   // Auto-fill details when SKU exists in inventory
   useEffect(() => {
     if (!currentSku) return
-    
+
     const item = inventory.find((i) => i.sku === currentSku)
     if (item) {
       setCurrentDescription(item.description)
@@ -862,7 +864,7 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
 
   const createOrder = async (e?: React.MouseEvent) => {
     if (e) e.preventDefault()
-    
+
     if (!selectedClient) {
       toast({
         title: "Error",
@@ -935,7 +937,7 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
             .insert([
               {
                 client_id: clientId,
-                order_date: new Date().toISOString(),
+                order_date: orderDate,
                 status: "pending",
                 total_amount: totalAmount,
                 notes: orderNotes,
@@ -971,34 +973,35 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
       } else {
         // Offline mode
         if (editingOrder) {
-            const updatedOrder: WholesaleOrder = {
-                ...editingOrder,
-                client_id: clientId,
-                total_amount: totalAmount,
-                items: orderItems,
-                notes: orderNotes,
-            }
-            setOrders((prev) => prev.map((o) => (o.id === editingOrder.id ? updatedOrder : o)))
-            toast({
-                title: "Pedido actualizado (Offline)",
-                description: "El pedido se ha actualizado localmente",
-            })
+          const updatedOrder: WholesaleOrder = {
+            ...editingOrder,
+            client_id: clientId,
+            total_amount: totalAmount,
+            items: orderItems,
+            notes: orderNotes,
+          }
+          setOrders((prev) => prev.map((o) => (o.id === editingOrder.id ? updatedOrder : o)))
+          toast({
+            title: "Pedido actualizado (Offline)",
+            description: "El pedido se ha actualizado localmente",
+          })
         } else {
-            const newOrder: WholesaleOrder = {
-              id: Date.now(),
-              client_id: clientId,
-              order_date: new Date().toISOString(),
-              status: "pending",
-              total_amount: totalAmount,
-              items: orderItems,
-              notes: orderNotes,
-              created_at: new Date().toISOString(),
-            }
-            setOrders((prev) => [newOrder, ...prev])
-            toast({
-              title: "Pedido creado (Offline)",
-              description: "El pedido se ha guardado localmente",
-            })
+          const newOrder: WholesaleOrder = {
+            id: Date.now(),
+            client_id: clientId,
+            order_date: orderDate,
+            status: "pending",
+            is_paid: false,
+            total_amount: totalAmount,
+            items: orderItems,
+            notes: orderNotes,
+            created_at: new Date().toISOString(),
+          }
+          setOrders((prev) => [newOrder, ...prev])
+          toast({
+            title: "Pedido creado (Offline)",
+            description: "El pedido se ha guardado localmente",
+          })
         }
       }
 
@@ -1007,6 +1010,7 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
       setOrderItems([])
       setSelectedClient("")
       setOrderNotes("")
+      setOrderDate(new Date().toISOString().split("T")[0])
       setEditingOrder(null)
     } catch (error) {
       logError("Error saving order:", error)
@@ -1063,7 +1067,7 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
         })
       } catch (error: any) {
         logError("Error updating order payment status:", error)
-        
+
         const errorMessage = error?.message || ""
         let description = "No se pudo actualizar el estado de pago en la base de datos"
 
@@ -1091,6 +1095,7 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
     setEditingOrder(order)
     setSelectedClient(order.client_id.toString())
     setOrderNotes(order.notes || "")
+    setOrderDate(order.order_date.split("T")[0])
     setOrderItems(order.items || [])
     setShowOrderForm(true)
   }
@@ -1121,7 +1126,7 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
     }
 
     setOrders((prev) => prev.filter((o) => o.id !== order.id))
-    
+
     await logActivity(
       "DELETE_WHOLESALE_ORDER",
       "wholesale_orders",
@@ -1212,9 +1217,9 @@ table {
 ${headers.map((h) => `<th class="header">${h}</th>`).join("")}
 </tr>
 ${csvRows
-  .map((row, index) => {
-    const item = allPrices[index]
-    return `<tr>
+        .map((row, index) => {
+          const item = allPrices[index]
+          return `<tr>
     <td class="data">${row[0]}</td>
     <td class="data">${row[1]}</td>
     <td class="data">${row[2]}</td>
@@ -1224,8 +1229,8 @@ ${csvRows
     <td class="data-number">${row[6]}</td>
 
   </tr>`
-  })
-  .join("")}
+        })
+        .join("")}
 </table>
 </body>
 </html>`
@@ -1282,8 +1287,8 @@ ${csvRows
       const clientOrders = orders.filter(o => o.client_id === client.id && ["confirmed", "shipped", "delivered"].includes(o.status))
       let lastOrderDays = 0
       if (clientOrders.length > 0) {
-          const lastOrderDate = new Date(Math.max(...clientOrders.map(o => new Date(o.order_date).getTime())))
-          lastOrderDays = Math.floor((Date.now() - lastOrderDate.getTime()) / (1000 * 60 * 60 * 24))
+        const lastOrderDate = new Date(Math.max(...clientOrders.map(o => new Date(o.order_date).getTime())))
+        lastOrderDays = Math.floor((Date.now() - lastOrderDate.getTime()) / (1000 * 60 * 60 * 24))
       }
       return {
         name: client.name,
@@ -1410,8 +1415,8 @@ h2 {
 <th class="header">Último Pedido</th>
 </tr>
 ${clientSales
-  .map(
-    (client) => `
+        .map(
+          (client) => `
 <tr>
 <td class="data">${client.name}</td>
 <td class="data">${client.businessName}</td>
@@ -1421,8 +1426,8 @@ ${clientSales
 <td class="data">Hace ${client.lastOrder} días</td>
 </tr>
 `,
-  )
-  .join("")}
+        )
+        .join("")}
 </table>
 
 <h2>PRODUCTOS MÁS VENDIDOS</h2>
@@ -1434,8 +1439,8 @@ ${clientSales
 <th class="header">Revenue</th>
 </tr>
 ${productSales
-  .map(
-    (product) => `
+        .map(
+          (product) => `
 <tr>
 <td class="data">${product.sku}</td>
 <td class="data">${product.description}</td>
@@ -1443,8 +1448,8 @@ ${productSales
 <td class="data-number">${formatCurrency(product.revenue)}</td>
 </tr>
 `,
-  )
-  .join("")}
+        )
+        .join("")}
 </table>
 
 <p style="text-align: center; color: #6B7280; margin-top: 40px; font-size: 12px;">
@@ -1593,14 +1598,14 @@ body {
 <div class="trend-analysis">
 <h3>Análisis de Tendencias Detallado</h3>
 ${analysisData.trends
-  .map(
-    (trend) => `
+        .map(
+          (trend) => `
 <div style="margin: 15px 0; padding: 15px; background: white; border-radius: 5px;">
 <strong>${trend.metric}:</strong> ${trend.trend} (${trend.percentage})
 </div>
 `,
-  )
-  .join("")}
+        )
+        .join("")}
 </div>
 
 <div class="recommendation">
@@ -1660,24 +1665,24 @@ Este reporte contiene información confidencial y está destinado únicamente pa
       const clientOrders = orders.filter(o => o.client_id === client.id && ["confirmed", "shipped", "delivered"].includes(o.status))
       const totalOrders = clientOrders.length
       const totalSales = clientOrders.reduce((sum, o) => sum + o.total_amount, 0)
-      
+
       let lastOrder = "Sin pedidos"
       let daysSinceLastOrder = -1
       if (totalOrders > 0) {
-          const lastOrderDate = new Date(Math.max(...clientOrders.map(o => new Date(o.order_date).getTime())))
-          daysSinceLastOrder = Math.floor((Date.now() - lastOrderDate.getTime()) / (1000 * 60 * 60 * 24))
-          lastOrder = `Hace ${daysSinceLastOrder} días`
+        const lastOrderDate = new Date(Math.max(...clientOrders.map(o => new Date(o.order_date).getTime())))
+        daysSinceLastOrder = Math.floor((Date.now() - lastOrderDate.getTime()) / (1000 * 60 * 60 * 24))
+        lastOrder = `Hace ${daysSinceLastOrder} días`
       }
 
       // Calculate frequency (average days between orders)
       let frequency = "N/A"
       if (totalOrders > 1) {
-          const dates = clientOrders.map(o => new Date(o.order_date).getTime()).sort((a, b) => a - b)
-          const firstOrder = dates[0]
-          const lastOrderTime = dates[dates.length - 1]
-          const daysDiff = (lastOrderTime - firstOrder) / (1000 * 60 * 60 * 24)
-          const avgDays = Math.round(daysDiff / (totalOrders - 1))
-          frequency = `Cada ${avgDays} días`
+        const dates = clientOrders.map(o => new Date(o.order_date).getTime()).sort((a, b) => a - b)
+        const firstOrder = dates[0]
+        const lastOrderTime = dates[dates.length - 1]
+        const daysDiff = (lastOrderTime - firstOrder) / (1000 * 60 * 60 * 24)
+        const avgDays = Math.round(daysDiff / (totalOrders - 1))
+        frequency = `Cada ${avgDays} días`
       }
 
       // Monthly Average (Total Sales / months since first order or registration)
@@ -1687,10 +1692,10 @@ Este reporte contiene información confidencial y está destinado únicamente pa
 
       let status = "Inactivo"
       if (totalOrders > 0) {
-          if (daysSinceLastOrder <= 30) status = "Activo"
-          else if (daysSinceLastOrder <= 90) status = "Regular"
+        if (daysSinceLastOrder <= 30) status = "Activo"
+        else if (daysSinceLastOrder <= 90) status = "Regular"
       } else if ((Date.now() - new Date(client.created_at).getTime()) / (1000 * 60 * 60 * 24) < 30) {
-          status = "Nuevo"
+        status = "Nuevo"
       }
 
       return {
@@ -1782,7 +1787,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
   const filteredItems = getFilteredWholesaleItems()
   const totalProducts = filteredItems.length
   const newProducts = filteredItems.filter((item) => item.is_new).length
-  
+
   // Agrupar por marca para mostrar en las tarjetas de estadísticas, aunque la tabla principal será paginada
   const groupedByBrandForStats = filteredItems.reduce(
     (acc, item) => {
@@ -1931,7 +1936,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
               </div>
 
               <div className="flex items-center gap-2">
-                 <Select
+                <Select
                   value={itemsPerPage.toString()}
                   onValueChange={(value) => setItemsPerPage(Number(value))}
                 >
@@ -2046,9 +2051,9 @@ Este reporte contiene información confidencial y está destinado únicamente pa
               </CardHeader>
               <CardContent className="p-0">
                 <div className="p-4 bg-slate-50 border-b flex justify-between items-center text-sm text-slate-500">
-                   <div>
-                     Mostrando {filteredItems.length > 0 ? startIndex + 1 : 0} a {Math.min(endIndex, filteredItems.length)} de {filteredItems.length} productos
-                   </div>
+                  <div>
+                    Mostrando {filteredItems.length > 0 ? startIndex + 1 : 0} a {Math.min(endIndex, filteredItems.length)} de {filteredItems.length} productos
+                  </div>
                 </div>
                 <ScrollArea className="h-[400px]">
                   {Object.entries(groupedCurrentItems).map(([brandName, products]) => (
@@ -2080,9 +2085,9 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                                 {formatCurrency(item.wholesale_price_2)}
                               </TableCell>
                               <TableCell className="font-medium text-purple-600 hidden md:table-cell">
-                              {formatCurrency(item.wholesale_price_3)}
-                            </TableCell>
-                          </TableRow>
+                                {formatCurrency(item.wholesale_price_3)}
+                              </TableCell>
+                            </TableRow>
                           ))}
                         </TableBody>
                       </Table>
@@ -2094,52 +2099,52 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                     </div>
                   )}
                 </ScrollArea>
-                
-                 {/* Controles de Paginación */}
-                 <div className="flex items-center justify-between px-4 py-4 border-t border-slate-200 bg-slate-50 rounded-b-lg">
-                   <div className="text-sm text-slate-500">
-                     Página {currentPage} de {totalPages || 1}
-                   </div>
-                   <div className="flex items-center space-x-2">
-                     <Button
-                       variant="outline"
-                       size="sm"
-                       onClick={() => setCurrentPage(1)}
-                       disabled={currentPage === 1}
-                       className="h-8 w-8 p-0"
-                     >
-                       <ChevronsLeft className="h-4 w-4" />
-                     </Button>
-                     <Button
-                       variant="outline"
-                       size="sm"
-                       onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                       disabled={currentPage === 1}
-                       className="h-8 w-8 p-0"
-                     >
-                       <ChevronLeft className="h-4 w-4" />
-                     </Button>
-                     
-                     <Button
-                       variant="outline"
-                       size="sm"
-                       onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                       disabled={currentPage === totalPages || totalPages === 0}
-                       className="h-8 w-8 p-0"
-                     >
-                       <ChevronRight className="h-4 w-4" />
-                     </Button>
-                     <Button
-                       variant="outline"
-                       size="sm"
-                       onClick={() => setCurrentPage(totalPages)}
-                       disabled={currentPage === totalPages || totalPages === 0}
-                       className="h-8 w-8 p-0"
-                     >
-                       <ChevronsRight className="h-4 w-4" />
-                     </Button>
-                   </div>
-                 </div>
+
+                {/* Controles de Paginación */}
+                <div className="flex items-center justify-between px-4 py-4 border-t border-slate-200 bg-slate-50 rounded-b-lg">
+                  <div className="text-sm text-slate-500">
+                    Página {currentPage} de {totalPages || 1}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage === 1}
+                      className="h-8 w-8 p-0"
+                    >
+                      <ChevronsLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="h-8 w-8 p-0"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages || totalPages === 0}
+                      className="h-8 w-8 p-0"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(totalPages)}
+                      disabled={currentPage === totalPages || totalPages === 0}
+                      className="h-8 w-8 p-0"
+                    >
+                      <ChevronsRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -2148,79 +2153,79 @@ Este reporte contiene información confidencial y está destinado únicamente pa
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold">Clientes Mayoristas</h3>
               {!isReadOnly && (
-                  <Button onClick={() => setShowClientForm(true)} className="bg-purple-600 hover:bg-purple-700">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Nuevo Cliente
-                  </Button>
-                )}
+                <Button onClick={() => setShowClientForm(true)} className="bg-purple-600 hover:bg-purple-700">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nuevo Cliente
+                </Button>
+              )}
             </div>
 
             <Card>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nombre</TableHead>
-                      <TableHead className="hidden md:table-cell">Razón Social</TableHead>
-                      <TableHead className="hidden md:table-cell">CUIT</TableHead>
-                      <TableHead className="hidden md:table-cell">Provincia</TableHead>
-                      <TableHead>Contacto</TableHead>
-                      <TableHead className="hidden md:table-cell">Email</TableHead>
-                      <TableHead className="hidden md:table-cell">WhatsApp</TableHead>
-                      <TableHead>Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {clients.map((client) => (
-                      <TableRow key={client.id}>
-                        <TableCell className="font-medium">
-                          <Button 
-                            variant="link" 
-                            className="p-0 h-auto font-medium text-purple-700 hover:text-purple-900" 
-                            onClick={() => setViewingClient(client)}
-                          >
-                            {client.name}
-                          </Button>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">{client.business_name}</TableCell>
-                        <TableCell className="hidden md:table-cell">{client.cuit}</TableCell>
-                        <TableCell className="hidden md:table-cell">{client.province}</TableCell>
-                        <TableCell>{client.contact_person}</TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <div className="flex items-center gap-2">
-                            <Mail className="w-4 h-4 text-gray-500" />
-                            {client.email}
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <div className="flex items-center gap-2">
-                            <Phone className="w-4 h-4 text-gray-500" />
-                            {client.whatsapp}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {!isReadOnly && (
-                            <div className="flex gap-2">
-                              <Button variant="ghost" size="sm" onClick={() => editClient(client)} title="Editar cliente">
-                                <Edit className="w-3 h-3" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => deleteClient(client)}
-                                title="Eliminar cliente"
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          )}
-                        </TableCell>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nombre</TableHead>
+                        <TableHead className="hidden md:table-cell">Razón Social</TableHead>
+                        <TableHead className="hidden md:table-cell">CUIT</TableHead>
+                        <TableHead className="hidden md:table-cell">Provincia</TableHead>
+                        <TableHead>Contacto</TableHead>
+                        <TableHead className="hidden md:table-cell">Email</TableHead>
+                        <TableHead className="hidden md:table-cell">WhatsApp</TableHead>
+                        <TableHead>Acciones</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {clients.map((client) => (
+                        <TableRow key={client.id}>
+                          <TableCell className="font-medium">
+                            <Button
+                              variant="link"
+                              className="p-0 h-auto font-medium text-purple-700 hover:text-purple-900"
+                              onClick={() => setViewingClient(client)}
+                            >
+                              {client.name}
+                            </Button>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">{client.business_name}</TableCell>
+                          <TableCell className="hidden md:table-cell">{client.cuit}</TableCell>
+                          <TableCell className="hidden md:table-cell">{client.province}</TableCell>
+                          <TableCell>{client.contact_person}</TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            <div className="flex items-center gap-2">
+                              <Mail className="w-4 h-4 text-gray-500" />
+                              {client.email}
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            <div className="flex items-center gap-2">
+                              <Phone className="w-4 h-4 text-gray-500" />
+                              {client.whatsapp}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {!isReadOnly && (
+                              <div className="flex gap-2">
+                                <Button variant="ghost" size="sm" onClick={() => editClient(client)} title="Editar cliente">
+                                  <Edit className="w-3 h-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => deleteClient(client)}
+                                  title="Eliminar cliente"
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               </CardContent>
             </Card>
@@ -2230,181 +2235,181 @@ Este reporte contiene información confidencial y está destinado únicamente pa
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold">Pedidos Mayoristas</h3>
               {!isReadOnly && (
-                  <Button onClick={() => setShowOrderForm(true)} className="bg-purple-600 hover:bg-purple-700">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Nuevo Pedido
-                  </Button>
-                )}
+                <Button onClick={() => setShowOrderForm(true)} className="bg-purple-600 hover:bg-purple-700">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Nuevo Pedido
+                </Button>
+              )}
             </div>
 
             <Card>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead className="hidden md:table-cell">Fecha</TableHead>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead>Pagado</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead className="hidden md:table-cell">Notas</TableHead>
-                      <TableHead className="hidden md:table-cell">Items</TableHead>
-                      <TableHead>Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {orders.map((order) => {
-                      const clientName = clients.find((c) => c.id === order.client_id)?.name || "Cliente desconocido"
-                      const hasMultipleItems = (order.items?.length || 0) > 1
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>ID</TableHead>
+                        <TableHead className="hidden md:table-cell">Fecha</TableHead>
+                        <TableHead>Cliente</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead>Pagado</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                        <TableHead className="hidden md:table-cell">Notas</TableHead>
+                        <TableHead className="hidden md:table-cell">Items</TableHead>
+                        <TableHead>Acciones</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {orders.map((order) => {
+                        const clientName = clients.find((c) => c.id === order.client_id)?.name || "Cliente desconocido"
+                        const hasMultipleItems = (order.items?.length || 0) > 1
 
-                      return (
-                        <>
-                          <TableRow key={order.id}>
-                            <TableCell className="font-medium">#{order.id}</TableCell>
-                            <TableCell className="hidden md:table-cell">{new Date(order.order_date).toLocaleDateString()}</TableCell>
-                            <TableCell>{clientName}</TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger disabled={isReadOnly} className="focus:outline-none">
-                                  <Badge className={`cursor-pointer ${getStatusColor(order.status)} border-0`}>
-                                    {getStatusLabel(order.status)}
-                                  </Badge>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                  <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "pending")}>
-                                    Pendiente
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "confirmed")}>
-                                    Confirmado
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "shipped")}>
-                                    Enviado
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "delivered")}>
-                                    Entregado
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "cancelled")}>
-                                    Cancelado
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger disabled={isReadOnly} className="focus:outline-none">
-                                  <Badge className={`cursor-pointer border-0 ${order.is_paid ? "bg-green-600 hover:bg-green-700" : "bg-red-500 hover:bg-red-600"} text-white`}>
-                                    {order.is_paid ? "SÍ" : "NO"}
-                                  </Badge>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                  <DropdownMenuItem onClick={() => updateOrderPaymentStatus(order.id, true)}>
-                                    SÍ
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => updateOrderPaymentStatus(order.id, false)}>
-                                    NO
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                            <TableCell className="text-right">${order.total_amount.toFixed(2)}</TableCell>
-                            <TableCell className="max-w-[200px] truncate hidden md:table-cell">{order.notes}</TableCell>
-                            <TableCell className="hidden md:table-cell">
-                              {hasMultipleItems ? (
-                                <div className="flex items-center gap-2">
-                                  <span>{order.items?.length || 0} items</span>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-6 w-6 p-0" 
-                                    onClick={() => toggleOrderExpansion(order.id)}
-                                  >
-                                    {expandedOrders.includes(order.id) ? (
-                                      <ChevronUp className="w-4 h-4" />
-                                    ) : (
-                                      <ChevronDown className="w-4 h-4" />
-                                    )}
-                                  </Button>
-                                </div>
-                              ) : (
-                                <span>{order.items?.length || 0} items</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {!isReadOnly && (
-                                <div className="flex gap-2">
-                                  <Button variant="ghost" size="sm" onClick={() => editOrder(order)} title="Editar pedido">
-                                    <Edit className="w-3 h-3" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => deleteOrder(order)}
-                                    title="Eliminar pedido"
-                                    className="text-red-600 hover:text-red-700"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </Button>
-                                </div>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                          {expandedOrders.includes(order.id) && hasMultipleItems && (
-                            <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
-                              <TableCell colSpan={9} className="p-4">
-                                <div className="bg-white rounded-md border p-4 shadow-sm">
-                                  <h4 className="font-semibold mb-3 text-sm text-gray-700 flex items-center gap-2">
-                                    <Package className="w-4 h-4" />
-                                    Detalle del Pedido
-                                  </h4>
-                                  <div className="overflow-x-auto">
-                                    <Table>
-                                    <TableHeader>
-                                      <TableRow className="hover:bg-transparent">
-                                        <TableHead className="h-8">SKU</TableHead>
-                                        <TableHead className="h-8">Descripción</TableHead>
-                                        <TableHead className="h-8 text-right">Cantidad</TableHead>
-                                        <TableHead className="h-8 text-right">Precio Unit.</TableHead>
-                                        <TableHead className="h-8 text-right">Total</TableHead>
-                                        <TableHead className="h-8 text-right">Costo Est.</TableHead>
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {order.items?.map((item, idx) => (
-                                        <TableRow key={idx} className="hover:bg-gray-50">
-                                          <TableCell className="py-2 text-sm">{item.sku}</TableCell>
-                                          <TableCell className="py-2 text-sm">{item.description}</TableCell>
-                                          <TableCell className="text-right py-2 text-sm">{item.quantity}</TableCell>
-                                          <TableCell className="text-right py-2 text-sm">{formatCurrency(item.unit_price)}</TableCell>
-                                          <TableCell className="text-right py-2 text-sm font-medium">{formatCurrency(item.total_price)}</TableCell>
-                                          <TableCell className="text-right py-2 text-sm text-gray-500">
-                                            {(() => {
-                                              const invItem = inventory.find(i => i.sku === item.sku)
-                                              return invItem ? formatCurrency(invItem.cost_without_tax) : "-"
-                                            })()}
-                                          </TableCell>
-                                        </TableRow>
-                                      ))}
-                                    </TableBody>
-                                  </Table>
+                        return (
+                          <>
+                            <TableRow key={order.id}>
+                              <TableCell className="font-medium">#{order.id}</TableCell>
+                              <TableCell className="hidden md:table-cell">{new Date(order.order_date).toLocaleDateString()}</TableCell>
+                              <TableCell>{clientName}</TableCell>
+                              <TableCell>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger disabled={isReadOnly} className="focus:outline-none">
+                                    <Badge className={`cursor-pointer ${getStatusColor(order.status)} border-0`}>
+                                      {getStatusLabel(order.status)}
+                                    </Badge>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "pending")}>
+                                      Pendiente
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "confirmed")}>
+                                      Confirmado
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "shipped")}>
+                                      Enviado
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "delivered")}>
+                                      Entregado
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => updateOrderStatus(order.id, "cancelled")}>
+                                      Cancelado
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                              <TableCell>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger disabled={isReadOnly} className="focus:outline-none">
+                                    <Badge className={`cursor-pointer border-0 ${order.is_paid ? "bg-green-600 hover:bg-green-700" : "bg-red-500 hover:bg-red-600"} text-white`}>
+                                      {order.is_paid ? "SÍ" : "NO"}
+                                    </Badge>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={() => updateOrderPaymentStatus(order.id, true)}>
+                                      SÍ
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => updateOrderPaymentStatus(order.id, false)}>
+                                      NO
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                              <TableCell className="text-right">${order.total_amount.toFixed(2)}</TableCell>
+                              <TableCell className="max-w-[200px] truncate hidden md:table-cell">{order.notes}</TableCell>
+                              <TableCell className="hidden md:table-cell">
+                                {hasMultipleItems ? (
+                                  <div className="flex items-center gap-2">
+                                    <span>{order.items?.length || 0} items</span>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-6 p-0"
+                                      onClick={() => toggleOrderExpansion(order.id)}
+                                    >
+                                      {expandedOrders.includes(order.id) ? (
+                                        <ChevronUp className="w-4 h-4" />
+                                      ) : (
+                                        <ChevronDown className="w-4 h-4" />
+                                      )}
+                                    </Button>
                                   </div>
-                                </div>
+                                ) : (
+                                  <span>{order.items?.length || 0} items</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {!isReadOnly && (
+                                  <div className="flex gap-2">
+                                    <Button variant="ghost" size="sm" onClick={() => editOrder(order)} title="Editar pedido">
+                                      <Edit className="w-3 h-3" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => deleteOrder(order)}
+                                      title="Eliminar pedido"
+                                      className="text-red-600 hover:text-red-700"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                  </div>
+                                )}
                               </TableCell>
                             </TableRow>
-                          )}
-                        </>
-                      )
-                    })}
-                    {orders.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={9} className="text-center py-8 text-gray-500">
-                          No hay pedidos registrados
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                            {expandedOrders.includes(order.id) && hasMultipleItems && (
+                              <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
+                                <TableCell colSpan={9} className="p-4">
+                                  <div className="bg-white rounded-md border p-4 shadow-sm">
+                                    <h4 className="font-semibold mb-3 text-sm text-gray-700 flex items-center gap-2">
+                                      <Package className="w-4 h-4" />
+                                      Detalle del Pedido
+                                    </h4>
+                                    <div className="overflow-x-auto">
+                                      <Table>
+                                        <TableHeader>
+                                          <TableRow className="hover:bg-transparent">
+                                            <TableHead className="h-8">SKU</TableHead>
+                                            <TableHead className="h-8">Descripción</TableHead>
+                                            <TableHead className="h-8 text-right">Cantidad</TableHead>
+                                            <TableHead className="h-8 text-right">Precio Unit.</TableHead>
+                                            <TableHead className="h-8 text-right">Total</TableHead>
+                                            <TableHead className="h-8 text-right">Costo Est.</TableHead>
+                                          </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                          {order.items?.map((item, idx) => (
+                                            <TableRow key={idx} className="hover:bg-gray-50">
+                                              <TableCell className="py-2 text-sm">{item.sku}</TableCell>
+                                              <TableCell className="py-2 text-sm">{item.description}</TableCell>
+                                              <TableCell className="text-right py-2 text-sm">{item.quantity}</TableCell>
+                                              <TableCell className="text-right py-2 text-sm">{formatCurrency(item.unit_price)}</TableCell>
+                                              <TableCell className="text-right py-2 text-sm font-medium">{formatCurrency(item.total_price)}</TableCell>
+                                              <TableCell className="text-right py-2 text-sm text-gray-500">
+                                                {(() => {
+                                                  const invItem = inventory.find(i => i.sku === item.sku)
+                                                  return invItem ? formatCurrency(invItem.cost_without_tax) : "-"
+                                                })()}
+                                              </TableCell>
+                                            </TableRow>
+                                          ))}
+                                        </TableBody>
+                                      </Table>
+                                    </div>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </>
+                        )
+                      })}
+                      {orders.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                            No hay pedidos registrados
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
                 </div>
               </CardContent>
             </Card>
@@ -2418,6 +2423,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                   setOrderItems([])
                   setSelectedClient("")
                   setOrderNotes("")
+                  setOrderDate(new Date().toISOString().split("T")[0])
                 }
               }}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -2442,15 +2448,24 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                               ))}
                             </SelectContent>
                           </Select>
-                          <Button 
-                            variant="outline" 
-                            size="icon" 
+                          <Button
+                            variant="outline"
+                            size="icon"
                             onClick={() => setShowClientForm(true)}
                             title="Nuevo Cliente"
                           >
                             <Plus className="w-4 h-4" />
                           </Button>
                         </div>
+                      </div>
+
+                      <div>
+                        <Label>Fecha del Pedido</Label>
+                        <Input
+                          type="date"
+                          value={orderDate}
+                          onChange={(e) => setOrderDate(e.target.value)}
+                        />
                       </div>
 
                       <div className="border p-4 rounded-md bg-gray-50">
@@ -2486,7 +2501,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                               />
                             </div>
                           </div>
-                          
+
                           <div>
                             <Label>Nombre</Label>
                             <Input
@@ -2495,7 +2510,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                               placeholder="Nombre del producto"
                             />
                           </div>
-                          
+
                           <div>
                             <Label>Precio Unitario</Label>
                             <div className="relative">
@@ -2716,7 +2731,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                       )
                     })}
                     {statistics.topClients.length === 0 && (
-                        <p className="text-center text-gray-500 py-4">No hay datos de ventas disponibles</p>
+                      <p className="text-center text-gray-500 py-4">No hay datos de ventas disponibles</p>
                     )}
                   </div>
                 </CardContent>
@@ -2748,7 +2763,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                       )
                     })}
                     {statistics.topProducts.length === 0 && (
-                        <p className="text-center text-gray-500 py-4">No hay datos de productos disponibles</p>
+                      <p className="text-center text-gray-500 py-4">No hay datos de productos disponibles</p>
                     )}
                   </div>
                 </CardContent>
@@ -2811,25 +2826,25 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                     {clients.map((client) => {
                       const clientOrders = orders.filter(o => o.client_id === client.id && ["confirmed", "shipped", "delivered"].includes(o.status))
                       const totalOrders = clientOrders.length
-                      
+
                       let lastOrderStr = "Sin pedidos"
                       let daysSinceLastOrder = -1
-                      
+
                       if (totalOrders > 0) {
-                          const lastOrderDate = new Date(Math.max(...clientOrders.map(o => new Date(o.order_date).getTime())))
-                          daysSinceLastOrder = Math.floor((Date.now() - lastOrderDate.getTime()) / (1000 * 60 * 60 * 24))
-                          lastOrderStr = `Hace ${daysSinceLastOrder} días`
+                        const lastOrderDate = new Date(Math.max(...clientOrders.map(o => new Date(o.order_date).getTime())))
+                        daysSinceLastOrder = Math.floor((Date.now() - lastOrderDate.getTime()) / (1000 * 60 * 60 * 24))
+                        lastOrderStr = `Hace ${daysSinceLastOrder} días`
                       }
 
                       // Calculate frequency
                       let frequencyStr = "N/A"
                       if (totalOrders > 1) {
-                          const dates = clientOrders.map(o => new Date(o.order_date).getTime()).sort((a, b) => a - b)
-                          const firstOrder = dates[0]
-                          const lastOrderTime = dates[dates.length - 1]
-                          const daysDiff = (lastOrderTime - firstOrder) / (1000 * 60 * 60 * 24)
-                          const avgDays = Math.round(daysDiff / (totalOrders - 1))
-                          frequencyStr = `Cada ${avgDays} días`
+                        const dates = clientOrders.map(o => new Date(o.order_date).getTime()).sort((a, b) => a - b)
+                        const firstOrder = dates[0]
+                        const lastOrderTime = dates[dates.length - 1]
+                        const daysDiff = (lastOrderTime - firstOrder) / (1000 * 60 * 60 * 24)
+                        const avgDays = Math.round(daysDiff / (totalOrders - 1))
+                        frequencyStr = `Cada ${avgDays} días`
                       }
 
                       const createdDate = new Date(client.created_at)
@@ -2838,12 +2853,12 @@ Este reporte contiene información confidencial y está destinado únicamente pa
 
                       let status = "Inactivo"
                       if (totalOrders > 0) {
-                          if (daysSinceLastOrder <= 30) status = "Activo"
-                          else if (daysSinceLastOrder <= 90) status = "Regular"
+                        if (daysSinceLastOrder <= 30) status = "Activo"
+                        else if (daysSinceLastOrder <= 90) status = "Regular"
                       } else if ((Date.now() - new Date(client.created_at).getTime()) / (1000 * 60 * 60 * 24) < 30) {
-                          status = "Nuevo"
+                        status = "Nuevo"
                       }
-                      
+
                       const statusColor =
                         status === "Activo" ? "bg-green-500" : status === "Regular" ? "bg-yellow-500" : status === "Nuevo" ? "bg-blue-500" : "bg-red-500"
 
@@ -2975,55 +2990,55 @@ Este reporte contiene información confidencial y está destinado únicamente pa
           </Dialog>
         )}
 
-      {viewingClient && (
-        <Dialog open={!!viewingClient} onOpenChange={(open) => !open && setViewingClient(null)}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Detalles del Cliente</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-gray-500">Nombre</Label>
-                  <p className="font-medium">{viewingClient.name}</p>
+        {viewingClient && (
+          <Dialog open={!!viewingClient} onOpenChange={(open) => !open && setViewingClient(null)}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Detalles del Cliente</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-gray-500">Nombre</Label>
+                    <p className="font-medium">{viewingClient.name}</p>
+                  </div>
+                  <div>
+                    <Label className="text-gray-500">Razón Social</Label>
+                    <p className="font-medium">{viewingClient.business_name}</p>
+                  </div>
+                  <div>
+                    <Label className="text-gray-500">CUIT</Label>
+                    <p className="font-medium">{viewingClient.cuit}</p>
+                  </div>
+                  <div>
+                    <Label className="text-gray-500">Provincia</Label>
+                    <p className="font-medium">{viewingClient.province}</p>
+                  </div>
+                  <div>
+                    <Label className="text-gray-500">Dirección</Label>
+                    <p className="font-medium">{viewingClient.address}</p>
+                  </div>
+                  <div>
+                    <Label className="text-gray-500">Contacto</Label>
+                    <p className="font-medium">{viewingClient.contact_person}</p>
+                  </div>
+                  <div>
+                    <Label className="text-gray-500">Email</Label>
+                    <p className="font-medium">{viewingClient.email}</p>
+                  </div>
+                  <div>
+                    <Label className="text-gray-500">WhatsApp</Label>
+                    <p className="font-medium">{viewingClient.whatsapp}</p>
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-gray-500">Razón Social</Label>
-                  <p className="font-medium">{viewingClient.business_name}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-500">CUIT</Label>
-                  <p className="font-medium">{viewingClient.cuit}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-500">Provincia</Label>
-                  <p className="font-medium">{viewingClient.province}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-500">Dirección</Label>
-                  <p className="font-medium">{viewingClient.address}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-500">Contacto</Label>
-                  <p className="font-medium">{viewingClient.contact_person}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-500">Email</Label>
-                  <p className="font-medium">{viewingClient.email}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-500">WhatsApp</Label>
-                  <p className="font-medium">{viewingClient.whatsapp}</p>
+                <div className="pt-4 flex justify-end">
+                  <Button onClick={() => setViewingClient(null)}>Cerrar</Button>
                 </div>
               </div>
-              <div className="pt-4 flex justify-end">
-                <Button onClick={() => setViewingClient(null)}>Cerrar</Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-    </div>
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
     </div>
   )
 }

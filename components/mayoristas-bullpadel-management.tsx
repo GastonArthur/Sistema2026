@@ -188,6 +188,7 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
   const [currentUnitPrice, setCurrentUnitPrice] = useState(0)
   const [currentQuantity, setCurrentQuantity] = useState(1)
   const [orderNotes, setOrderNotes] = useState("")
+  const [orderDate, setOrderDate] = useState(new Date().toISOString().split("T")[0])
   const [editingOrder, setEditingOrder] = useState<WholesaleOrder | null>(null)
   const [viewingClient, setViewingClient] = useState<WholesaleClient | null>(null)
   const [expandedOrders, setExpandedOrders] = useState<number[]>([])
@@ -413,6 +414,7 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
       const { data: clientsData, error: clientsError } = await supabase
         .from("wholesale_clients")
         .select("*")
+        .eq('section', 'bullpadel')
         .order("name")
 
       if (clientsError) throw clientsError
@@ -741,6 +743,7 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
               email: newClient.email,
               whatsapp: newClient.whatsapp,
               created_by: userId,
+              section: 'bullpadel',
             },
           ])
           .select()
@@ -938,7 +941,7 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
             .insert([
               {
                 client_id: clientId,
-                order_date: new Date().toISOString(),
+                order_date: orderDate,
                 status: "pending",
                 total_amount: totalAmount,
                 notes: orderNotes,
@@ -990,8 +993,9 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
           const newOrder: WholesaleOrder = {
             id: Date.now(),
             client_id: clientId,
-            order_date: new Date().toISOString(),
+            order_date: orderDate,
             status: "pending",
+            is_paid: false,
             total_amount: totalAmount,
             items: orderItems,
             notes: orderNotes,
@@ -1010,6 +1014,7 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
       setOrderItems([])
       setSelectedClient("")
       setOrderNotes("")
+      setOrderDate(new Date().toISOString().split("T")[0])
       setEditingOrder(null)
     } catch (error) {
       logError("Error saving order:", error)
@@ -1094,6 +1099,7 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
     setEditingOrder(order)
     setSelectedClient(order.client_id.toString())
     setOrderNotes(order.notes || "")
+    setOrderDate(order.order_date.split("T")[0])
     setOrderItems(order.items || [])
     setShowOrderForm(true)
   }
@@ -1836,7 +1842,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-4">
           <ShoppingCart className="w-5 h-5 text-purple-600" />
-          <h2 className="text-xl font-semibold">Ventas Mayoristas</h2>
+          <h2 className="text-xl font-semibold">Ventas Mayoristas Bullpadel</h2>
         </div>
         <p className="text-sm text-gray-500 mb-4">Gestión completa de ventas mayoristas, precios y clientes</p>
 
@@ -2144,6 +2150,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                   setOrderItems([])
                   setSelectedClient("")
                   setOrderNotes("")
+                  setOrderDate(new Date().toISOString().split("T")[0])
                 }
               }}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -2177,6 +2184,15 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                             <Plus className="w-4 h-4" />
                           </Button>
                         </div>
+                      </div>
+
+                      <div>
+                        <Label>Fecha del Pedido</Label>
+                        <Input
+                          type="date"
+                          value={orderDate}
+                          onChange={(e) => setOrderDate(e.target.value)}
+                        />
                       </div>
 
                       <div className="border p-4 rounded-md bg-gray-50">
@@ -2970,6 +2986,6 @@ Este reporte contiene información confidencial y está destinado únicamente pa
           </Dialog>
         )}
       </div>
-    </div>
+    </div >
   )
 }

@@ -215,9 +215,9 @@ export function AppSidebar({
                   onClick={() => handleNavigation("wholesale-bullpadel")}
                   isActive={activeTab === "wholesale-bullpadel"}
                   tooltip="Mayoristas Bullpadel"
-                  className="group/btn hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 ease-in-out data-[active=true]:bg-purple-100 data-[active=true]:text-purple-800"
+                  className="group/btn hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 ease-in-out data-[active=true]:bg-blue-100 data-[active=true]:text-blue-800"
                 >
-                  <ShoppingCart className="group-hover/btn:scale-110 transition-transform text-purple-500/80 group-hover/btn:text-purple-600 group-data-[active=true]:text-purple-700" />
+                  <ShoppingCart className="group-hover/btn:scale-110 transition-transform text-blue-500/80 group-hover/btn:text-blue-600 group-data-[active=true]:text-blue-700" />
                   <span className="font-medium">Mayoristas Bullpadel</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
