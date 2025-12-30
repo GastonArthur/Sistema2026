@@ -60,10 +60,10 @@ export function AppSidebar({
   const handleNavigation = (tab: string) => {
     setActiveTab(tab)
   }
-  const [gestionOpen, setGestionOpen] = useState(true)
-  const [ventasOpen, setVentasOpen] = useState(true)
-  const [finanzasOpen, setFinanzasOpen] = useState(true)
-  const [catalogosOpen, setCatalogosOpen] = useState(true)
+  const [gestionOpen, setGestionOpen] = useState(false)
+  const [ventasOpen, setVentasOpen] = useState(false)
+  const [finanzasOpen, setFinanzasOpen] = useState(false)
+  const [catalogosOpen, setCatalogosOpen] = useState(false)
 
   return (
     <Sidebar collapsible="icon">
@@ -96,9 +96,8 @@ export function AppSidebar({
           </div>
         </div>
       </SidebarHeader>
-      <SidebarContent className="px-2">
+      <SidebarContent className="px-3">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-blue-600 font-bold uppercase tracking-wider text-[10px] mb-1">Principal</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -128,12 +127,11 @@ export function AppSidebar({
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-indigo-600 font-bold uppercase tracking-wider text-[10px] mb-1">Catálogos</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <button
-                  className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                  className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                   onClick={() => setCatalogosOpen((v) => !v)}
                 >
                   {catalogosOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
@@ -171,12 +169,11 @@ export function AppSidebar({
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-violet-600 font-bold uppercase tracking-wider text-[10px] mb-1">Gestión</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <button
-                  className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                  className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                   onClick={() => setGestionOpen((v) => !v)}
                 >
                   {gestionOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
@@ -225,12 +222,11 @@ export function AppSidebar({
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-emerald-600 font-bold uppercase tracking-wider text-[10px] mb-1">Ventas y Gastos</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <button
-                  className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                  className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                   onClick={() => setVentasOpen((v) => !v)}
                 >
                   {ventasOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
@@ -277,7 +273,7 @@ export function AppSidebar({
 
               <SidebarMenuItem>
                 <button
-                  className="w-full flex items-center gap-2 p-2 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                  className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                   onClick={() => setFinanzasOpen((v) => !v)}
                 >
                   {finanzasOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}

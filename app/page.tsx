@@ -2604,7 +2604,7 @@ ${csvRows
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="flex min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 overflow-x-hidden">
         <AppSidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
@@ -2613,7 +2613,7 @@ ${csvRows
           isOnline={isOnline}
           lastSync={lastSync}
         />
-        <div className="relative flex min-h-svh flex-1 flex-col bg-background peer-data-[variant=inset]:min-h-[calc(100svh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow">
+        <div className="relative flex min-h-svh flex-1 flex-col bg-background overflow-x-hidden peer-data-[variant=inset]:min-h-[calc(100svh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow">
           {/* Mobile Header */}
           <div className="md:hidden flex items-center gap-2 p-4 border-b bg-white shadow-sm">
             <SidebarTrigger className="h-8 w-8" />
