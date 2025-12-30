@@ -66,7 +66,7 @@ export function AppSidebar({
   const [catalogosOpen, setCatalogosOpen] = useState(false)
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="offcanvas">
       <SidebarHeader className="border-b border-sidebar-border/50 pb-4 mb-2">
         <div className="flex flex-col px-4 py-2 gap-1 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0">
           <div className="flex items-center justify-between w-full group-data-[collapsible=icon]:justify-center">
@@ -346,6 +346,7 @@ export function AppSidebar({
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   )
 }
