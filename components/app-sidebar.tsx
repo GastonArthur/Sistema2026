@@ -59,6 +59,10 @@ export function AppSidebar({
 
   const handleNavigation = (tab: string) => {
     setActiveTab(tab)
+    setCatalogosOpen(false)
+    setGestionOpen(false)
+    setVentasOpen(false)
+    setFinanzasOpen(false)
   }
   const [gestionOpen, setGestionOpen] = useState(false)
   const [ventasOpen, setVentasOpen] = useState(false)
@@ -96,7 +100,7 @@ export function AppSidebar({
           </div>
         </div>
       </SidebarHeader>
-      <SidebarContent className="px-3">
+      <SidebarContent className="px-2">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -105,7 +109,7 @@ export function AppSidebar({
                   isActive={activeTab === "inventory"}
                   onClick={() => handleNavigation("inventory")}
                   tooltip="Inventario"
-                  className="group/btn hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 ease-in-out data-[active=true]:bg-blue-100 data-[active=true]:text-blue-800"
+                  className="group/btn hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 ease-in-out data-[active=true]:bg-blue-100 data-[active=true]:text-blue-800 rounded-md"
                 >
                   <LayoutDashboard className="group-hover/btn:scale-110 transition-transform text-blue-500/80 group-hover/btn:text-blue-600 group-data-[active=true]:text-blue-700" />
                   <span className="font-medium">Inventario</span>
@@ -116,7 +120,7 @@ export function AppSidebar({
                   isActive={activeTab === "import"}
                   onClick={() => handleNavigation("import")}
                   tooltip="Importar"
-                  className="group/btn hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 ease-in-out data-[active=true]:bg-blue-100 data-[active=true]:text-blue-800"
+                  className="group/btn hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 ease-in-out data-[active=true]:bg-blue-100 data-[active=true]:text-blue-800 rounded-md"
                 >
                   <FileSpreadsheet className="group-hover/btn:scale-110 transition-transform text-blue-500/80 group-hover/btn:text-blue-600 group-data-[active=true]:text-blue-700" />
                   <span className="font-medium">Importar</span>
@@ -131,11 +135,11 @@ export function AppSidebar({
             <SidebarMenu>
               <SidebarMenuItem>
                 <button
-                  className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                  className="w-full flex items-center gap-2 p-2 rounded-md bg-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors border border-sidebar-border"
                   onClick={() => setCatalogosOpen((v) => !v)}
                 >
                   {catalogosOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-                  <span className="font-medium">Sección Catálogos</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sección Catálogos</span>
                 </button>
               </SidebarMenuItem>
               {catalogosOpen && (
@@ -145,7 +149,7 @@ export function AppSidebar({
                       onClick={() => handleNavigation("precios")}
                       isActive={activeTab === "precios"}
                       tooltip="Precios a Publicar"
-                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary group-data-[collapsible=icon]:hover:bg-transparent group-data-[collapsible=icon]:hover:text-sidebar-foreground group-data-[collapsible=icon]:border-l-0 group-data-[collapsible=icon]:data-[active=true]:border-l-0"
+                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary rounded-sm"
                     >
                       <DollarSign className="opacity-70" />
                       <span>Precios a Publicar</span>
@@ -156,7 +160,7 @@ export function AppSidebar({
                       onClick={() => handleNavigation("zentor")}
                       isActive={activeTab === "zentor"}
                       tooltip="Lista ZENTOR"
-                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary group-data-[collapsible=icon]:hover:bg-transparent group-data-[collapsible=icon]:hover:text-sidebar-foreground group-data-[collapsible=icon]:border-l-0 group-data-[collapsible=icon]:data-[active=true]:border-l-0"
+                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary rounded-sm"
                     >
                       <Package className="opacity-70" />
                       <span>Lista ZENTOR</span>
@@ -173,11 +177,11 @@ export function AppSidebar({
             <SidebarMenu>
               <SidebarMenuItem>
                 <button
-                  className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                  className="w-full flex items-center gap-2 p-2 rounded-md bg-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors border border-sidebar-border"
                   onClick={() => setGestionOpen((v) => !v)}
                 >
                   {gestionOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-                  <span className="font-medium">Sección Gestión</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sección Gestión</span>
                 </button>
               </SidebarMenuItem>
               {gestionOpen && (
@@ -187,7 +191,7 @@ export function AppSidebar({
                       onClick={() => handleNavigation("clients")}
                       isActive={activeTab === "clients"}
                       tooltip="Clientes"
-                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary group-data-[collapsible=icon]:hover:bg-transparent group-data-[collapsible=icon]:hover:text-sidebar-foreground group-data-[collapsible=icon]:border-l-0 group-data-[collapsible=icon]:data-[active=true]:border-l-0"
+                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary rounded-sm"
                     >
                       <Users className="opacity-70" />
                       <span>Clientes</span>
@@ -198,7 +202,7 @@ export function AppSidebar({
                       onClick={() => handleNavigation("brands")}
                       isActive={activeTab === "brands"}
                       tooltip="Marcas"
-                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary group-data-[collapsible=icon]:hover:bg-transparent group-data-[collapsible=icon]:hover:text-sidebar-foreground group-data-[collapsible=icon]:border-l-0 group-data-[collapsible=icon]:data-[active=true]:border-l-0"
+                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary rounded-sm"
                     >
                       <Tag className="opacity-70" />
                       <span>Marcas</span>
@@ -209,7 +213,7 @@ export function AppSidebar({
                       onClick={() => handleNavigation("suppliers")}
                       isActive={activeTab === "suppliers"}
                       tooltip="Proveedores"
-                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary group-data-[collapsible=icon]:hover:bg-transparent group-data-[collapsible=icon]:hover:text-sidebar-foreground group-data-[collapsible=icon]:border-l-0 group-data-[collapsible=icon]:data-[active=true]:border-l-0"
+                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary rounded-sm"
                     >
                       <Users className="opacity-70" />
                       <span>Proveedores</span>
@@ -226,11 +230,11 @@ export function AppSidebar({
             <SidebarMenu>
               <SidebarMenuItem>
                 <button
-                  className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                  className="w-full flex items-center gap-2 p-2 rounded-md bg-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors border border-sidebar-border"
                   onClick={() => setVentasOpen((v) => !v)}
                 >
                   {ventasOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-                  <span className="font-medium">Sección Ventas</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sección Ventas</span>
                 </button>
               </SidebarMenuItem>
               {ventasOpen && (
@@ -240,7 +244,7 @@ export function AppSidebar({
                       onClick={() => handleNavigation("wholesale")}
                       isActive={activeTab === "wholesale"}
                       tooltip="Mayoristas"
-                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary group-data-[collapsible=icon]:hover:bg-transparent group-data-[collapsible=icon]:hover:text-sidebar-foreground group-data-[collapsible=icon]:border-l-0 group-data-[collapsible=icon]:data-[active=true]:border-l-0"
+                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary rounded-sm"
                     >
                       <ShoppingCart className="opacity-70" />
                       <span>Mayoristas</span>
@@ -251,7 +255,7 @@ export function AppSidebar({
                       onClick={() => handleNavigation("wholesale-bullpadel")}
                       isActive={activeTab === "wholesale-bullpadel"}
                       tooltip="Mayoristas Bullpadel"
-                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary"
+                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary rounded-sm"
                     >
                       <ShoppingCart className="opacity-70" />
                       <span>Mayoristas Bullpadel</span>
@@ -262,7 +266,7 @@ export function AppSidebar({
                       onClick={() => handleNavigation("retail")}
                       isActive={activeTab === "retail"}
                       tooltip="Minoristas"
-                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary"
+                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary rounded-sm"
                     >
                       <ShoppingBag className="opacity-70" />
                       <span>Minoristas</span>
@@ -273,11 +277,11 @@ export function AppSidebar({
 
               <SidebarMenuItem>
                 <button
-                  className="w-full flex items-center gap-3 p-3 rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                  className="w-full flex items-center gap-2 p-2 rounded-md bg-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors border border-sidebar-border"
                   onClick={() => setFinanzasOpen((v) => !v)}
                 >
                   {finanzasOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-                  <span className="font-medium">Sección Finanzas</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sección Finanzas</span>
                 </button>
               </SidebarMenuItem>
               {finanzasOpen && (
@@ -287,7 +291,7 @@ export function AppSidebar({
                       asChild
                       isActive={activeTab === "rentabilidad"}
                       tooltip="Rentabilidad Real"
-                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary"
+                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary rounded-sm"
                     >
                       <a href="/dashboard/rentabilidad">
                         <TrendingUp className="opacity-70" />
@@ -300,7 +304,7 @@ export function AppSidebar({
                       onClick={() => handleNavigation("gastos")}
                       isActive={activeTab === "gastos"}
                       tooltip="Gastos"
-                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary"
+                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary rounded-sm"
                     >
                       <Receipt className="opacity-70" />
                       <span>Gastos</span>
@@ -311,11 +315,10 @@ export function AppSidebar({
                       onClick={() => handleNavigation("notas-credito")}
                       isActive={activeTab === "notas-credito"}
                       tooltip="Notas de Crédito"
-                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary relative group-data-[collapsible=icon]:hover:bg-transparent group-data-[collapsible=icon]:hover:text-sidebar-foreground group-data-[collapsible=icon]:border-l-0 group-data-[collapsible=icon]:data-[active=true]:border-l-0"
+                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary relative rounded-sm"
                     >
                       <FileText className="opacity-70" />
                       <span>Notas de Crédito</span>
-                      <SidebarMenuBadge className="bg-emerald-100 text-emerald-600">NEW</SidebarMenuBadge>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </>
