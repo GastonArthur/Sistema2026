@@ -62,6 +62,7 @@ import {
   Tag,
   Settings,
   FileSpreadsheet,
+  FileText,
   Building2,
   TrendingUp,
   TrendingDown,
