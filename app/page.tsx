@@ -72,6 +72,7 @@ import {
   Trash2,
   Receipt,
   ShoppingCart,
+  ShoppingBag,
   Search,
   Check,
   ChevronLeft,
