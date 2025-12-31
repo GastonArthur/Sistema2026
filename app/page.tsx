@@ -63,6 +63,7 @@ import {
   Settings,
   FileSpreadsheet,
   FileText,
+  UserCircle,
   Building2,
   TrendingUp,
   TrendingDown,
