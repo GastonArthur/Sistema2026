@@ -100,8 +100,8 @@ export function AppSidebar({
           </div>
         </div>
       </SidebarHeader>
-      <SidebarContent className="px-2">
-        <SidebarGroup>
+      <SidebarContent className="px-2 gap-1">
+        <SidebarGroup className="p-1">
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -130,7 +130,7 @@ export function AppSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
+        <SidebarGroup className="p-1">
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -172,7 +172,7 @@ export function AppSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
+        <SidebarGroup className="p-1">
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
@@ -225,7 +225,7 @@ export function AppSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
+        <SidebarGroup className="p-1">
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
