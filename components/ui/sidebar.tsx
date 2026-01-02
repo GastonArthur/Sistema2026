@@ -302,20 +302,19 @@ const SidebarRail = React.forwardRef<
       onClick={toggleSidebar}
       title="Toggle Sidebar"
       className={cn(
-        "absolute z-20 flex items-center justify-center rounded-full border border-sidebar-border shadow transition-colors",
+        "absolute z-20 flex items-center justify-center rounded-full border border-sidebar-border shadow transition-colors bg-zinc-900 text-white hover:bg-zinc-800",
         isCollapsed
-          ? "size-10 bg-primary text-primary-foreground ring-2 ring-primary/30 hover:brightness-110"
-          : "size-8 bg-sidebar-accent text-sidebar-foreground hover:bg-sidebar-muted hover:text-sidebar-accent-foreground",
-        // Position for left-side sidebar
-        "[[data-side=left]_&]:top-1/2 [[data-side=left]_&]:-translate-y-1/2 [[data-side=left]_&]:-right-3",
-        // Position for right-side sidebar
-        "[[data-side=right]_&]:top-1/2 [[data-side=right]_&]:-translate-y-1/2 [[data-side=right]_&]:-left-3",
+          ? "size-9"
+          : "size-9",
+        // Position única centrada en el borde
+        "[[data-side=left]_&]:top-1/2 [[data-side=left]_&]:-translate-y-1/2 [[data-side=left]_&]:-right-4",
+        "[[data-side=right]_&]:top-1/2 [[data-side=right]_&]:-translate-y-1/2 [[data-side=right]_&]:-left-4",
         className
       )}
       {...props}
     >
       {isCollapsed ? (
-        <ChevronRight className="size-6" />
+        <ChevronRight className="size-5" />
       ) : (
         <ChevronLeft className="size-5" />
       )}

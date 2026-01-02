@@ -20,6 +20,7 @@ import {
   ChevronRight,
   ChevronLeft
 } from "lucide-react"
+import Link from "next/link"
 import { useState } from "react"
 
 import {
@@ -35,7 +36,6 @@ import {
   SidebarMenuBadge,
   SidebarMenuItem,
   SidebarSeparator,
-  SidebarRail,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar"
@@ -105,22 +105,22 @@ export function AppSidebar({
                 <SidebarMenuButton
                   isActive={activeTab === "inventory"}
                   onClick={() => handleNavigation("inventory")}
-                  tooltip="Inventario"
+                  tooltip="Dashboard"
                   className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
                 >
-                  <LayoutDashboard className="size-5" strokeWidth={2} />
-                  <span className="text-sm font-medium">Inventario</span>
+                  <BarChart3 className="size-5" strokeWidth={2} />
+                  <span className="text-sm font-medium">Dashboard</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
                   isActive={activeTab === "import"}
                   onClick={() => handleNavigation("import")}
-                  tooltip="Importar"
+                  tooltip="Productos"
                   className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
                 >
-                  <FileSpreadsheet className="size-5" strokeWidth={2} />
-                  <span className="text-sm font-medium">Importar</span>
+                  <Package className="size-5" strokeWidth={2} />
+                  <span className="text-sm font-medium">Productos</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -136,7 +136,7 @@ export function AppSidebar({
                   onClick={() => setCatalogosOpen((v) => !v)}
                 >
                   {catalogosOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-                  <span className="text-xs font-semibold uppercase tracking-wide">Sección Catálogos</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide">Monitoreo de precios</span>
                 </button>
               </SidebarMenuItem>
               {catalogosOpen && (
@@ -178,7 +178,7 @@ export function AppSidebar({
                   onClick={() => setGestionOpen((v) => !v)}
                 >
                   {gestionOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-                  <span className="text-xs font-semibold uppercase tracking-wide">Sección Gestión</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide">Configuración</span>
                 </button>
               </SidebarMenuItem>
               {gestionOpen && (
@@ -231,7 +231,7 @@ export function AppSidebar({
                   onClick={() => setVentasOpen((v) => !v)}
                 >
                   {ventasOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-                  <span className="text-xs font-semibold uppercase tracking-wide">Sección Ventas</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide">Ventas</span>
                 </button>
               </SidebarMenuItem>
               {ventasOpen && (
@@ -278,22 +278,21 @@ export function AppSidebar({
                   onClick={() => setFinanzasOpen((v) => !v)}
                 >
                   {finanzasOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-                  <span className="text-xs font-semibold uppercase tracking-wide">Sección Finanzas</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide">Finanzas</span>
                 </button>
               </SidebarMenuItem>
               {finanzasOpen && (
                 <>
                   <SidebarMenuItem>
                     <SidebarMenuButton
-                      asChild
                       isActive={activeTab === "rentabilidad"}
                       tooltip="Rentabilidad Real"
                       className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
                     >
-                      <a href="/dashboard/rentabilidad">
+                      <Link href="/dashboard/rentabilidad">
                         <TrendingUp className="size-5" strokeWidth={2} />
                         <span>Rentabilidad Real</span>
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -346,7 +345,6 @@ export function AppSidebar({
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
-      <SidebarRail />
     </Sidebar>
   )
 }

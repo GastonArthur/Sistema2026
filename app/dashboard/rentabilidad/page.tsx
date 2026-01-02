@@ -35,6 +35,7 @@ import {
 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
 // Initialize Supabase Client (Client Side)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -94,25 +95,26 @@ export default function RentabilidadPage() {
     }
     initSession()
   }, [])
-  // Redirect to main app for other tabs
+  // Redirect to main app for other tabs (client-side, sin recarga completa)
+  const router = useRouter()
   const handleSidebarNavigation = (tab: string) => {
-    window.location.href = `/?tab=${tab}`
+    router.push(`/?tab=${tab}`)
   }
   
   const handleShowWholesale = (val: boolean) => {
-    if(val) window.location.href = "/?section=wholesale"
+    if (val) router.push("/?section=wholesale")
   }
 
   const handleShowRetail = (val: boolean) => {
-    if(val) window.location.href = "/?section=retail"
+    if (val) router.push("/?section=retail")
   }
 
   const handleShowGastos = (val: boolean) => {
-    if(val) window.location.href = "/?section=gastos"
+    if (val) router.push("/?section=gastos")
   }
 
   const handleShowClients = (val: boolean) => {
-    if(val) window.location.href = "/?section=clients"
+    if (val) router.push("/?section=clients")
   }
 
   useEffect(() => {

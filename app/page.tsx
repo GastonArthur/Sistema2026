@@ -32,6 +32,14 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu"
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -195,6 +203,26 @@ function InventoryManagementContent() {
 
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(50)
+  const [visibleColumns, setVisibleColumns] = useState({
+    fecha: true,
+    sku: true,
+    ean: true,
+    nombre: true,
+    cantidad: true,
+    costo_sin_iva: true,
+    costo_con_iva: true,
+    pvp_sin_iva: true,
+    pvp_con_iva: true,
+    variacion_precio: true,
+    empresa: true,
+    canal: true,
+    marca: true,
+    estado: true,
+    factura: true,
+    observaciones: true,
+    repeticiones: true,
+    acciones: true,
+  })
 
   useEffect(() => {
     setCurrentPage(1)
@@ -3120,6 +3148,131 @@ ${csvRows
                   <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
                     <Filter className="w-3.5 h-3.5 text-slate-500" />
                     <h3 className="text-sm font-semibold text-slate-700">Filtros de Búsqueda</h3>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-6 text-xs px-2">
+                          Columnas
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-56">
+                        <DropdownMenuLabel>Mostrar columnas</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuCheckboxItem
+                          checked={visibleColumns.fecha}
+                          onCheckedChange={(c) => setVisibleColumns((prev) => ({ ...prev, fecha: !!c }))}
+                        >
+                          Fecha
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={visibleColumns.sku}
+                          onCheckedChange={(c) => setVisibleColumns((prev) => ({ ...prev, sku: !!c }))}
+                        >
+                          SKU
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={visibleColumns.ean}
+                          onCheckedChange={(c) => setVisibleColumns((prev) => ({ ...prev, ean: !!c }))}
+                        >
+                          EAN
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={visibleColumns.nombre}
+                          onCheckedChange={(c) => setVisibleColumns((prev) => ({ ...prev, nombre: !!c }))}
+                        >
+                          Nombre
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={visibleColumns.cantidad}
+                          onCheckedChange={(c) => setVisibleColumns((prev) => ({ ...prev, cantidad: !!c }))}
+                        >
+                          Cantidad
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={visibleColumns.costo_sin_iva}
+                          onCheckedChange={(c) => setVisibleColumns((prev) => ({ ...prev, costo_sin_iva: !!c }))}
+                        >
+                          Costo s/IVA
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={visibleColumns.costo_con_iva}
+                          onCheckedChange={(c) => setVisibleColumns((prev) => ({ ...prev, costo_con_iva: !!c }))}
+                        >
+                          Costo c/IVA
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={visibleColumns.pvp_sin_iva}
+                          onCheckedChange={(c) => setVisibleColumns((prev) => ({ ...prev, pvp_sin_iva: !!c }))}
+                        >
+                          PVP s/IVA
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={visibleColumns.pvp_con_iva}
+                          onCheckedChange={(c) => setVisibleColumns((prev) => ({ ...prev, pvp_con_iva: !!c }))}
+                        >
+                          PVP c/IVA
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={visibleColumns.variacion_precio}
+                          onCheckedChange={(c) =>
+                            setVisibleColumns((prev) => ({ ...prev, variacion_precio: !!c }))
+                          }
+                        >
+                          Var. Precio
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={visibleColumns.empresa}
+                          onCheckedChange={(c) => setVisibleColumns((prev) => ({ ...prev, empresa: !!c }))}
+                        >
+                          Empresa
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={visibleColumns.canal}
+                          onCheckedChange={(c) => setVisibleColumns((prev) => ({ ...prev, canal: !!c }))}
+                        >
+                          Canal
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={visibleColumns.marca}
+                          onCheckedChange={(c) => setVisibleColumns((prev) => ({ ...prev, marca: !!c }))}
+                        >
+                          Marca
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={visibleColumns.estado}
+                          onCheckedChange={(c) => setVisibleColumns((prev) => ({ ...prev, estado: !!c }))}
+                        >
+                          Estado
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={visibleColumns.factura}
+                          onCheckedChange={(c) => setVisibleColumns((prev) => ({ ...prev, factura: !!c }))}
+                        >
+                          Factura
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={visibleColumns.observaciones}
+                          onCheckedChange={(c) =>
+                            setVisibleColumns((prev) => ({ ...prev, observaciones: !!c }))
+                          }
+                        >
+                          Observaciones
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={visibleColumns.repeticiones}
+                          onCheckedChange={(c) =>
+                            setVisibleColumns((prev) => ({ ...prev, repeticiones: !!c }))
+                          }
+                        >
+                          Rep.
+                        </DropdownMenuCheckboxItem>
+                        <DropdownMenuCheckboxItem
+                          checked={visibleColumns.acciones}
+                          onCheckedChange={(c) => setVisibleColumns((prev) => ({ ...prev, acciones: !!c }))}
+                        >
+                          Acciones
+                        </DropdownMenuCheckboxItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -3174,6 +3327,9 @@ ${csvRows
                             <SelectItem value="200">200</SelectItem>
                           </SelectContent>
                         </Select>
+                        <p className="text-[10px] text-slate-400 mt-1">
+                          Visualiza {itemsPerPage} artículos por página
+                        </p>
                         <Select
                           value={filters.period}
                           onValueChange={(value) => setFilters((prev) => ({ ...prev, period: value }))}
@@ -3388,56 +3544,92 @@ ${csvRows
                                 className="border-white data-[state=checked]:bg-white data-[state=checked]:text-blue-600 translate-y-[2px]"
                               />
                             </TableHead>
-                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
-                              Fecha
-                            </TableHead>
-                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">SKU</TableHead>
-                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">EAN</TableHead>
-                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
-                              Nombre
-                            </TableHead>
-                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
-                              Cant.
-                            </TableHead>
-                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
-                              Costo s/IVA
-                            </TableHead>
-                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
-                              Costo c/IVA
-                            </TableHead>
-                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
-                              PVP s/IVA
-                            </TableHead>
-                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
-                              PVP c/IVA
-                            </TableHead>
-                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
-                              Var. Precio
-                            </TableHead>
-                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
-                              Empresa
-                            </TableHead>
-                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
-                              Canal
-                            </TableHead>
-                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
-                              Marca
-                            </TableHead>
-                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
-                              Estado
-                            </TableHead>
-                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
-                              Factura
-                            </TableHead>
-                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
-                              Observaciones
-                            </TableHead>
-                            <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
-                              Rep.
-                            </TableHead>
-                            <TableHead className="font-bold text-white text-center text-xs px-2 h-8">
-                              Acciones
-                            </TableHead>
+                            {visibleColumns.fecha && (
+                              <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
+                                Fecha
+                              </TableHead>
+                            )}
+                            {visibleColumns.sku && (
+                              <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">SKU</TableHead>
+                            )}
+                            {visibleColumns.ean && (
+                              <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">EAN</TableHead>
+                            )}
+                            {visibleColumns.nombre && (
+                              <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                                Nombre
+                              </TableHead>
+                            )}
+                            {visibleColumns.cantidad && (
+                              <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                                Cant.
+                              </TableHead>
+                            )}
+                            {visibleColumns.costo_sin_iva && (
+                              <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
+                                Costo s/IVA
+                              </TableHead>
+                            )}
+                            {visibleColumns.costo_con_iva && (
+                              <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
+                                Costo c/IVA
+                              </TableHead>
+                            )}
+                            {visibleColumns.pvp_sin_iva && (
+                              <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
+                                PVP s/IVA
+                              </TableHead>
+                            )}
+                            {visibleColumns.pvp_con_iva && (
+                              <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                                PVP c/IVA
+                              </TableHead>
+                            )}
+                            {visibleColumns.variacion_precio && (
+                              <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
+                                Var. Precio
+                              </TableHead>
+                            )}
+                            {visibleColumns.empresa && (
+                              <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
+                                Empresa
+                              </TableHead>
+                            )}
+                            {visibleColumns.canal && (
+                              <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
+                                Canal
+                              </TableHead>
+                            )}
+                            {visibleColumns.marca && (
+                              <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
+                                Marca
+                              </TableHead>
+                            )}
+                            {visibleColumns.estado && (
+                              <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8">
+                                Estado
+                              </TableHead>
+                            )}
+                            {visibleColumns.factura && (
+                              <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
+                                Factura
+                              </TableHead>
+                            )}
+                            {visibleColumns.observaciones && (
+                              <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
+                                Observaciones
+                              </TableHead>
+                            )}
+                            {visibleColumns.repeticiones && (
+                              <TableHead className="font-bold text-white text-center border-r border-blue-400/30 text-xs px-2 h-8 hidden md:table-cell">
+                                Rep.
+                              </TableHead>
+                            )}
+                            {visibleColumns.acciones && (
+                              <TableHead className="font-bold text-white text-center text-xs px-2 h-8">
+                                Acciones
+                              </TableHead>
+                            )}
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -3450,130 +3642,196 @@ ${csvRows
                                     onCheckedChange={(checked) => toggleSelectItem(item.id, !!checked)}
                                   />
                                 </TableCell>
-                                <TableCell className="border-r border-slate-100 text-center text-slate-500 py-1 px-2 text-[10px] whitespace-nowrap hidden md:table-cell">{item.date_entered}</TableCell>
-                                <TableCell className="font-medium min-w-[100px] max-w-[150px] border-r border-slate-100 py-1 px-2 text-xs">
-                                  <div
-                                    className="font-mono whitespace-nowrap overflow-hidden text-ellipsis text-blue-600 font-semibold"
-                                    style={{
-                                      fontVariantNumeric: "tabular-nums",
-                                      wordBreak: "keep-all",
-                                    }}
-                                    title={String(item.sku)}
-                                  >
-                                    {String(item.sku)}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="border-r border-slate-100 py-1 px-2 text-xs max-w-[100px] truncate hidden md:table-cell" title={item.ean || ""}>{item.ean || "-"}</TableCell>
-                                <TableCell className="border-r border-slate-100 py-1 px-2 text-xs max-w-[150px] truncate" title={item.description}>{item.description}</TableCell>
-                                <TableCell className="border-r border-slate-100 text-center font-medium py-1 px-2 text-xs">{item.quantity}</TableCell>
-                                <TableCell className="border-r border-slate-100 text-right font-mono text-slate-600 py-1 px-2 text-xs">${item.cost_without_tax.toFixed(2)}</TableCell>
-                                <TableCell className="border-r border-slate-100 text-right font-mono text-slate-600 py-1 px-2 text-xs">${item.cost_with_tax.toFixed(2)}</TableCell>
-                                <TableCell className="border-r border-slate-100 text-right font-mono font-medium text-slate-800 py-1 px-2 text-xs hidden md:table-cell">${item.pvp_without_tax.toFixed(2)}</TableCell>
-                                <TableCell className="border-r border-slate-100 text-right font-mono font-bold text-slate-900 py-1 px-2 text-xs">${item.pvp_with_tax.toFixed(2)}</TableCell>
-                                <TableCell className="border-r border-slate-100 py-1 px-2 text-xs hidden md:table-cell">
-                                  {priceVariations[item.id]?.hasVariation ? (
-                                    <div className="flex items-center justify-center gap-1">
-                                      {priceVariations[item.id].isIncrease ? (
-                                        <TrendingUp className="w-3 h-3 text-red-500" />
-                                      ) : (
-                                        <TrendingDown className="w-3 h-3 text-green-500" />
-                                      )}
-                                      <span
-                                        className={`text-[10px] font-medium ${priceVariations[item.id].isIncrease ? "text-red-600" : "text-green-600"
+                                {visibleColumns.fecha && (
+                                  <TableCell className="border-r border-slate-100 text-center text-slate-500 py-1 px-2 text-[10px] whitespace-nowrap hidden md:table-cell">
+                                    {item.date_entered}
+                                  </TableCell>
+                                )}
+                                {visibleColumns.sku && (
+                                  <TableCell className="font-medium min-w-[100px] max-w-[150px] border-r border-slate-100 py-1 px-2 text-xs">
+                                    <div
+                                      className="font-mono whitespace-nowrap overflow-hidden text-ellipsis text-blue-600 font-semibold"
+                                      style={{
+                                        fontVariantNumeric: "tabular-nums",
+                                        wordBreak: "keep-all",
+                                      }}
+                                      title={String(item.sku)}
+                                    >
+                                      {String(item.sku)}
+                                    </div>
+                                  </TableCell>
+                                )}
+                                {visibleColumns.ean && (
+                                  <TableCell className="border-r border-slate-100 py-1 px-2 text-xs max-w-[100px] truncate hidden md:table-cell" title={item.ean || ""}>
+                                    {item.ean || "-"}
+                                  </TableCell>
+                                )}
+                                {visibleColumns.nombre && (
+                                  <TableCell className="border-r border-slate-100 py-1 px-2 text-xs max-w-[150px] truncate" title={item.description}>
+                                    {item.description}
+                                  </TableCell>
+                                )}
+                                {visibleColumns.cantidad && (
+                                  <TableCell className="border-r border-slate-100 text-center font-medium py-1 px-2 text-xs">
+                                    {item.quantity}
+                                  </TableCell>
+                                )}
+                                {visibleColumns.costo_sin_iva && (
+                                  <TableCell className="border-r border-slate-100 text-right font-mono text-slate-600 py-1 px-2 text-xs">
+                                    ${item.cost_without_tax.toFixed(2)}
+                                  </TableCell>
+                                )}
+                                {visibleColumns.costo_con_iva && (
+                                  <TableCell className="border-r border-slate-100 text-right font-mono text-slate-600 py-1 px-2 text-xs">
+                                    ${item.cost_with_tax.toFixed(2)}
+                                  </TableCell>
+                                )}
+                                {visibleColumns.pvp_sin_iva && (
+                                  <TableCell className="border-r border-slate-100 text-right font-mono font-medium text-slate-800 py-1 px-2 text-xs hidden md:table-cell">
+                                    ${item.pvp_without_tax.toFixed(2)}
+                                  </TableCell>
+                                )}
+                                {visibleColumns.pvp_con_iva && (
+                                  <TableCell className="border-r border-slate-100 text-right font-mono font-bold text-slate-900 py-1 px-2 text-xs">
+                                    ${item.pvp_with_tax.toFixed(2)}
+                                  </TableCell>
+                                )}
+                                {visibleColumns.variacion_precio && (
+                                  <TableCell className="border-r border-slate-100 py-1 px-2 text-xs hidden md:table-cell">
+                                    {priceVariations[item.id]?.hasVariation ? (
+                                      <div className="flex items-center justify-center gap-1">
+                                        {priceVariations[item.id].isIncrease ? (
+                                          <TrendingUp className="w-3 h-3 text-red-500" />
+                                        ) : (
+                                          <TrendingDown className="w-3 h-3 text-green-500" />
+                                        )}
+                                        <span
+                                          className={`text-[10px] font-medium ${
+                                            priceVariations[item.id].isIncrease ? "text-red-600" : "text-green-600"
                                           }`}
-                                      >
-                                        {priceVariations[item.id].percentage.toFixed(1)}%
-                                      </span>
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center justify-center">
-                                      <Minus className="w-3 h-3 text-slate-300" />
-                                    </div>
-                                  )}
-                                </TableCell>
-                                <TableCell className="border-r border-slate-100 text-center py-1 px-2 text-xs hidden md:table-cell">
-                                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 h-5 px-1 text-[10px]">
-                                    {item.company.substring(0, 3)}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="border-r border-slate-100 text-center py-1 px-2 text-xs hidden md:table-cell">{item.channel}</TableCell>
-                                <TableCell className="border-r border-slate-100 py-1 px-2 text-xs truncate max-w-[80px] hidden md:table-cell" title={item.brands?.name}>{item.brands?.name}</TableCell>
-                                <TableCell className="border-r border-slate-100 text-center py-1 px-2">
-                                  <Badge
-                                    variant={
-                                      item.stock_status === "normal"
-                                        ? "default"
-                                        : item.stock_status === "missing"
+                                        >
+                                          {priceVariations[item.id].percentage.toFixed(1)}%
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center justify-center">
+                                        <Minus className="w-3 h-3 text-slate-300" />
+                                      </div>
+                                    )}
+                                  </TableCell>
+                                )}
+                                {visibleColumns.empresa && (
+                                  <TableCell className="border-r border-slate-100 text-center py-1 px-2 text-xs hidden md:table-cell">
+                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 h-5 px-1 text-[10px]">
+                                      {item.company.substring(0, 3)}
+                                    </Badge>
+                                  </TableCell>
+                                )}
+                                {visibleColumns.canal && (
+                                  <TableCell className="border-r border-slate-100 text-center py-1 px-2 text-xs hidden md:table-cell">
+                                    {item.channel}
+                                  </TableCell>
+                                )}
+                                {visibleColumns.marca && (
+                                  <TableCell className="border-r border-slate-100 py-1 px-2 text-xs truncate max-w-[80px] hidden md:table-cell" title={item.brands?.name}>
+                                    {item.brands?.name}
+                                  </TableCell>
+                                )}
+                                {visibleColumns.estado && (
+                                  <TableCell className="border-r border-slate-100 text-center py-1 px-2">
+                                    <Badge
+                                      variant={
+                                        item.stock_status === "normal"
+                                          ? "default"
+                                          : item.stock_status === "missing"
                                           ? "destructive"
                                           : "secondary"
-                                    }
-                                    className={`h-5 px-1 text-[10px] ${item.stock_status === "normal"
-                                        ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-200"
-                                        : ""
+                                      }
+                                      className={`h-5 px-1 text-[10px] ${
+                                        item.stock_status === "normal"
+                                          ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-200"
+                                          : ""
                                       }`}
-                                  >
-                                    {item.stock_status === "normal"
-                                      ? "Ok"
-                                      : item.stock_status === "missing"
+                                    >
+                                      {item.stock_status === "normal"
+                                        ? "Ok"
+                                        : item.stock_status === "missing"
                                         ? "Faltó"
                                         : "Sobró"}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="border-r border-slate-100 font-mono text-[10px] py-1 px-2 truncate max-w-[80px] hidden md:table-cell" title={item.invoice_number || undefined}>{item.invoice_number}</TableCell>
-                                <TableCell className="max-w-[100px] truncate border-r border-slate-100 text-slate-500 italic py-1 px-2 text-[10px] hidden md:table-cell" title={item.observations || undefined}>
-                                  {item.observations}
-                                </TableCell>
-                                <TableCell className="border-r border-slate-100 py-1 px-2 text-xs hidden md:table-cell">
-                                  <div className="flex items-center gap-1 justify-center">
-                                    <span className="font-medium text-slate-600">{skuStats.skuCounts[item.sku]}x</span>
-                                    {skuStats.skuCounts[item.sku] > 1 && (
-                                      <Badge
-                                        variant="destructive"
-                                        className="cursor-pointer hover:bg-red-600 shadow-sm h-5 px-1 text-[10px]"
-                                        onClick={() =>
-                                          setSKUHistoryModal({
-                                            show: true,
-                                            sku: item.sku,
-                                            history: skuStats.skuHistory[item.sku],
-                                          })
-                                        }
-                                      >
-                                        Ver
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="py-1 px-2">
-                                  <div className="flex gap-1 justify-center">
-                                    {hasPermission("EDIT_ITEM") && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => editInventoryItem(item)}
-                                        className="h-6 w-6 p-0 text-blue-600 hover:bg-blue-50"
-                                      >
-                                        <Edit className="w-3 h-3" />
-                                      </Button>
-                                    )}
-                                    {hasPermission("DELETE_ITEM") && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() =>
-                                          setDeleteConfirm({
-                                            show: true,
-                                            type: "item",
-                                            id: item.id,
-                                            name: item.sku,
-                                          })
-                                        }
-                                        className="h-6 w-6 p-0 text-red-600 hover:bg-red-50"
-                                      >
-                                        <Trash2 className="w-3 h-3" />
-                                      </Button>
-                                    )}
-                                  </div>
-                                </TableCell>
+                                    </Badge>
+                                  </TableCell>
+                                )}
+                                {visibleColumns.factura && (
+                                  <TableCell
+                                    className="border-r border-slate-100 font-mono text-[10px] py-1 px-2 truncate max-w-[80px] hidden md:table-cell"
+                                    title={item.invoice_number || undefined}
+                                  >
+                                    {item.invoice_number}
+                                  </TableCell>
+                                )}
+                                {visibleColumns.observaciones && (
+                                  <TableCell
+                                    className="max-w-[100px] truncate border-r border-slate-100 text-slate-500 italic py-1 px-2 text-[10px] hidden md:table-cell"
+                                    title={item.observations || undefined}
+                                  >
+                                    {item.observations}
+                                  </TableCell>
+                                )}
+                                {visibleColumns.repeticiones && (
+                                  <TableCell className="border-r border-slate-100 py-1 px-2 text-xs hidden md:table-cell">
+                                    <div className="flex items-center gap-1 justify-center">
+                                      <span className="font-medium text-slate-600">{skuStats.skuCounts[item.sku]}x</span>
+                                      {skuStats.skuCounts[item.sku] > 1 && (
+                                        <Badge
+                                          variant="destructive"
+                                          className="cursor-pointer hover:bg-red-600 shadow-sm h-5 px-1 text-[10px]"
+                                          onClick={() =>
+                                            setSKUHistoryModal({
+                                              show: true,
+                                              sku: item.sku,
+                                              history: skuStats.skuHistory[item.sku],
+                                            })
+                                          }
+                                        >
+                                          Ver
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                )}
+                                {visibleColumns.acciones && (
+                                  <TableCell className="py-1 px-2">
+                                    <div className="flex gap-1 justify-center">
+                                      {hasPermission("EDIT_ITEM") && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => editInventoryItem(item)}
+                                          className="h-6 w-6 p-0 text-blue-600 hover:bg-blue-50"
+                                        >
+                                          <Edit className="w-3 h-3" />
+                                        </Button>
+                                      )}
+                                      {hasPermission("DELETE_ITEM") && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() =>
+                                            setDeleteConfirm({
+                                              show: true,
+                                              type: "item",
+                                              id: item.id,
+                                              name: item.sku,
+                                            })
+                                          }
+                                          className="h-6 w-6 p-0 text-red-600 hover:bg-red-50"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                )}
                               </TableRow>
                             ))
                           ) : (
