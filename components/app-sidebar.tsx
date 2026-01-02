@@ -128,7 +128,7 @@ export function AppSidebar({
       <SidebarContent className="px-3 py-4 bg-zinc-900">
         <SidebarGroup className="p-0">
           <SidebarGroupContent>
-            <SidebarMenu className="gap-3">
+            <SidebarMenu className="gap-3 group-data-[collapsible=icon]:gap-1">
               <SidebarMenuItem>
                 <SidebarMenuButton
                   isActive={activeTab === "inventory"}
@@ -157,7 +157,7 @@ export function AppSidebar({
 
         <SidebarGroup className="p-0">
           <SidebarGroupContent>
-            <SidebarMenu className="gap-3">
+            <SidebarMenu className="gap-3 group-data-[collapsible=icon]:gap-1">
               <SidebarMenuItem>
                 <button
                   className="w-full flex items-center h-11 px-3 rounded-none bg-transparent text-zinc-300 hover:text-white transition-colors border-none group-data-[collapsible=icon]:hidden"
@@ -203,7 +203,7 @@ export function AppSidebar({
 
         <SidebarGroup className="p-0">
           <SidebarGroupContent>
-            <SidebarMenu className="gap-3">
+            <SidebarMenu className="gap-3 group-data-[collapsible=icon]:gap-1">
               <SidebarMenuItem>
                 <button
                   className="w-full flex items-center h-11 px-3 rounded-none bg-transparent text-zinc-300 hover:text-white transition-colors border-none group-data-[collapsible=icon]:hidden"
@@ -260,7 +260,7 @@ export function AppSidebar({
 
         <SidebarGroup className="p-0">
           <SidebarGroupContent>
-            <SidebarMenu className="gap-3">
+            <SidebarMenu className="gap-3 group-data-[collapsible=icon]:gap-1">
               <SidebarMenuItem>
                 <button
                   className="w-full flex items-center h-11 px-3 rounded-none bg-transparent text-zinc-300 hover:text-white transition-colors border-none group-data-[collapsible=icon]:hidden"
