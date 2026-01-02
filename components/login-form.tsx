@@ -103,23 +103,23 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
-      <Card className="w-full max-w-md shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
-        <CardHeader className="text-center space-y-4 pb-8">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-zinc-900 via-slate-900 to-slate-800 p-6">
+      <Card className="w-full max-w-md bg-zinc-900/95 border border-zinc-800 rounded-2xl shadow-2xl">
+        <CardHeader className="text-center space-y-4 pb-6">
+          <div className="mx-auto w-16 h-16 rounded-xl bg-zinc-900 border border-zinc-700 flex items-center justify-center shadow-[0_0_30px_rgba(99,102,241,0.35)] ring-1 ring-indigo-500/40">
             <Package className="w-8 h-8 text-white" />
           </div>
           <div>
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              Sistema MAYCAM
+            <CardTitle className="text-3xl font-extrabold text-white tracking-wide uppercase">
+              MAYCAM
             </CardTitle>
-            <CardDescription className="text-slate-600 mt-2">Gestión Integral de Inventario</CardDescription>
+            <CardDescription className="text-zinc-400 mt-1">Sistema de Gestión Integral</CardDescription>
           </div>
         </CardHeader>
 
         <CardContent className="space-y-6">
           {error && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" className="bg-red-900/20 border-red-500/40 text-red-200">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
             </Alert>
@@ -132,8 +132,8 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
                   <ShieldCheck className="w-8 h-8 text-blue-600" />
                 </div>
                 <div className="text-center space-y-2">
-                  <h3 className="font-semibold text-lg">Verificación de Dos Pasos</h3>
-                  <p className="text-sm text-slate-500">Ingrese el código de 6 dígitos de su aplicación autenticadora.</p>
+                  <h3 className="font-semibold text-lg text-white">Verificación de Dos Pasos</h3>
+                  <p className="text-sm text-zinc-400">Ingrese el código de 6 dígitos de su aplicación autenticadora.</p>
                 </div>
                 
                 <div className="flex justify-center py-4">
@@ -159,16 +159,16 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
             ) : (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-slate-700 font-medium">
-                    Email
+                  <Label htmlFor="email" className="text-zinc-300 font-medium">
+                    Correo electrónico
                   </Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="usuario@maycam.com"
+                    placeholder="tu@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="h-12 text-base"
+                    className="h-11 text-base bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
                     disabled={isLoading}
                     autoComplete="email"
                     required
@@ -176,7 +176,7 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-slate-700 font-medium">
+                  <Label htmlFor="password" className="text-zinc-300 font-medium">
                     Contraseña
                   </Label>
                   <div className="relative">
@@ -186,7 +186,7 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="h-12 text-base pr-10"
+                      className="h-11 text-base pr-10 bg-zinc-800 border-zinc-700 text-zinc-100 placeholder:text-zinc-500"
                       disabled={isLoading}
                       autoComplete="current-password"
                       required
@@ -195,14 +195,14 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-zinc-400"
                       onClick={() => setShowPassword(!showPassword)}
                       disabled={isLoading}
                     >
                       {showPassword ? (
-                        <EyeOff className="h-4 w-4 text-slate-500" />
+                        <EyeOff className="h-4 w-4" />
                       ) : (
-                        <Eye className="h-4 w-4 text-slate-500" />
+                        <Eye className="h-4 w-4" />
                       )}
                     </Button>
                   </div>
@@ -212,7 +212,7 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
 
             <Button
               type="submit"
-              className="w-full h-12 text-base bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg transform hover:scale-[1.02] transition-all"
+              className="w-full h-12 text-base bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg transform hover:scale-[1.02] transition-all rounded-lg"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -232,7 +232,7 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
               <Button 
                 type="button" 
                 variant="ghost" 
-                className="w-full text-slate-500"
+                className="w-full text-zinc-400"
                 onClick={() => {
                   setRequire2FA(false)
                   setUserId(null)
@@ -246,10 +246,9 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
           </form>
 
           {!require2FA && (
-            <div className="text-center text-sm text-slate-500 border-t pt-4 space-y-1">
-              <p className="font-medium">Sistema de Gestión de Inventario MAYCAM</p>
-              <p>Versión 2.0 - 2025</p>
-              <p className="text-xs">Acceso seguro en la nube</p>
+            <div className="text-center text-sm text-zinc-500 border-t border-zinc-800 pt-4 space-y-1">
+              <p className="font-medium text-zinc-400">© 2025 Sistema MAYCAM. Todos los derechos reservados.</p>
+              <p className="text-xs">Versión 2.0</p>
             </div>
           )}
         </CardContent>
