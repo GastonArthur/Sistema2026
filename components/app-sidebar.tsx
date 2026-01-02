@@ -22,7 +22,7 @@ import {
   ChevronLeft
 } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 import {
   Sidebar,
@@ -65,24 +65,53 @@ export function AppSidebar({
 
   const handleNavigation = (tab: string) => {
     setActiveTab(tab)
-    setCatalogosOpen(false)
-    setGestionOpen(false)
-    setVentasOpen(false)
-    setFinanzasOpen(false)
   }
   const [gestionOpen, setGestionOpen] = useState(false)
   const [ventasOpen, setVentasOpen] = useState(false)
   const [finanzasOpen, setFinanzasOpen] = useState(false)
   const [catalogosOpen, setCatalogosOpen] = useState(false)
 
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("sidebar:sections")
+      if (raw) {
+        const s = JSON.parse(raw)
+        if (typeof s.gestionOpen === "boolean") setGestionOpen(s.gestionOpen)
+        if (typeof s.ventasOpen === "boolean") setVentasOpen(s.ventasOpen)
+        if (typeof s.finanzasOpen === "boolean") setFinanzasOpen(s.finanzasOpen)
+        if (typeof s.catalogosOpen === "boolean") setCatalogosOpen(s.catalogosOpen)
+      }
+    } catch {}
+  }, [])
+
+  useEffect(() => {
+    try {
+      const s = { gestionOpen, ventasOpen, finanzasOpen, catalogosOpen }
+      localStorage.setItem("sidebar:sections", JSON.stringify(s))
+    } catch {}
+  }, [gestionOpen, ventasOpen, finanzasOpen, catalogosOpen])
+
   return (
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarHeader className="h-16 border-b border-zinc-700/50 px-4 bg-zinc-900 relative">
         <div className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
           <Package className="size-5 text-white shrink-0" strokeWidth={2.5} />
-          <span className="text-lg font-bold tracking-tight leading-none text-white group-data-[collapsible=icon]:hidden">
-            Sistema2026
-          </span>
+          <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+            <span className="text-lg font-bold tracking-tight leading-none text-white">
+              Sistema2026
+            </span>
+            <div className="flex items-center gap-2 text-[11px] text-zinc-400">
+              <span className="inline-flex items-center gap-1">
+                <span className={isOnline ? "inline-block size-1.5 rounded-full bg-green-500" : "inline-block size-1.5 rounded-full bg-red-500"} />
+                {isOnline ? "En línea" : "Offline"}
+              </span>
+              {lastSync && (
+                <span>
+                  • Últ. actualización {new Date(lastSync).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" })}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
         <button
           onClick={toggleSidebar}
