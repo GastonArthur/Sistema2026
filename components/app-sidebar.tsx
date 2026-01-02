@@ -98,12 +98,12 @@ export function AppSidebar({
           <Package className="size-5 text-white shrink-0" strokeWidth={2.5} />
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
             <span className="text-lg font-bold tracking-tight leading-none text-white">
-              Sistema2026
+              Maycam Gestión
             </span>
             <div className="flex items-center gap-2 text-[11px] text-zinc-400">
               <span className="inline-flex items-center gap-1">
                 <span className={isOnline ? "inline-block size-1.5 rounded-full bg-green-500" : "inline-block size-1.5 rounded-full bg-red-500"} />
-                {isOnline ? "En línea" : "Offline"}
+                {isOnline ? "En línea" : "Sin conexión"}
               </span>
               {lastSync && (
                 <span>
@@ -160,7 +160,7 @@ export function AppSidebar({
             <SidebarMenu className="gap-3">
               <SidebarMenuItem>
                 <button
-                  className="w-full flex items-center h-11 px-3 rounded-none bg-transparent text-zinc-300 hover:text-white transition-colors border-none"
+                  className="w-full flex items-center h-11 px-3 rounded-none bg-transparent text-zinc-300 hover:text-white transition-colors border-none group-data-[collapsible=icon]:hidden"
                   onClick={() => setCatalogosOpen((v) => !v)}
                 >
                   <span className="text-xs font-semibold uppercase tracking-wide">Monitoreo de precios</span>
@@ -206,7 +206,7 @@ export function AppSidebar({
             <SidebarMenu className="gap-3">
               <SidebarMenuItem>
                 <button
-                  className="w-full flex items-center h-11 px-3 rounded-none bg-transparent text-zinc-300 hover:text-white transition-colors border-none"
+                  className="w-full flex items-center h-11 px-3 rounded-none bg-transparent text-zinc-300 hover:text-white transition-colors border-none group-data-[collapsible=icon]:hidden"
                   onClick={() => setGestionOpen((v) => !v)}
                 >
                   <span className="text-xs font-semibold uppercase tracking-wide">Configuración</span>
@@ -263,7 +263,7 @@ export function AppSidebar({
             <SidebarMenu className="gap-3">
               <SidebarMenuItem>
                 <button
-                  className="w-full flex items-center h-11 px-3 rounded-none bg-transparent text-zinc-300 hover:text-white transition-colors border-none"
+                  className="w-full flex items-center h-11 px-3 rounded-none bg-transparent text-zinc-300 hover:text-white transition-colors border-none group-data-[collapsible=icon]:hidden"
                   onClick={() => setVentasOpen((v) => !v)}
                 >
                   <span className="text-xs font-semibold uppercase tracking-wide">Ventas</span>
@@ -314,7 +314,7 @@ export function AppSidebar({
 
               <SidebarMenuItem>
                 <button
-                  className="w-full flex items-center h-11 px-3 rounded-none bg-transparent text-zinc-300 hover:text-white transition-colors border-none"
+                  className="w-full flex items-center h-11 px-3 rounded-none bg-transparent text-zinc-300 hover:text-white transition-colors border-none group-data-[collapsible=icon]:hidden"
                   onClick={() => setFinanzasOpen((v) => !v)}
                 >
                   <span className="text-xs font-semibold uppercase tracking-wide">Finanzas</span>
