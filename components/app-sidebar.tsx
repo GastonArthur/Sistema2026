@@ -100,7 +100,7 @@ export function AppSidebar({
             <span className="text-lg font-bold tracking-tight leading-none text-white">
               Maycam Gestión
             </span>
-            <div className="flex items-center gap-2 text-[11px] text-zinc-400">
+            <div className="flex items-center gap-2 text-[11px] text-zinc-400 mt-2">
               <span className="inline-flex items-center gap-1">
                 <span className={isOnline ? "inline-block size-1.5 rounded-full bg-green-500" : "inline-block size-1.5 rounded-full bg-red-500"} />
                 {isOnline ? "En línea" : "Sin conexión"}
