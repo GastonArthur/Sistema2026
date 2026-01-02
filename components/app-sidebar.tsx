@@ -79,9 +79,7 @@ export function AppSidebar({
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarHeader className="h-16 border-b border-zinc-700/50 px-4 bg-zinc-900 relative">
         <div className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white shrink-0">
-            <Package className="size-5 text-zinc-900" strokeWidth={2.5} />
-          </div>
+          <Package className="size-5 text-white shrink-0" strokeWidth={2.5} />
           <span className="text-lg font-bold tracking-tight leading-none text-white group-data-[collapsible=icon]:hidden">
             Sistema2026
           </span>
@@ -101,7 +99,7 @@ export function AppSidebar({
       <SidebarContent className="px-3 py-4 bg-zinc-900">
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu className="gap-0.5">
+            <SidebarMenu className="gap-1">
               <SidebarMenuItem>
                 <SidebarMenuButton
                   isActive={activeTab === "inventory"}
@@ -109,9 +107,7 @@ export function AppSidebar({
                   tooltip="Dashboard"
                   className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                 >
-                  <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
-                    <BarChart3 className="size-5" strokeWidth={2} />
-                  </div>
+                  <BarChart3 className="size-5 shrink-0" strokeWidth={2} />
                   <span className="text-sm font-medium tracking-tight">Dashboard</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -122,9 +118,7 @@ export function AppSidebar({
                   tooltip="Productos"
                   className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                 >
-                  <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
-                    <Package className="size-5" strokeWidth={2} />
-                  </div>
+                  <Package className="size-5 shrink-0" strokeWidth={2} />
                   <span className="text-sm font-medium tracking-tight">Productos</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -137,11 +131,15 @@ export function AppSidebar({
             <SidebarMenu>
               <SidebarMenuItem>
                 <button
-                  className="w-full flex items-center gap-2 h-10 px-3 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors border border-zinc-700"
+                  className="w-full flex items-center h-11 px-3 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors border border-zinc-700"
                   onClick={() => setCatalogosOpen((v) => !v)}
                 >
-                  {catalogosOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
                   <span className="text-xs font-semibold uppercase tracking-wide">Monitoreo de precios</span>
+                  {catalogosOpen ? (
+                    <ChevronDown className="size-4 ml-auto" />
+                  ) : (
+                    <ChevronRight className="size-4 ml-auto" />
+                  )}
                 </button>
               </SidebarMenuItem>
               {catalogosOpen && (
@@ -153,9 +151,7 @@ export function AppSidebar({
                       tooltip="Precios a Publicar"
                       className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
-                      <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
-                        <DollarSign className="size-5" strokeWidth={2} />
-                      </div>
+                      <DollarSign className="size-5 shrink-0" strokeWidth={2} />
                       <span className="text-sm font-medium tracking-tight">Precios a Publicar</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -166,9 +162,7 @@ export function AppSidebar({
                       tooltip="Lista ZENTOR"
                       className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
-                      <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
-                        <Package className="size-5" strokeWidth={2} />
-                      </div>
+                      <Package className="size-5 shrink-0" strokeWidth={2} />
                       <span className="text-sm font-medium tracking-tight">Lista ZENTOR</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -183,11 +177,15 @@ export function AppSidebar({
             <SidebarMenu>
               <SidebarMenuItem>
                 <button
-                  className="w-full flex items-center gap-2 h-10 px-3 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors border border-zinc-700"
+                  className="w-full flex items-center h-11 px-3 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors border border-zinc-700"
                   onClick={() => setGestionOpen((v) => !v)}
                 >
-                  {gestionOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
                   <span className="text-xs font-semibold uppercase tracking-wide">Configuración</span>
+                  {gestionOpen ? (
+                    <ChevronDown className="size-4 ml-auto" />
+                  ) : (
+                    <ChevronRight className="size-4 ml-auto" />
+                  )}
                 </button>
               </SidebarMenuItem>
               {gestionOpen && (
@@ -199,9 +197,7 @@ export function AppSidebar({
                       tooltip="Clientes"
                       className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
-                      <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
-                        <Users className="size-5" strokeWidth={2} />
-                      </div>
+                      <Users className="size-5 shrink-0" strokeWidth={2} />
                       <span className="text-sm font-medium tracking-tight">Clientes</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -212,9 +208,7 @@ export function AppSidebar({
                       tooltip="Marcas"
                       className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
-                      <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
-                        <Tag className="size-5" strokeWidth={2} />
-                      </div>
+                      <Tag className="size-5 shrink-0" strokeWidth={2} />
                       <span className="text-sm font-medium tracking-tight">Marcas</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -225,9 +219,7 @@ export function AppSidebar({
                       tooltip="Proveedores"
                       className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
-                      <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
-                        <Users className="size-5" strokeWidth={2} />
-                      </div>
+                      <Users className="size-5 shrink-0" strokeWidth={2} />
                       <span className="text-sm font-medium tracking-tight">Proveedores</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -242,11 +234,15 @@ export function AppSidebar({
             <SidebarMenu>
               <SidebarMenuItem>
                 <button
-                  className="w-full flex items-center gap-2 h-10 px-3 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors border border-zinc-700"
+                  className="w-full flex items-center h-11 px-3 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors border border-zinc-700"
                   onClick={() => setVentasOpen((v) => !v)}
                 >
-                  {ventasOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
                   <span className="text-xs font-semibold uppercase tracking-wide">Ventas</span>
+                  {ventasOpen ? (
+                    <ChevronDown className="size-4 ml-auto" />
+                  ) : (
+                    <ChevronRight className="size-4 ml-auto" />
+                  )}
                 </button>
               </SidebarMenuItem>
               {ventasOpen && (
@@ -258,9 +254,7 @@ export function AppSidebar({
                       tooltip="Mayoristas"
                       className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
-                      <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
-                        <ShoppingCart className="size-5" strokeWidth={2} />
-                      </div>
+                      <ShoppingCart className="size-5 shrink-0" strokeWidth={2} />
                       <span className="text-sm font-medium tracking-tight">Mayoristas</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -271,9 +265,7 @@ export function AppSidebar({
                       tooltip="Mayoristas Bullpadel"
                       className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
-                      <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
-                        <ShoppingCart className="size-5" strokeWidth={2} />
-                      </div>
+                      <ShoppingCart className="size-5 shrink-0" strokeWidth={2} />
                       <span className="text-sm font-medium tracking-tight">Mayoristas Bullpadel</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -284,9 +276,7 @@ export function AppSidebar({
                       tooltip="Minoristas"
                       className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
-                      <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
-                        <ShoppingBag className="size-5" strokeWidth={2} />
-                      </div>
+                      <ShoppingBag className="size-5 shrink-0" strokeWidth={2} />
                       <span className="text-sm font-medium tracking-tight">Minoristas</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -295,11 +285,15 @@ export function AppSidebar({
 
               <SidebarMenuItem>
                 <button
-                  className="w-full flex items-center gap-2 h-10 px-3 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors border border-zinc-700"
+                  className="w-full flex items-center h-11 px-3 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors border border-zinc-700"
                   onClick={() => setFinanzasOpen((v) => !v)}
                 >
-                  {finanzasOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
                   <span className="text-xs font-semibold uppercase tracking-wide">Finanzas</span>
+                  {finanzasOpen ? (
+                    <ChevronDown className="size-4 ml-auto" />
+                  ) : (
+                    <ChevronRight className="size-4 ml-auto" />
+                  )}
                 </button>
               </SidebarMenuItem>
               {finanzasOpen && (
@@ -311,9 +305,7 @@ export function AppSidebar({
                       className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
                       <Link href="/dashboard/rentabilidad" className="flex items-center gap-2 w-full">
-                        <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
-                          <TrendingUp className="size-5" strokeWidth={2} />
-                        </div>
+                        <TrendingUp className="size-5 shrink-0" strokeWidth={2} />
                         <span className="text-sm font-medium tracking-tight">Rentabilidad Real</span>
                       </Link>
                     </SidebarMenuButton>
@@ -325,9 +317,7 @@ export function AppSidebar({
                       tooltip="Gastos"
                       className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
-                      <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
-                        <Receipt className="size-5" strokeWidth={2} />
-                      </div>
+                      <Receipt className="size-5 shrink-0" strokeWidth={2} />
                       <span className="text-sm font-medium tracking-tight">Gastos</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -338,9 +328,7 @@ export function AppSidebar({
                       tooltip="Notas de Crédito"
                       className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors relative group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
-                      <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
-                        <FileText className="size-5" strokeWidth={2} />
-                      </div>
+                      <FileText className="size-5 shrink-0" strokeWidth={2} />
                       <span className="text-sm font-medium tracking-tight">Notas de Crédito</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -354,9 +342,7 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <div className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg bg-zinc-800 text-white border border-zinc-700/50 shadow-sm group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:gap-0">
-              <div className="bg-white text-zinc-900 p-1 rounded shrink-0">
-                <UserCircle className="size-5" />
-              </div>
+              <UserCircle className="size-5 shrink-0" />
               <span className="truncate font-medium group-data-[collapsible=icon]:hidden">{userEmail || "Usuario"}</span>
             </div>
           </SidebarMenuItem>

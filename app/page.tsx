@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState, useEffect, useRef, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
+import { logout } from "@/lib/auth"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { formatCurrency, convertScientificNotation } from "@/lib/utils"
 import { logError } from "@/lib/logger"
@@ -557,13 +558,18 @@ function InventoryManagementContent() {
     }
   }
 
-  const handleLogout = () => {
-    stopAutoRefresh()
-    setIsAuthenticated(false)
-    setInventory([])
-    setSuppliers([])
-    setBrands([])
-    setLastSync(null)
+  const handleLogout = async () => {
+    try {
+      await logout()
+    } finally {
+      stopAutoRefresh()
+      setIsAuthenticated(false)
+      setInventory([])
+      setSuppliers([])
+      setBrands([])
+      setLastSync(null)
+      router.push("/login")
+    }
   }
 
   const calculateWithTax = (amount: number) => {

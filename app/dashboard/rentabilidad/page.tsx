@@ -36,6 +36,7 @@ import {
 import { formatCurrency } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
+import { logout } from "@/lib/auth"
 // Initialize Supabase Client (Client Side)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -510,7 +511,7 @@ export default function RentabilidadPage() {
         setShowRetail={handleShowRetail}
         setShowGastos={handleShowGastos}
         setShowClients={handleShowClients}
-        onLogout={() => window.location.href = "/"} 
+        onLogout={async () => { await logout(); router.push("/login") }} 
         userEmail={userEmail} 
       />
       <SidebarInset>
