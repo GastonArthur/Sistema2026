@@ -17,7 +17,8 @@ import {
   ShieldCheck,
   FileText,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  ChevronLeft
 } from "lucide-react"
 import { useState } from "react"
 
