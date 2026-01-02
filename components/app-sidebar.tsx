@@ -178,7 +178,7 @@ export function AppSidebar({
                       onClick={() => handleNavigation("precios")}
                       isActive={activeTab === "precios"}
                       tooltip="Precios a Publicar"
-                      className="h-11 px-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
+                      className="h-11 pl-8 pr-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
                       <DollarSign className="size-5 shrink-0" strokeWidth={2} />
                       <span className="text-sm font-medium tracking-tight">Precios a Publicar</span>
@@ -189,7 +189,7 @@ export function AppSidebar({
                       onClick={() => handleNavigation("zentor")}
                       isActive={activeTab === "zentor"}
                       tooltip="Lista ZENTOR"
-                      className="h-11 px-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
+                      className="h-11 pl-8 pr-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
                       <Package className="size-5 shrink-0" strokeWidth={2} />
                       <span className="text-sm font-medium tracking-tight">Lista ZENTOR</span>
@@ -224,7 +224,7 @@ export function AppSidebar({
                       onClick={() => handleNavigation("clients")}
                       isActive={activeTab === "clients"}
                       tooltip="Clientes"
-                      className="h-11 px-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
+                      className="h-11 pl-8 pr-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
                       <Users className="size-5 shrink-0" strokeWidth={2} />
                       <span className="text-sm font-medium tracking-tight">Clientes</span>
@@ -235,7 +235,7 @@ export function AppSidebar({
                       onClick={() => handleNavigation("brands")}
                       isActive={activeTab === "brands"}
                       tooltip="Marcas"
-                      className="h-11 px-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
+                      className="h-11 pl-8 pr-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
                       <Tag className="size-5 shrink-0" strokeWidth={2} />
                       <span className="text-sm font-medium tracking-tight">Marcas</span>
@@ -246,7 +246,7 @@ export function AppSidebar({
                       onClick={() => handleNavigation("suppliers")}
                       isActive={activeTab === "suppliers"}
                       tooltip="Proveedores"
-                      className="h-11 px-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
+                      className="h-11 pl-8 pr-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
                       <Users className="size-5 shrink-0" strokeWidth={2} />
                       <span className="text-sm font-medium tracking-tight">Proveedores</span>
@@ -281,7 +281,7 @@ export function AppSidebar({
                       onClick={() => handleNavigation("wholesale")}
                       isActive={activeTab === "wholesale"}
                       tooltip="Mayoristas"
-                      className="h-11 px-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
+                      className="h-11 pl-8 pr-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
                       <ShoppingCart className="size-5 shrink-0" strokeWidth={2} />
                       <span className="text-sm font-medium tracking-tight">Mayoristas</span>
@@ -292,7 +292,7 @@ export function AppSidebar({
                       onClick={() => handleNavigation("wholesale-bullpadel")}
                       isActive={activeTab === "wholesale-bullpadel"}
                       tooltip="Mayoristas Bullpadel"
-                      className="h-11 px-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
+                      className="h-11 pl-8 pr-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
                       <ShoppingCart className="size-5 shrink-0" strokeWidth={2} />
                       <span className="text-sm font-medium tracking-tight">Mayoristas Bullpadel</span>
@@ -303,7 +303,7 @@ export function AppSidebar({
                       onClick={() => handleNavigation("retail")}
                       isActive={activeTab === "retail"}
                       tooltip="Minoristas"
-                      className="h-11 px-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
+                      className="h-11 pl-8 pr-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
                       <ShoppingBag className="size-5 shrink-0" strokeWidth={2} />
                       <span className="text-sm font-medium tracking-tight">Minoristas</span>
@@ -331,7 +331,7 @@ export function AppSidebar({
                     <SidebarMenuButton
                       isActive={activeTab === "rentabilidad"}
                       tooltip="Rentabilidad Real"
-                      className="h-11 px-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
+                      className="h-11 pl-8 pr-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
                       <Link href="/dashboard/rentabilidad" className="flex items-center gap-2 w-full">
                         <TrendingUp className="size-5 shrink-0" strokeWidth={2} />
@@ -344,7 +344,7 @@ export function AppSidebar({
                       onClick={() => handleNavigation("gastos")}
                       isActive={activeTab === "gastos"}
                       tooltip="Gastos"
-                      className="h-11 px-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
+                      className="h-11 pl-8 pr-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
                       <Receipt className="size-5 shrink-0" strokeWidth={2} />
                       <span className="text-sm font-medium tracking-tight">Gastos</span>
@@ -355,7 +355,7 @@ export function AppSidebar({
                       onClick={() => handleNavigation("notas-credito")}
                       isActive={activeTab === "notas-credito"}
                       tooltip="Notas de Crédito"
-                      className="h-11 px-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors relative group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
+                      className="h-11 pl-8 pr-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors relative group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
                       <FileText className="size-5 shrink-0" strokeWidth={2} />
                       <span className="text-sm font-medium tracking-tight">Notas de Crédito</span>
