@@ -3303,45 +3303,86 @@ ${csvRows
                   </div>
 
                   <div className="space-y-3">
-                    {/* Row 1: Search & Time/Sort */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
-                      {/* Search */}
-                      <div className="lg:col-span-4">
+                      <div className="lg:col-span-5">
+                        <Label className="text-xs text-slate-500 mb-1 block">Buscar</Label>
                         <div className="relative">
                           <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-400" />
                           <Input
-                            placeholder="Buscar SKU o descripción..."
+                            placeholder="SKU o descripción"
                             value={filters.searchSku}
                             onChange={(e) => setFilters((prev) => ({ ...prev, searchSku: e.target.value }))}
                             className="pl-8 h-8 text-sm"
                           />
                         </div>
                       </div>
-
-                      {/* Period */}
                       <div className="lg:col-span-2">
+                        <Label className="text-xs text-slate-500 mb-1 block">Proveedor</Label>
                         <Select
-                          value={itemsPerPage.toString()}
-                          onValueChange={(value) => setItemsPerPage(Number(value))}
+                          value={filters.supplier || "all"}
+                          onValueChange={(value) => setFilters((prev) => ({ ...prev, supplier: value }))}
                         >
-                          <SelectTrigger className="h-8 text-sm w-[80px]">
-                            <SelectValue placeholder="50" />
+                          <SelectTrigger className="h-8 text-sm">
+                            <SelectValue placeholder="Todos" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="50">50</SelectItem>
-                            <SelectItem value="100">100</SelectItem>
-                            <SelectItem value="200">200</SelectItem>
+                            <SelectItem value="all">Todos los proveedores</SelectItem>
+                            <SelectItem value="none">Sin proveedor</SelectItem>
+                            {suppliers.map((supplier) => (
+                              <SelectItem key={supplier.id} value={supplier.id.toString()}>
+                                {supplier.name}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
-                        <p className="text-[10px] text-slate-400 mt-1">
-                          Visualiza {itemsPerPage} artículos por página
-                        </p>
+                      </div>
+                      <div className="lg:col-span-2">
+                        <Label className="text-xs text-slate-500 mb-1 block">Marca</Label>
+                        <Select
+                          value={filters.brand || "all"}
+                          onValueChange={(value) => setFilters((prev) => ({ ...prev, brand: value }))}
+                        >
+                          <SelectTrigger className="h-8 text-sm">
+                            <SelectValue placeholder="Todas" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Todas las marcas</SelectItem>
+                            <SelectItem value="none">Sin marca</SelectItem>
+                            {brands.map((brand) => (
+                              <SelectItem key={brand.id} value={brand.id.toString()}>
+                                {brand.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="lg:col-span-3">
+                        <Label className="text-xs text-slate-500 mb-1 block">Empresa</Label>
+                        <Select
+                          value={filters.company}
+                          onValueChange={(value) => setFilters((prev) => ({ ...prev, company: value }))}
+                        >
+                          <SelectTrigger className="h-8 text-sm">
+                            <SelectValue placeholder="Todas" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Todas las empresas</SelectItem>
+                            <SelectItem value="MAYCAM">MAYCAM</SelectItem>
+                            <SelectItem value="BLUE DOGO">BLUE DOGO</SelectItem>
+                            <SelectItem value="GLOBOBAZAAR">GLOBOBAZAAR</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+                      <div className="lg:col-span-3">
+                        <Label className="text-xs text-slate-500 mb-1 block">Periodo</Label>
                         <Select
                           value={filters.period}
                           onValueChange={(value) => setFilters((prev) => ({ ...prev, period: value }))}
                         >
                           <SelectTrigger className="h-8 text-sm">
-                            <SelectValue placeholder="Periodo" />
+                            <SelectValue placeholder="Seleccionar" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="all">Todo el historial</SelectItem>
@@ -3353,38 +3394,70 @@ ${csvRows
                           </SelectContent>
                         </Select>
                       </div>
-
-                      {/* Custom Dates */}
                       {filters.period === "custom" ? (
                         <div className="lg:col-span-4 flex gap-2">
-                          <Input
-                            type="date"
-                            value={filters.dateFrom}
-                            onChange={(e) => setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))}
-                            className="h-8 text-sm"
-                          />
-                          <Input
-                            type="date"
-                            value={filters.dateTo}
-                            onChange={(e) => setFilters((prev) => ({ ...prev, dateTo: e.target.value }))}
-                            className="h-8 text-sm"
-                          />
+                          <div className="flex-1">
+                            <Label className="text-xs text-slate-500 mb-1 block">Desde</Label>
+                            <Input
+                              type="date"
+                              value={filters.dateFrom}
+                              onChange={(e) => setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))}
+                              className="h-8 text-sm"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <Label className="text-xs text-slate-500 mb-1 block">Hasta</Label>
+                            <Input
+                              type="date"
+                              value={filters.dateTo}
+                              onChange={(e) => setFilters((prev) => ({ ...prev, dateTo: e.target.value }))}
+                              className="h-8 text-sm"
+                            />
+                          </div>
                         </div>
                       ) : (
                         <div className="hidden lg:block lg:col-span-4"></div>
                       )}
-
-                      {/* Sort */}
                       <div className="lg:col-span-2">
+                        <Label className="text-xs text-slate-500 mb-1 block">Items por página</Label>
+                        <Select
+                          value={itemsPerPage.toString()}
+                          onValueChange={(value) => setItemsPerPage(Number(value))}
+                        >
+                          <SelectTrigger className="h-8 text-sm">
+                            <SelectValue placeholder="50" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="50">50</SelectItem>
+                            <SelectItem value="100">100</SelectItem>
+                            <SelectItem value="200">200</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="lg:col-span-2">
+                        <Label className="text-xs text-slate-500 mb-1 block">Duplicados</Label>
+                        <Select
+                          value={filters.duplicates || "all"}
+                          onValueChange={(value) => setFilters((prev) => ({ ...prev, duplicates: value }))}
+                        >
+                          <SelectTrigger className="h-8 text-sm">
+                            <SelectValue placeholder="Todos" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Todos</SelectItem>
+                            <SelectItem value="duplicated">Solo Duplicados</SelectItem>
+                            <SelectItem value="unique">Solo Únicos</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="lg:col-span-3">
+                        <Label className="text-xs text-slate-500 mb-1 block">Ordenar</Label>
                         <Select
                           value={filters.sortBy}
                           onValueChange={(value) => setFilters((prev) => ({ ...prev, sortBy: value }))}
                         >
                           <SelectTrigger className="h-8 text-sm">
-                            <span className="truncate">
-                              <span className="text-slate-400 mr-1">Orden:</span>
-                              <SelectValue placeholder="Ordenar" />
-                            </span>
+                            <SelectValue placeholder="Seleccionar" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="date_desc">Más recientes</SelectItem>
@@ -3397,86 +3470,6 @@ ${csvRows
                           </SelectContent>
                         </Select>
                       </div>
-                    </div>
-
-                    {/* Row 2: Secondary Filters */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <Select
-                        value={filters.supplier || "all"}
-                        onValueChange={(value) => setFilters((prev) => ({ ...prev, supplier: value }))}
-                      >
-                        <SelectTrigger className="h-8 text-sm">
-                          <span className="truncate">
-                            <span className="text-slate-400 mr-1">Prov:</span>
-                            <SelectValue placeholder="Todos" />
-                          </span>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todos los proveedores</SelectItem>
-                          <SelectItem value="none">Sin proveedor</SelectItem>
-                          {suppliers.map((supplier) => (
-                            <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                              {supplier.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-
-                      <Select
-                        value={filters.brand || "all"}
-                        onValueChange={(value) => setFilters((prev) => ({ ...prev, brand: value }))}
-                      >
-                        <SelectTrigger className="h-8 text-sm">
-                          <span className="truncate">
-                            <span className="text-slate-400 mr-1">Marca:</span>
-                            <SelectValue placeholder="Todas" />
-                          </span>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todas las marcas</SelectItem>
-                          <SelectItem value="none">Sin marca</SelectItem>
-                          {brands.map((brand) => (
-                            <SelectItem key={brand.id} value={brand.id.toString()}>
-                              {brand.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-
-                      <Select
-                        value={filters.company}
-                        onValueChange={(value) => setFilters((prev) => ({ ...prev, company: value }))}
-                      >
-                        <SelectTrigger className="h-8 text-sm">
-                          <span className="truncate">
-                            <span className="text-slate-400 mr-1">Emp:</span>
-                            <SelectValue placeholder="Todas" />
-                          </span>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todas las empresas</SelectItem>
-                          <SelectItem value="MAYCAM">MAYCAM</SelectItem>
-                          <SelectItem value="BLUE DOGO">BLUE DOGO</SelectItem>
-                          <SelectItem value="GLOBOBAZAAR">GLOBOBAZAAR</SelectItem>
-                        </SelectContent>
-                      </Select>
-
-                      <Select
-                        value={filters.duplicates || "all"}
-                        onValueChange={(value) => setFilters((prev) => ({ ...prev, duplicates: value }))}
-                      >
-                        <SelectTrigger className="h-8 text-sm">
-                          <span className="truncate">
-                            <span className="text-slate-400 mr-1">Dup:</span>
-                            <SelectValue placeholder="Todos" />
-                          </span>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todos</SelectItem>
-                          <SelectItem value="duplicated">Solo Duplicados</SelectItem>
-                          <SelectItem value="unique">Solo Únicos</SelectItem>
-                        </SelectContent>
-                      </Select>
                     </div>
                   </div>
                 </div>
