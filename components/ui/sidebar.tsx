@@ -302,13 +302,13 @@ const SidebarRail = React.forwardRef<
       onClick={toggleSidebar}
       title="Toggle Sidebar"
       className={cn(
-        "absolute z-20 flex items-center justify-center rounded-full border border-sidebar-border shadow transition-colors bg-zinc-900 text-white hover:bg-zinc-800",
+        "absolute z-20 flex items-center justify-center rounded-full border border-sidebar-border shadow transition-colors bg-white text-zinc-900 hover:bg-zinc-100",
         isCollapsed
           ? "size-9"
           : "size-9",
         // Position única centrada en el borde
-        "[[data-side=left]_&]:top-1/2 [[data-side=left]_&]:-translate-y-1/2 [[data-side=left]_&]:-right-4",
-        "[[data-side=right]_&]:top-1/2 [[data-side=right]_&]:-translate-y-1/2 [[data-side=right]_&]:-left-4",
+        "[[data-side=left]_&]:top-1/2 [[data-side=left]_&]:-translate-y-1/2 [[data-side=left]_&]:-right-2",
+        "[[data-side=right]_&]:top-1/2 [[data-side=right]_&]:-translate-y-1/2 [[data-side=right]_&]:-left-2",
         className
       )}
       {...props}

@@ -107,10 +107,12 @@ export function AppSidebar({
                   isActive={activeTab === "inventory"}
                   onClick={() => handleNavigation("inventory")}
                   tooltip="Dashboard"
-                  className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
+                  className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                 >
-                  <BarChart3 className="size-5" strokeWidth={2} />
-                  <span className="text-sm font-medium">Dashboard</span>
+                  <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
+                    <BarChart3 className="size-5" strokeWidth={2} />
+                  </div>
+                  <span className="text-sm font-medium tracking-tight">Dashboard</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
@@ -118,10 +120,12 @@ export function AppSidebar({
                   isActive={activeTab === "import"}
                   onClick={() => handleNavigation("import")}
                   tooltip="Productos"
-                  className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
+                  className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                 >
-                  <Package className="size-5" strokeWidth={2} />
-                  <span className="text-sm font-medium">Productos</span>
+                  <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
+                    <Package className="size-5" strokeWidth={2} />
+                  </div>
+                  <span className="text-sm font-medium tracking-tight">Productos</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -147,10 +151,12 @@ export function AppSidebar({
                       onClick={() => handleNavigation("precios")}
                       isActive={activeTab === "precios"}
                       tooltip="Precios a Publicar"
-                      className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
+                      className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
-                      <DollarSign className="size-5" strokeWidth={2} />
-                      <span>Precios a Publicar</span>
+                      <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
+                        <DollarSign className="size-5" strokeWidth={2} />
+                      </div>
+                      <span className="text-sm font-medium tracking-tight">Precios a Publicar</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -158,10 +164,12 @@ export function AppSidebar({
                       onClick={() => handleNavigation("zentor")}
                       isActive={activeTab === "zentor"}
                       tooltip="Lista ZENTOR"
-                      className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
+                      className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
-                      <Package className="size-5" strokeWidth={2} />
-                      <span>Lista ZENTOR</span>
+                      <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
+                        <Package className="size-5" strokeWidth={2} />
+                      </div>
+                      <span className="text-sm font-medium tracking-tight">Lista ZENTOR</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </>
@@ -189,10 +197,12 @@ export function AppSidebar({
                       onClick={() => handleNavigation("clients")}
                       isActive={activeTab === "clients"}
                       tooltip="Clientes"
-                      className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
+                      className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
-                      <Users className="size-5" strokeWidth={2} />
-                      <span>Clientes</span>
+                      <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
+                        <Users className="size-5" strokeWidth={2} />
+                      </div>
+                      <span className="text-sm font-medium tracking-tight">Clientes</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -200,10 +210,12 @@ export function AppSidebar({
                       onClick={() => handleNavigation("brands")}
                       isActive={activeTab === "brands"}
                       tooltip="Marcas"
-                      className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
+                      className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
-                      <Tag className="size-5" strokeWidth={2} />
-                      <span>Marcas</span>
+                      <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
+                        <Tag className="size-5" strokeWidth={2} />
+                      </div>
+                      <span className="text-sm font-medium tracking-tight">Marcas</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -211,10 +223,12 @@ export function AppSidebar({
                       onClick={() => handleNavigation("suppliers")}
                       isActive={activeTab === "suppliers"}
                       tooltip="Proveedores"
-                      className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
+                      className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
-                      <Users className="size-5" strokeWidth={2} />
-                      <span>Proveedores</span>
+                      <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
+                        <Users className="size-5" strokeWidth={2} />
+                      </div>
+                      <span className="text-sm font-medium tracking-tight">Proveedores</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </>
@@ -242,10 +256,12 @@ export function AppSidebar({
                       onClick={() => handleNavigation("wholesale")}
                       isActive={activeTab === "wholesale"}
                       tooltip="Mayoristas"
-                      className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
+                      className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
-                      <ShoppingCart className="size-5" strokeWidth={2} />
-                      <span>Mayoristas</span>
+                      <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
+                        <ShoppingCart className="size-5" strokeWidth={2} />
+                      </div>
+                      <span className="text-sm font-medium tracking-tight">Mayoristas</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -253,10 +269,12 @@ export function AppSidebar({
                       onClick={() => handleNavigation("wholesale-bullpadel")}
                       isActive={activeTab === "wholesale-bullpadel"}
                       tooltip="Mayoristas Bullpadel"
-                      className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
+                      className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
-                      <ShoppingCart className="size-5" strokeWidth={2} />
-                      <span>Mayoristas Bullpadel</span>
+                      <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
+                        <ShoppingCart className="size-5" strokeWidth={2} />
+                      </div>
+                      <span className="text-sm font-medium tracking-tight">Mayoristas Bullpadel</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -264,10 +282,12 @@ export function AppSidebar({
                       onClick={() => handleNavigation("retail")}
                       isActive={activeTab === "retail"}
                       tooltip="Minoristas"
-                      className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
+                      className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
-                      <ShoppingBag className="size-5" strokeWidth={2} />
-                      <span>Minoristas</span>
+                      <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
+                        <ShoppingBag className="size-5" strokeWidth={2} />
+                      </div>
+                      <span className="text-sm font-medium tracking-tight">Minoristas</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </>
@@ -288,11 +308,13 @@ export function AppSidebar({
                     <SidebarMenuButton
                       isActive={activeTab === "rentabilidad"}
                       tooltip="Rentabilidad Real"
-                      className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
+                      className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
-                      <Link href="/dashboard/rentabilidad">
-                        <TrendingUp className="size-5" strokeWidth={2} />
-                        <span>Rentabilidad Real</span>
+                      <Link href="/dashboard/rentabilidad" className="flex items-center gap-2 w-full">
+                        <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
+                          <TrendingUp className="size-5" strokeWidth={2} />
+                        </div>
+                        <span className="text-sm font-medium tracking-tight">Rentabilidad Real</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -301,10 +323,12 @@ export function AppSidebar({
                       onClick={() => handleNavigation("gastos")}
                       isActive={activeTab === "gastos"}
                       tooltip="Gastos"
-                      className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
+                      className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
-                      <Receipt className="size-5" strokeWidth={2} />
-                      <span>Gastos</span>
+                      <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
+                        <Receipt className="size-5" strokeWidth={2} />
+                      </div>
+                      <span className="text-sm font-medium tracking-tight">Gastos</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -312,10 +336,12 @@ export function AppSidebar({
                       onClick={() => handleNavigation("notas-credito")}
                       isActive={activeTab === "notas-credito"}
                       tooltip="Notas de Crédito"
-                      className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors relative"
+                      className="h-11 px-3 rounded-xl text-zinc-200 border border-zinc-700/40 bg-zinc-800/50 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors relative group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
-                      <FileText className="size-5" strokeWidth={2} />
-                      <span>Notas de Crédito</span>
+                      <div className="bg-white text-zinc-900 p-1 rounded-lg shrink-0">
+                        <FileText className="size-5" strokeWidth={2} />
+                      </div>
+                      <span className="text-sm font-medium tracking-tight">Notas de Crédito</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </>
