@@ -36,6 +36,7 @@ import {
   SidebarSeparator,
   SidebarRail,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 
@@ -57,6 +58,9 @@ export function AppSidebar({
   lastSync
 }: SidebarNavigationProps) {
 
+  const { state, toggleSidebar } = useSidebar()
+  const isCollapsed = state === "collapsed"
+
   const handleNavigation = (tab: string) => {
     setActiveTab(tab)
     setCatalogosOpen(false)
@@ -70,49 +74,41 @@ export function AppSidebar({
   const [catalogosOpen, setCatalogosOpen] = useState(false)
 
   return (
-    <Sidebar collapsible="offcanvas">
-      <SidebarHeader className="border-b border-sidebar-border/50 pb-4 mb-2">
-        <div className="flex flex-col px-4 py-2 gap-1 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:px-0">
-          <div className="flex items-center justify-between w-full group-data-[collapsible=icon]:justify-center">
-            <div className="flex items-center gap-3 group-data-[collapsible=icon]:hidden">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20 shrink-0">
-                <Package className="size-5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-bold text-lg tracking-tight">Sistema Maycam</span>
-                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Dashboard</span>
-              </div>
-            </div>
-            {/* Trigger eliminado para cerrar desde el header */}
+    <Sidebar collapsible="icon" className="border-r-0">
+      <SidebarHeader className="h-16 border-b border-zinc-700/50 px-4 bg-zinc-900 relative">
+        <div className="flex items-center gap-3 w-full group-data-[collapsible=icon]:justify-center">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white shrink-0">
+            <Package className="size-5 text-zinc-900" strokeWidth={2.5} />
           </div>
-          <div className="flex flex-col pl-[3.25rem] gap-1 group-data-[collapsible=icon]:hidden">
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full shadow-sm ${isOnline ? "bg-emerald-500 shadow-emerald-500/50" : "bg-red-500 shadow-red-500/50"}`}></div>
-              <span className={`text-xs font-medium ${isOnline ? "text-emerald-600" : "text-red-600"}`}>
-                {isOnline ? "En línea" : "Sin conexión"}
-              </span>
-            </div>
-            {lastSync && (
-              <span className="text-[10px] text-muted-foreground/80 font-mono">
-                Sync: {lastSync.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            )}
-          </div>
+          <span className="text-lg font-bold tracking-tight leading-none text-white group-data-[collapsible=icon]:hidden">
+            Sistema2026
+          </span>
         </div>
+        <button
+          onClick={toggleSidebar}
+          className="absolute -right-3 top-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 rounded-full bg-zinc-900 border border-zinc-700 text-white hover:bg-zinc-800 transition-colors z-50"
+          aria-label={isCollapsed ? "Expandir sidebar" : "Colapsar sidebar"}
+        >
+          {isCollapsed ? (
+            <ChevronRight className="size-3.5" strokeWidth={2.5} />
+          ) : (
+            <ChevronLeft className="size-3.5" strokeWidth={2.5} />
+          )}
+        </button>
       </SidebarHeader>
-      <SidebarContent className="px-2 gap-3">
+      <SidebarContent className="px-3 py-4 bg-zinc-900">
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-0.5">
               <SidebarMenuItem>
                 <SidebarMenuButton
                   isActive={activeTab === "inventory"}
                   onClick={() => handleNavigation("inventory")}
                   tooltip="Inventario"
-                  className="group/btn hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 ease-in-out data-[active=true]:bg-blue-100 data-[active=true]:text-blue-800 rounded-md"
+                  className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
                 >
-                  <LayoutDashboard className="group-hover/btn:scale-110 transition-transform text-blue-500/80 group-hover/btn:text-blue-600 group-data-[active=true]:text-blue-700" />
-                  <span className="font-medium">Inventario</span>
+                  <LayoutDashboard className="size-5" strokeWidth={2} />
+                  <span className="text-sm font-medium">Inventario</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
@@ -120,10 +116,10 @@ export function AppSidebar({
                   isActive={activeTab === "import"}
                   onClick={() => handleNavigation("import")}
                   tooltip="Importar"
-                  className="group/btn hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 ease-in-out data-[active=true]:bg-blue-100 data-[active=true]:text-blue-800 rounded-md"
+                  className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
                 >
-                  <FileSpreadsheet className="group-hover/btn:scale-110 transition-transform text-blue-500/80 group-hover/btn:text-blue-600 group-data-[active=true]:text-blue-700" />
-                  <span className="font-medium">Importar</span>
+                  <FileSpreadsheet className="size-5" strokeWidth={2} />
+                  <span className="text-sm font-medium">Importar</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -135,11 +131,11 @@ export function AppSidebar({
             <SidebarMenu>
               <SidebarMenuItem>
                 <button
-                  className="w-full flex items-center gap-2 p-2 rounded-md bg-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors border border-sidebar-border"
+                  className="w-full flex items-center gap-2 h-10 px-3 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors border border-zinc-700"
                   onClick={() => setCatalogosOpen((v) => !v)}
                 >
                   {catalogosOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sección Catálogos</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide">Sección Catálogos</span>
                 </button>
               </SidebarMenuItem>
               {catalogosOpen && (
@@ -149,9 +145,9 @@ export function AppSidebar({
                       onClick={() => handleNavigation("precios")}
                       isActive={activeTab === "precios"}
                       tooltip="Precios a Publicar"
-                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary rounded-sm"
+                      className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
                     >
-                      <DollarSign className="opacity-70" />
+                      <DollarSign className="size-5" strokeWidth={2} />
                       <span>Precios a Publicar</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -160,9 +156,9 @@ export function AppSidebar({
                       onClick={() => handleNavigation("zentor")}
                       isActive={activeTab === "zentor"}
                       tooltip="Lista ZENTOR"
-                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary rounded-sm"
+                      className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
                     >
-                      <Package className="opacity-70" />
+                      <Package className="size-5" strokeWidth={2} />
                       <span>Lista ZENTOR</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -177,11 +173,11 @@ export function AppSidebar({
             <SidebarMenu>
               <SidebarMenuItem>
                 <button
-                  className="w-full flex items-center gap-2 p-2 rounded-md bg-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors border border-sidebar-border"
+                  className="w-full flex items-center gap-2 h-10 px-3 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors border border-zinc-700"
                   onClick={() => setGestionOpen((v) => !v)}
                 >
                   {gestionOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sección Gestión</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide">Sección Gestión</span>
                 </button>
               </SidebarMenuItem>
               {gestionOpen && (
@@ -191,9 +187,9 @@ export function AppSidebar({
                       onClick={() => handleNavigation("clients")}
                       isActive={activeTab === "clients"}
                       tooltip="Clientes"
-                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary rounded-sm"
+                      className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
                     >
-                      <Users className="opacity-70" />
+                      <Users className="size-5" strokeWidth={2} />
                       <span>Clientes</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -202,9 +198,9 @@ export function AppSidebar({
                       onClick={() => handleNavigation("brands")}
                       isActive={activeTab === "brands"}
                       tooltip="Marcas"
-                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary rounded-sm"
+                      className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
                     >
-                      <Tag className="opacity-70" />
+                      <Tag className="size-5" strokeWidth={2} />
                       <span>Marcas</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -213,9 +209,9 @@ export function AppSidebar({
                       onClick={() => handleNavigation("suppliers")}
                       isActive={activeTab === "suppliers"}
                       tooltip="Proveedores"
-                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary rounded-sm"
+                      className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
                     >
-                      <Users className="opacity-70" />
+                      <Users className="size-5" strokeWidth={2} />
                       <span>Proveedores</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -230,11 +226,11 @@ export function AppSidebar({
             <SidebarMenu>
               <SidebarMenuItem>
                 <button
-                  className="w-full flex items-center gap-2 p-2 rounded-md bg-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors border border-sidebar-border"
+                  className="w-full flex items-center gap-2 h-10 px-3 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors border border-zinc-700"
                   onClick={() => setVentasOpen((v) => !v)}
                 >
                   {ventasOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sección Ventas</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide">Sección Ventas</span>
                 </button>
               </SidebarMenuItem>
               {ventasOpen && (
@@ -244,9 +240,9 @@ export function AppSidebar({
                       onClick={() => handleNavigation("wholesale")}
                       isActive={activeTab === "wholesale"}
                       tooltip="Mayoristas"
-                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary rounded-sm"
+                      className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
                     >
-                      <ShoppingCart className="opacity-70" />
+                      <ShoppingCart className="size-5" strokeWidth={2} />
                       <span>Mayoristas</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -255,9 +251,9 @@ export function AppSidebar({
                       onClick={() => handleNavigation("wholesale-bullpadel")}
                       isActive={activeTab === "wholesale-bullpadel"}
                       tooltip="Mayoristas Bullpadel"
-                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary rounded-sm"
+                      className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
                     >
-                      <ShoppingCart className="opacity-70" />
+                      <ShoppingCart className="size-5" strokeWidth={2} />
                       <span>Mayoristas Bullpadel</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -266,9 +262,9 @@ export function AppSidebar({
                       onClick={() => handleNavigation("retail")}
                       isActive={activeTab === "retail"}
                       tooltip="Minoristas"
-                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary rounded-sm"
+                      className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
                     >
-                      <ShoppingBag className="opacity-70" />
+                      <ShoppingBag className="size-5" strokeWidth={2} />
                       <span>Minoristas</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -277,11 +273,11 @@ export function AppSidebar({
 
               <SidebarMenuItem>
                 <button
-                  className="w-full flex items-center gap-2 p-2 rounded-md bg-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors border border-sidebar-border"
+                  className="w-full flex items-center gap-2 h-10 px-3 rounded-lg bg-zinc-800/60 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors border border-zinc-700"
                   onClick={() => setFinanzasOpen((v) => !v)}
                 >
                   {finanzasOpen ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sección Finanzas</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide">Sección Finanzas</span>
                 </button>
               </SidebarMenuItem>
               {finanzasOpen && (
@@ -291,10 +287,10 @@ export function AppSidebar({
                       asChild
                       isActive={activeTab === "rentabilidad"}
                       tooltip="Rentabilidad Real"
-                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary rounded-sm"
+                      className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
                     >
                       <a href="/dashboard/rentabilidad">
-                        <TrendingUp className="opacity-70" />
+                        <TrendingUp className="size-5" strokeWidth={2} />
                         <span>Rentabilidad Real</span>
                       </a>
                     </SidebarMenuButton>
@@ -304,9 +300,9 @@ export function AppSidebar({
                       onClick={() => handleNavigation("gastos")}
                       isActive={activeTab === "gastos"}
                       tooltip="Gastos"
-                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary rounded-sm"
+                      className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors"
                     >
-                      <Receipt className="opacity-70" />
+                      <Receipt className="size-5" strokeWidth={2} />
                       <span>Gastos</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -315,9 +311,9 @@ export function AppSidebar({
                       onClick={() => handleNavigation("notas-credito")}
                       isActive={activeTab === "notas-credito"}
                       tooltip="Notas de Crédito"
-                      className="group/btn hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-200 data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground data-[active=true]:border-l-2 data-[active=true]:border-primary relative rounded-sm"
+                      className="h-10 px-3 rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white data-[active=true]:bg-zinc-800 data-[active=true]:text-white transition-colors relative"
                     >
-                      <FileText className="opacity-70" />
+                      <FileText className="size-5" strokeWidth={2} />
                       <span>Notas de Crédito</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -327,11 +323,11 @@ export function AppSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t border-sidebar-border/50 p-2">
+      <SidebarFooter className="border-t border-zinc-700/50 p-3 bg-zinc-900">
         <SidebarMenu>
           <SidebarMenuItem>
-            <div className="flex items-center gap-3 px-3 py-2 text-sm rounded-md bg-sidebar-accent/50 text-sidebar-foreground border border-sidebar-border/50 shadow-sm group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:gap-0">
-              <div className="bg-primary/10 p-1 rounded-full text-primary shrink-0">
+            <div className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg bg-zinc-800 text-white border border-zinc-700/50 shadow-sm group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:gap-0">
+              <div className="bg-white text-zinc-900 p-1 rounded shrink-0">
                 <UserCircle className="size-5" />
               </div>
               <span className="truncate font-medium group-data-[collapsible=icon]:hidden">{userEmail || "Usuario"}</span>
@@ -341,7 +337,7 @@ export function AppSidebar({
             <SidebarMenuButton
               onClick={onLogout}
               tooltip="Cerrar Sesión"
-              className="group/logout text-red-500 hover:text-red-600 hover:bg-red-50 hover:border-red-100 border border-transparent transition-all duration-200"
+              className="group/logout text-red-500 hover:text-red-600 hover:bg-red-500/10 hover:border-red-200 border border-transparent rounded-lg transition-all duration-200"
             >
               <LogOut className="group-hover/logout:rotate-180 transition-transform duration-500" />
               <span className="font-medium">Cerrar Sesión</span>
