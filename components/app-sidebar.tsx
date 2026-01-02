@@ -171,7 +171,7 @@ export function AppSidebar({
                   )}
                 </button>
               </SidebarMenuItem>
-              {catalogosOpen && (
+              {(catalogosOpen || isCollapsed) && (
                 <>
                   <SidebarMenuItem>
                     <SidebarMenuButton
@@ -217,7 +217,7 @@ export function AppSidebar({
                   )}
                 </button>
               </SidebarMenuItem>
-              {gestionOpen && (
+              {(gestionOpen || isCollapsed) && (
                 <>
                   <SidebarMenuItem>
                     <SidebarMenuButton
@@ -274,7 +274,7 @@ export function AppSidebar({
                   )}
                 </button>
               </SidebarMenuItem>
-              {ventasOpen && (
+              {(ventasOpen || isCollapsed) && (
                 <>
                   <SidebarMenuItem>
                     <SidebarMenuButton
@@ -325,7 +325,7 @@ export function AppSidebar({
                   )}
                 </button>
               </SidebarMenuItem>
-              {finanzasOpen && (
+              {(finanzasOpen || isCollapsed) && (
                 <>
                   <SidebarMenuItem>
                     <SidebarMenuButton
