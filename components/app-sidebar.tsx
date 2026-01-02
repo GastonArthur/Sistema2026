@@ -2,6 +2,7 @@
 
 import {
   Package,
+  BarChart3,
   Users,
   Tag,
   DollarSign,
