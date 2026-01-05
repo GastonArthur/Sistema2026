@@ -229,6 +229,54 @@ function InventoryManagementContent() {
     setCurrentPage(1)
   }, [filters, itemsPerPage])
 
+  useEffect(() => {
+    const user = getCurrentUser()
+    if (isSupabaseConfigured && user) {
+      supabase
+        .from("user_preferences")
+        .select("value")
+        .eq("user_id", user.id)
+        .eq("key", "inventory_visible_columns")
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data?.value) {
+            setVisibleColumns((prev) => ({ ...prev, ...data.value }))
+          }
+        })
+    } else {
+      const email = user?.email || "default"
+      const saved = typeof window !== "undefined" ? localStorage.getItem(`inventory_visible_columns_${email}`) : null
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          setVisibleColumns((prev) => ({ ...prev, ...parsed }))
+        } catch {}
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    const user = getCurrentUser()
+    if (isSupabaseConfigured && user) {
+      supabase
+        .from("user_preferences")
+        .upsert(
+          {
+            user_id: user.id,
+            key: "inventory_visible_columns",
+            value: visibleColumns,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id,key" }
+        )
+    } else {
+      const email = user?.email || "default"
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`inventory_visible_columns_${email}`, JSON.stringify(visibleColumns))
+      }
+    }
+  }, [visibleColumns])
+
   // New supplier/brand forms
   const [newSupplier, setNewSupplier] = useState("")
   const [newBrand, setNewBrand] = useState("")
@@ -2684,9 +2732,7 @@ ${csvRows
             {/* Header con información del usuario */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-2">
-                <div>
-                  <p className="text-slate-600 font-medium">Gestión Integral de Inventario</p>
-                </div>
+                <div />
               </div>
               <div className="flex items-center gap-4">
                 {/* Botón para gestionar anuncios - Solo administradores */}
