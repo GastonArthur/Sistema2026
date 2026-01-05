@@ -125,7 +125,7 @@ export function AppSidebar({
           )}
         </button>
       </SidebarHeader>
-      <SidebarContent className="px-3 py-4 bg-zinc-900">
+      <SidebarContent className="px-3 py-4 bg-zinc-900 overflow-y-auto">
         <SidebarGroup className="p-0">
           <SidebarGroupContent>
             <SidebarMenu className="gap-3 group-data-[collapsible=icon]:gap-1">
@@ -181,7 +181,7 @@ export function AppSidebar({
                       className="h-11 pl-8 pr-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
                       <DollarSign className="size-5 shrink-0" strokeWidth={2} />
-                      <span className="text-sm font-medium tracking-tight">Precios a Publicar</span>
+                      <span className="text-xs font-medium tracking-tight">Precios a Publicar</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -192,7 +192,7 @@ export function AppSidebar({
                       className="h-11 pl-8 pr-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
                       <Package className="size-5 shrink-0" strokeWidth={2} />
-                      <span className="text-sm font-medium tracking-tight">Lista ZENTOR</span>
+                      <span className="text-xs font-medium tracking-tight">Lista ZENTOR</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </>
@@ -227,7 +227,7 @@ export function AppSidebar({
                       className="h-11 pl-8 pr-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
                       <Users className="size-5 shrink-0" strokeWidth={2} />
-                      <span className="text-sm font-medium tracking-tight">Clientes</span>
+                      <span className="text-xs font-medium tracking-tight">Clientes</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -238,7 +238,7 @@ export function AppSidebar({
                       className="h-11 pl-8 pr-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
                       <Tag className="size-5 shrink-0" strokeWidth={2} />
-                      <span className="text-sm font-medium tracking-tight">Marcas</span>
+                      <span className="text-xs font-medium tracking-tight">Marcas</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -249,7 +249,7 @@ export function AppSidebar({
                       className="h-11 pl-8 pr-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
                       <Users className="size-5 shrink-0" strokeWidth={2} />
-                      <span className="text-sm font-medium tracking-tight">Proveedores</span>
+                      <span className="text-xs font-medium tracking-tight">Proveedores</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </>
@@ -284,7 +284,7 @@ export function AppSidebar({
                       className="h-11 pl-8 pr-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
                       <ShoppingCart className="size-5 shrink-0" strokeWidth={2} />
-                      <span className="text-sm font-medium tracking-tight">Mayoristas</span>
+                      <span className="text-xs font-medium tracking-tight">Mayoristas</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -295,7 +295,7 @@ export function AppSidebar({
                       className="h-11 pl-8 pr-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
                       <ShoppingCart className="size-5 shrink-0" strokeWidth={2} />
-                      <span className="text-sm font-medium tracking-tight">Mayoristas Bullpadel</span>
+                      <span className="text-xs font-medium tracking-tight">Mayoristas Bullpadel</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -306,7 +306,7 @@ export function AppSidebar({
                       className="h-11 pl-8 pr-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
                       <ShoppingBag className="size-5 shrink-0" strokeWidth={2} />
-                      <span className="text-sm font-medium tracking-tight">Minoristas</span>
+                      <span className="text-xs font-medium tracking-tight">Minoristas</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </>
@@ -335,7 +335,7 @@ export function AppSidebar({
                     >
                       <Link href="/dashboard/rentabilidad" className="flex items-center gap-2 w-full">
                         <TrendingUp className="size-5 shrink-0" strokeWidth={2} />
-                        <span className="text-sm font-medium tracking-tight">Rentabilidad Real</span>
+                        <span className="text-xs font-medium tracking-tight">Rentabilidad Real</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -347,7 +347,7 @@ export function AppSidebar({
                       className="h-11 pl-8 pr-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
                       <Receipt className="size-5 shrink-0" strokeWidth={2} />
-                      <span className="text-sm font-medium tracking-tight">Gastos</span>
+                      <span className="text-xs font-medium tracking-tight">Gastos</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -358,7 +358,7 @@ export function AppSidebar({
                       className="h-11 pl-8 pr-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors relative group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0"
                     >
                       <FileText className="size-5 shrink-0" strokeWidth={2} />
-                      <span className="text-sm font-medium tracking-tight">Notas de Crédito</span>
+                      <span className="text-xs font-medium tracking-tight">Notas de Crédito</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </>
