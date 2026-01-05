@@ -39,7 +39,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  UserCircle
 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { logActivity, hasPermission, getCurrentUser } from "@/lib/auth"

@@ -103,6 +103,7 @@ export function VentasMinoristas({ inventory }: VentasMinoristasProps) {
   // New Sale Form State
   const [newSaleDate, setNewSaleDate] = useState(new Date().toISOString().split("T")[0])
   const [newSaleClient, setNewSaleClient] = useState("")
+  const [newSaleClientId, setNewSaleClientId] = useState<number | null>(null)
   const [newSaleItems, setNewSaleItems] = useState<RetailSaleItem[]>([])
   const [currentSku, setCurrentSku] = useState("")
   const [currentManualProduct, setCurrentManualProduct] = useState({ description: "", price: 0 })
@@ -299,7 +300,7 @@ export function VentasMinoristas({ inventory }: VentasMinoristasProps) {
   const { subtotal, total } = calculateTotals()
 
   const handleRegisterSale = () => {
-    if (!newSaleClient) {
+    if (!newSaleClientId) {
       toast({ title: "Error", description: "Debe seleccionar un cliente", variant: "destructive" })
       return
     }
@@ -330,7 +331,7 @@ export function VentasMinoristas({ inventory }: VentasMinoristasProps) {
       const newSale: RetailSale = {
         id: Date.now(),
         date: newSaleDate,
-        client_id: 0,
+        client_id: newSaleClientId || 0,
         client_name: newSaleClient,
         items: newSaleItems,
         subtotal,
@@ -353,6 +354,7 @@ export function VentasMinoristas({ inventory }: VentasMinoristasProps) {
   const resetForm = () => {
     setNewSaleItems([])
     setNewSaleClient("")
+    setNewSaleClientId(null)
     setDiscount(0)
     setShippingCost(0)
     setNotes("")
@@ -396,39 +398,64 @@ export function VentasMinoristas({ inventory }: VentasMinoristasProps) {
 
     try {
       if (isSupabaseConfigured) {
-        const { data, error } = await supabase
-          .from("retail_clients")
-          .insert([{
-             name: newClientData.name,
-             dni_cuit: newClientData.dni_cuit,
-             email: newClientData.email,
-             phone: newClientData.phone,
-             province: newClientData.province,
-             city: newClientData.city,
-             zip_code: newClientData.zip_code,
-             address: newClientData.address
-          }])
-          .select()
-          .single()
-          
-        if (error) throw error
-        
-        setClients([data, ...clients])
-        setNewSaleClient(data.name)
-        
-        await logActivity("CREATE_RETAIL_CLIENT", "retail_clients", data.id, null, data, "Cliente minorista creado")
-      } else {
-        const newClient: RetailClient = {
-          id: Date.now(),
-          ...newClientData,
-          created_at: new Date().toISOString().split("T")[0]
+        if (editingClient) {
+          const { data, error } = await supabase
+            .from("retail_clients")
+            .update({
+              name: newClientData.name,
+              dni_cuit: newClientData.dni_cuit,
+              email: newClientData.email,
+              phone: newClientData.phone,
+              province: newClientData.province,
+              city: newClientData.city,
+              zip_code: newClientData.zip_code,
+              address: newClientData.address
+            })
+            .eq("id", editingClient.id)
+            .select()
+            .single()
+          if (error) throw error
+          setClients(clients.map(c => c.id === data.id ? data : c))
+          await logActivity("UPDATE_RETAIL_CLIENT", "retail_clients", data.id, editingClient, data, "Cliente minorista actualizado")
+        } else {
+          const { data, error } = await supabase
+            .from("retail_clients")
+            .insert([{
+               name: newClientData.name,
+               dni_cuit: newClientData.dni_cuit,
+               email: newClientData.email,
+               phone: newClientData.phone,
+               province: newClientData.province,
+               city: newClientData.city,
+               zip_code: newClientData.zip_code,
+               address: newClientData.address
+            }])
+            .select()
+            .single()
+          if (error) throw error
+          setClients([data, ...clients])
+          setNewSaleClient(data.name)
+          setNewSaleClientId(data.id)
+          await logActivity("CREATE_RETAIL_CLIENT", "retail_clients", data.id, null, data, "Cliente minorista creado")
         }
-
-        setClients([newClient, ...clients])
-        setNewSaleClient(newClient.name)
+      } else {
+        if (editingClient) {
+          const updated: RetailClient = { ...editingClient, ...newClientData }
+          setClients(clients.map(c => c.id === updated.id ? updated : c))
+        } else {
+          const newClient: RetailClient = {
+            id: Date.now(),
+            ...newClientData,
+            created_at: new Date().toISOString().split("T")[0]
+          }
+          setClients([newClient, ...clients])
+          setNewSaleClient(newClient.name)
+          setNewSaleClientId(newClient.id)
+        }
       }
       
       setShowClientForm(false)
+      setEditingClient(null)
       setNewClientData({ 
         name: "", 
         dni_cuit: "", 
@@ -439,10 +466,25 @@ export function VentasMinoristas({ inventory }: VentasMinoristasProps) {
         zip_code: "", 
         address: "" 
       })
-      toast({ title: "Cliente creado", description: "El cliente se ha creado correctamente" })
+      toast({ title: editingClient ? "Cliente actualizado" : "Cliente creado", description: editingClient ? "El cliente se ha actualizado correctamente" : "El cliente se ha creado correctamente" })
     } catch (error) {
       logError("Error creating client", error)
       toast({ title: "Error", description: "No se pudo crear el cliente", variant: "destructive" })
+    }
+  }
+
+  const handleDeleteClient = async (client: RetailClient) => {
+    try {
+      if (isSupabaseConfigured) {
+        const { error } = await supabase.from("retail_clients").delete().eq("id", client.id)
+        if (error) throw error
+        await logActivity("DELETE_RETAIL_CLIENT", "retail_clients", client.id, client, null, "Cliente minorista eliminado")
+      }
+      setClients(clients.filter(c => c.id !== client.id))
+      toast({ title: "Cliente eliminado", description: "El cliente ha sido eliminado correctamente" })
+    } catch (error) {
+      logError("Error deleting client", error)
+      toast({ title: "Error", description: "No se pudo eliminar el cliente", variant: "destructive" })
     }
   }
 
@@ -714,6 +756,7 @@ export function VentasMinoristas({ inventory }: VentasMinoristasProps) {
                         <TableHead>Teléfono</TableHead>
                         <TableHead>Ubicación</TableHead>
                         <TableHead>Dirección</TableHead>
+                        <TableHead>Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -743,6 +786,41 @@ export function VentasMinoristas({ inventory }: VentasMinoristasProps) {
                               <span className="text-gray-500">CP: {client.zip_code || "-"}</span>
                             </div>
                           </TableCell>
+                          <TableCell>
+                            {!isReadOnly && (
+                              <div className="flex gap-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="gap-2"
+                                  onClick={() => {
+                                    setEditingClient(client)
+                                    setNewClientData({
+                                      name: client.name,
+                                      dni_cuit: client.dni_cuit || "",
+                                      email: client.email || "",
+                                      phone: client.phone || "",
+                                      province: client.province || "",
+                                      city: client.city || "",
+                                      zip_code: client.zip_code || "",
+                                      address: client.address || ""
+                                    })
+                                    setShowClientForm(true)
+                                  }}
+                                >
+                                  <Edit className="w-4 h-4" /> Editar
+                                </Button>
+                                <Button 
+                                  variant="destructive" 
+                                  size="sm" 
+                                  className="gap-2"
+                                  onClick={() => handleDeleteClient(client)}
+                                >
+                                  <Trash2 className="w-4 h-4" /> Eliminar
+                                </Button>
+                              </div>
+                            )}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -771,7 +849,26 @@ export function VentasMinoristas({ inventory }: VentasMinoristasProps) {
                   <div className="space-y-2">
                     <Label>Cliente *</Label>
                     <div className="flex gap-2">
-                      <Input placeholder="Buscar cliente o escribir nombre..." value={newSaleClient} onChange={e => setNewSaleClient(e.target.value)} />
+                      <Select
+                        value={newSaleClientId ? String(newSaleClientId) : ""}
+                        onValueChange={(val) => {
+                          const id = parseInt(val)
+                          setNewSaleClientId(id)
+                          const c = clients.find(x => x.id === id)
+                          setNewSaleClient(c ? c.name : "")
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar cliente..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {clients.map(c => (
+                            <SelectItem key={c.id} value={String(c.id)}>
+                              {c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <Button variant="outline" size="icon" onClick={() => setShowClientForm(true)} title="Nuevo Cliente">
                         <Plus className="w-4 h-4" />
                       </Button>

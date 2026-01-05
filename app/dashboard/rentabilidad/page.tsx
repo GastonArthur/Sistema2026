@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import { checkSession } from "@/lib/auth"
-import { createClient } from "@supabase/supabase-js"
+import { supabase, isSupabaseConfigured } from "@/lib/supabase"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -37,12 +37,6 @@ import { formatCurrency } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import { logout } from "@/lib/auth"
-// Initialize Supabase Client (Client Side)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-const supabase = (supabaseUrl && supabaseKey) 
-  ? createClient(supabaseUrl, supabaseKey) 
-  : null
 
 export default function RentabilidadPage() {
   const [activeTab, setActiveTab] = useState("summary")
