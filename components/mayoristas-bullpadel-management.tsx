@@ -2030,17 +2030,30 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                     onClick={async () => {
                       if (!newVendor.trim()) return
                       if (isSupabaseConfigured) {
-                        const { data, error } = await supabase
-                          .from("wholesale_vendors")
-                          .insert({ name: newVendor.trim(), section: "bullpadel" })
-                          .select()
-                          .single()
-                        if (!error && data) {
-                          setVendors((prev) => [...prev, data])
-                          setNewVendor("")
-                          toast({ title: "Vendedor agregado", description: data.name })
-                        } else {
-                          toast({ title: "Error", description: "No se pudo agregar el vendedor", variant: "destructive" })
+                        try {
+                          const { data, error } = await supabase
+                            .from("wholesale_vendors")
+                            .insert({ name: newVendor.trim(), section: "bullpadel" })
+                            .select()
+                            .single()
+                          if (error) throw error
+                          if (data) {
+                            setVendors((prev) => [...prev, data])
+                            setNewVendor("")
+                            toast({ title: "Vendedor agregado", description: data.name })
+                          }
+                        } catch (err: any) {
+                          const msg = typeof err?.message === "string" ? err.message : "No se pudo agregar el vendedor"
+                          const is404 = String(err?.status || "").startsWith("404") || /not found|does not exist|relation .* does not exist/i.test(msg)
+                          if (is404) {
+                            toast({
+                              title: "Tabla faltante: wholesale_vendors",
+                              description: "Crea la tabla en Supabase ejecutando MASTER_DB_SETUP.sql y vuelve a intentar.",
+                              variant: "destructive",
+                            })
+                          } else {
+                            toast({ title: "Error", description: msg, variant: "destructive" })
+                          }
                         }
                       } else {
                         const v = { id: Date.now(), name: newVendor.trim() }
