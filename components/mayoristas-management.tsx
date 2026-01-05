@@ -209,6 +209,8 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
   const [editingOrder, setEditingOrder] = useState<WholesaleOrder | null>(null)
   const [viewingClient, setViewingClient] = useState<WholesaleClient | null>(null)
   const [expandedOrders, setExpandedOrders] = useState<number[]>([])
+  const [vendors, setVendors] = useState<{ id: number; name: string }[]>([])
+  const [newVendor, setNewVendor] = useState("")
 
   const toggleOrderExpansion = (orderId: number) => {
     setExpandedOrders(prev =>
@@ -357,6 +359,23 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
       ...data
     })).sort((a, b) => b.quantity - a.quantity)
 
+    const vendorSales = (() => {
+      const map: Record<string, { sales: number; orders: number }> = {}
+      currentPeriodOrders.forEach(o => {
+        const v = (o.vendor || "").trim() || "Sin vendedor"
+        const prev = map[v] || { sales: 0, orders: 0 }
+        map[v] = { sales: prev.sales + (o.total_amount || 0), orders: prev.orders + 1 }
+      })
+      return Object.entries(map)
+        .map(([name, data]) => ({
+          name,
+          sales: data.sales,
+          orders: data.orders,
+          percentage: totalSales > 0 ? (data.sales / totalSales) * 100 : 0,
+        }))
+        .sort((a, b) => b.sales - a.sales)
+    })()
+
     setStatistics({
       totalSales,
       totalOrders: totalOrdersCount,
@@ -366,7 +385,8 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
       retention,
       activeProducts,
       topClients: clientSales,
-      topProducts
+      topProducts,
+      vendorSales
     })
   }
 
@@ -442,6 +462,12 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
 
       if (ordersError) throw ordersError
       setOrders(ordersData || [])
+
+      const { data: vendorsData } = await supabase
+        .from("wholesale_vendors")
+        .select("*")
+        .order("name")
+      setVendors(vendorsData || [])
 
       // Fetch config
       const { data: configData, error: configError } = await supabase
@@ -961,6 +987,7 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
                 total_amount: totalAmount,
                 notes: orderNotes,
                 created_by: userId,
+                vendor: orderVendor || null,
               },
             ])
             .select()
@@ -1867,7 +1894,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
         <p className="text-sm text-gray-500 mb-4">Gestión completa de ventas mayoristas, precios y clientes</p>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="precios" className="flex items-center gap-2">
               <Package className="w-4 h-4" />
               Precios
@@ -1883,6 +1910,10 @@ Este reporte contiene información confidencial y está destinado únicamente pa
             <TabsTrigger value="reportes" className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
               Reportes
+            </TabsTrigger>
+            <TabsTrigger value="vendedores" className="flex items-center gap-2">
+              <UserCircle className="w-4 h-4" />
+              Vendedores
             </TabsTrigger>
           </TabsList>
 
@@ -2498,11 +2529,28 @@ Este reporte contiene información confidencial y está destinado únicamente pa
 
                       <div>
                         <Label>Vendedor</Label>
-                        <Input
-                          value={orderVendor}
-                          onChange={(e) => setOrderVendor(e.target.value)}
-                          placeholder="Nombre del vendedor"
-                        />
+                        <div className="flex gap-2">
+                          <Select value={orderVendor} onValueChange={setOrderVendor}>
+                            <SelectTrigger className="flex-1">
+                              <SelectValue placeholder="Seleccionar vendedor" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {vendors.map((v) => (
+                                <SelectItem key={v.id} value={v.name}>
+                                  {v.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setActiveTab("vendedores")}
+                            title="Nuevo Vendedor"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
 
                       <div className="border p-4 rounded-md bg-gray-50">
@@ -2639,6 +2687,74 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                 </DialogContent>
               </Dialog>
             )}
+          </TabsContent>
+          <TabsContent value="vendedores" className="space-y-4 h-[calc(95vh-200px)] overflow-y-auto">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserCircle className="w-5 h-5" />
+                  Vendedores
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2 mb-4">
+                  <Input
+                    placeholder="Nombre del vendedor"
+                    value={newVendor}
+                    onChange={(e) => setNewVendor(e.target.value)}
+                    className="w-64"
+                  />
+                  <Button
+                    onClick={async () => {
+                      if (!newVendor.trim()) return
+                      if (isSupabaseConfigured) {
+                        const { data, error } = await supabase
+                          .from("wholesale_vendors")
+                          .insert({ name: newVendor.trim() })
+                          .select()
+                          .single()
+                        if (!error && data) {
+                          setVendors((prev) => [...prev, data])
+                          setNewVendor("")
+                          toast({ title: "Vendedor agregado", description: data.name })
+                        } else {
+                          toast({ title: "Error", description: "No se pudo agregar el vendedor", variant: "destructive" })
+                        }
+                      } else {
+                        const v = { id: Date.now(), name: newVendor.trim() }
+                        setVendors((prev) => [...prev, v])
+                        setNewVendor("")
+                        toast({ title: "Vendedor agregado", description: v.name })
+                      }
+                    }}
+                    className="bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    Agregar
+                  </Button>
+                </div>
+                <div className="border rounded-md">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nombre</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {vendors.map((v) => (
+                        <TableRow key={v.id}>
+                          <TableCell className="font-medium">{v.name}</TableCell>
+                        </TableRow>
+                      ))}
+                      {vendors.length === 0 && (
+                        <TableRow>
+                          <TableCell className="text-center text-gray-500">No hay vendedores cargados</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="reportes" className="space-y-4 h-[calc(95vh-200px)] overflow-y-auto">

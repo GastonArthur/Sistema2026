@@ -281,6 +281,13 @@ CREATE TABLE IF NOT EXISTS wholesale_order_items (
     total_price NUMERIC(10, 2) NOT NULL DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS wholesale_vendors (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    section TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_wholesale_orders_client_id ON wholesale_orders(client_id);
 CREATE INDEX IF NOT EXISTS idx_wholesale_order_items_order_id ON wholesale_order_items(order_id);
 

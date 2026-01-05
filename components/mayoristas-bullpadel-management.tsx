@@ -209,6 +209,8 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
   const [editingOrder, setEditingOrder] = useState<WholesaleOrder | null>(null)
   const [viewingClient, setViewingClient] = useState<WholesaleClient | null>(null)
   const [expandedOrders, setExpandedOrders] = useState<number[]>([])
+  const [vendors, setVendors] = useState<{ id: number; name: string }[]>([])
+  const [newVendor, setNewVendor] = useState("")
 
   const toggleOrderExpansion = (orderId: number) => {
     setExpandedOrders(prev =>
@@ -360,6 +362,23 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
       ...data
     })).sort((a, b) => b.quantity - a.quantity)
 
+    const vendorSales = (() => {
+      const map: Record<string, { sales: number; orders: number }> = {}
+      currentPeriodOrders.forEach(o => {
+        const v = (o.vendor || "").trim() || "Sin vendedor"
+        const prev = map[v] || { sales: 0, orders: 0 }
+        map[v] = { sales: prev.sales + (o.total_amount || 0), orders: prev.orders + 1 }
+      })
+      return Object.entries(map)
+        .map(([name, data]) => ({
+          name,
+          sales: data.sales,
+          orders: data.orders,
+          percentage: totalSales > 0 ? (data.sales / totalSales) * 100 : 0,
+        }))
+        .sort((a, b) => b.sales - a.sales)
+    })()
+
     setStatistics({
       totalSales,
       totalOrders: totalOrdersCount,
@@ -369,7 +388,8 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
       retention,
       activeProducts,
       topClients: clientSales,
-      topProducts
+      topProducts,
+      vendorSales
     })
   }
 
@@ -452,6 +472,13 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
       }
 
       setOrders(ordersData || [])
+
+      const { data: vendorsData } = await supabase
+        .from("wholesale_vendors")
+        .select("*")
+        .eq("section", "bullpadel")
+        .order("name")
+      setVendors(vendorsData || [])
 
       // Fetch config
       const { data: configData, error: configError } = await supabase
@@ -972,6 +999,7 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
                 total_amount: totalAmount,
                 notes: orderNotes,
                 created_by: userId,
+                vendor: orderVendor || null,
               },
             ])
             .select()
@@ -1878,7 +1906,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
         <p className="text-sm text-gray-500 mb-4">Gestión completa de ventas mayoristas, precios y clientes</p>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
 
             <TabsTrigger value="clientes" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
@@ -1891,6 +1919,10 @@ Este reporte contiene información confidencial y está destinado únicamente pa
             <TabsTrigger value="reportes" className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
               Reportes
+            </TabsTrigger>
+            <TabsTrigger value="vendedores" className="flex items-center gap-2">
+              <UserCircle className="w-4 h-4" />
+              Vendedores
             </TabsTrigger>
           </TabsList>
 
@@ -1971,6 +2003,74 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                           </TableCell>
                         </TableRow>
                       ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="vendedores" className="space-y-4 h-[calc(95vh-200px)] overflow-y-auto">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserCircle className="w-5 h-5" />
+                  Vendedores
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2 mb-4">
+                  <Input
+                    placeholder="Nombre del vendedor"
+                    value={newVendor}
+                    onChange={(e) => setNewVendor(e.target.value)}
+                    className="w-64"
+                  />
+                  <Button
+                    onClick={async () => {
+                      if (!newVendor.trim()) return
+                      if (isSupabaseConfigured) {
+                        const { data, error } = await supabase
+                          .from("wholesale_vendors")
+                          .insert({ name: newVendor.trim(), section: "bullpadel" })
+                          .select()
+                          .single()
+                        if (!error && data) {
+                          setVendors((prev) => [...prev, data])
+                          setNewVendor("")
+                          toast({ title: "Vendedor agregado", description: data.name })
+                        } else {
+                          toast({ title: "Error", description: "No se pudo agregar el vendedor", variant: "destructive" })
+                        }
+                      } else {
+                        const v = { id: Date.now(), name: newVendor.trim() }
+                        setVendors((prev) => [...prev, v])
+                        setNewVendor("")
+                        toast({ title: "Vendedor agregado", description: v.name })
+                      }
+                    }}
+                    className="bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    Agregar
+                  </Button>
+                </div>
+                <div className="border rounded-md">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nombre</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {vendors.map((v) => (
+                        <TableRow key={v.id}>
+                          <TableCell className="font-medium">{v.name}</TableCell>
+                        </TableRow>
+                      ))}
+                      {vendors.length === 0 && (
+                        <TableRow>
+                          <TableCell className="text-center text-gray-500">No hay vendedores cargados</TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </div>
@@ -2228,6 +2328,32 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                           value={orderDate}
                           onChange={(e) => setOrderDate(e.target.value)}
                         />
+                      </div>
+
+                      <div>
+                        <Label>Vendedor</Label>
+                        <div className="flex gap-2">
+                          <Select value={orderVendor} onValueChange={setOrderVendor}>
+                            <SelectTrigger className="flex-1">
+                              <SelectValue placeholder="Seleccionar vendedor" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {vendors.map((v) => (
+                                <SelectItem key={v.id} value={v.name}>
+                                  {v.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setActiveTab("vendedores")}
+                            title="Nuevo Vendedor"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
 
                       <div className="border p-4 rounded-md bg-gray-50">
@@ -2805,6 +2931,38 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                 </CardContent>
               </Card>
             </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Ventas por Vendedor</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {Array.isArray((statistics as any).vendorSales) && (statistics as any).vendorSales.slice(0, 10).map((v: any, index: number) => (
+                    <div key={v.name + index} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-semibold text-sm">
+                          {index + 1}
+                        </div>
+                        <div>
+                          <p className="font-medium">{v.name}</p>
+                          <p className="text-sm text-gray-500">{v.orders} pedidos</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold">{formatCurrency(v.sales)}</p>
+                        <div className="w-20 bg-gray-200 rounded-full h-2 mt-1">
+                          <div className="bg-indigo-600 h-2 rounded-full" style={{ width: `${v.percentage}%` }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {!Array.isArray((statistics as any).vendorSales) || (statistics as any).vendorSales.length === 0 ? (
+                    <p className="text-center text-gray-500 py-4">No hay ventas por vendedor en el período</p>
+                  ) : null}
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Análisis de tendencias */}
             <Card>
