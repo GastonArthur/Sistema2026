@@ -2722,12 +2722,20 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                             toast({ title: "Vendedor agregado", description: data.name })
                           }
                         } catch (err: any) {
+                          const status = String(err?.status || "")
                           const msg = typeof err?.message === "string" ? err.message : "No se pudo agregar el vendedor"
-                          const is404 = String(err?.status || "").startsWith("404") || /not found|does not exist|relation .* does not exist/i.test(msg)
+                          const is404 = status.startsWith("404") || /not found|does not exist|relation .* does not exist/i.test(msg)
+                          const is401 = status.startsWith("401") || /row-level security/i.test(msg)
                           if (is404) {
                             toast({
                               title: "Tabla faltante: wholesale_vendors",
                               description: "Crea la tabla en Supabase ejecutando MASTER_DB_SETUP.sql y vuelve a intentar.",
+                              variant: "destructive",
+                            })
+                          } else if (is401) {
+                            toast({
+                              title: "Acceso denegado por RLS",
+                              description: "Autoriza INSERT/SELECT en wholesale_vendors para el rol apropiado (anon/authenticated).",
                               variant: "destructive",
                             })
                           } else {
