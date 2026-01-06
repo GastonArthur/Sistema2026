@@ -520,17 +520,7 @@ export function StockManagement() {
               </Badge>
             )}
           </div>
-          {lastLog && (
-            <div className="mt-4 bg-slate-50 border rounded-md p-3 text-sm">
-              <div className="font-semibold mb-2">Log registrado:</div>
-              <div className="font-mono whitespace-pre-wrap">
-                {"{user_id: " + (lastLog.user_id ?? "null") + ", user_email: '" + (lastLog.user_email ?? "") + "', user_name: '" + (lastLog.user_name ?? "") + "', action: 'CREATE_STOCK_PRODUCT', table_name: 'stock_products', ...}"}
-              </div>
-              <div className="mt-1">action: "CREATE_STOCK_PRODUCT"</div>
-              <div className="mt-1">description: "Creación de producto en Stock"</div>
-              <div className="mt-1 font-mono">new_data: "{lastLog.new_data}"</div>
-            </div>
-          )}
+          
         </CardContent>
       </Card>
 

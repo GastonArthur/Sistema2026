@@ -326,6 +326,52 @@ VALUES (
   can_view_logs = true,
   can_view_wholesale = true;
 
+-- 10. Stock Management
+CREATE TABLE IF NOT EXISTS stock_brands (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS stock_products (
+  id SERIAL PRIMARY KEY,
+  sku TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  brand TEXT NOT NULL,
+  quantity INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS stock_changes (
+  id SERIAL PRIMARY KEY,
+  product_id INTEGER REFERENCES stock_products(id) ON DELETE CASCADE,
+  sku TEXT NOT NULL,
+  old_quantity INTEGER NOT NULL DEFAULT 0,
+  new_quantity INTEGER NOT NULL DEFAULT 0,
+  user_email TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_stock_products_sku ON stock_products(sku);
+CREATE INDEX IF NOT EXISTS idx_stock_products_brand ON stock_products(brand);
+CREATE INDEX IF NOT EXISTS idx_stock_changes_product_id ON stock_changes(product_id);
+
+-- Triggers for updated_at
+DROP TRIGGER IF EXISTS update_stock_products_updated_at ON stock_products;
+CREATE TRIGGER update_stock_products_updated_at
+  BEFORE UPDATE ON stock_products
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_stock_brands_updated_at ON stock_brands;
+CREATE TRIGGER update_stock_brands_updated_at
+  BEFORE UPDATE ON stock_brands
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
 -- 11. Maintenance
 -- VACUUM ANALYZE; -- Commented out because it cannot run inside a transaction block in Supabase SQL Editor
 
