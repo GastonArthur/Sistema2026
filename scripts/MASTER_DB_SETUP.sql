@@ -372,6 +372,18 @@ CREATE TRIGGER update_stock_brands_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
+-- Allow duplicated SKU by dropping unique constraint if exists
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 
+    FROM pg_constraint 
+    WHERE conname = 'stock_products_sku_key'
+  ) THEN
+    ALTER TABLE stock_products DROP CONSTRAINT stock_products_sku_key;
+  END IF;
+END $$;
+
 -- 11. Maintenance
 -- VACUUM ANALYZE; -- Commented out because it cannot run inside a transaction block in Supabase SQL Editor
 

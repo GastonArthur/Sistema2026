@@ -65,6 +65,7 @@ export function StockManagement() {
   const [lastLog, setLastLog] = useState<any | null>(null)
   const [brandFilter, setBrandFilter] = useState<string>("all")
   const [skuCheckResult, setSkuCheckResult] = useState<{ exists: boolean; product?: StockProduct | null } | null>(null)
+  const [showSkuTools, setShowSkuTools] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -93,6 +94,25 @@ export function StockManagement() {
     return Object.entries(groups).sort((a, b) => a[0].localeCompare(b[0]))
   }, [filtered])
 
+  const diffByProductId = useMemo(() => {
+    const bySku: Record<string, StockProduct[]> = {}
+    products
+      .slice()
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+      .forEach((p) => {
+        if (!bySku[p.sku]) bySku[p.sku] = []
+        bySku[p.sku].push(p)
+      })
+    const map: Record<number, number | null> = {}
+    Object.values(bySku).forEach((list) => {
+      for (let i = 0; i < list.length; i++) {
+        const curr = list[i]
+        const prev = i > 0 ? list[i - 1] : null
+        map[curr.id] = prev ? curr.quantity - prev.quantity : null
+      }
+    })
+    return map
+  }, [products])
   async function fetchData() {
     try {
       setLoading(true)
@@ -281,6 +301,8 @@ export function StockManagement() {
         })
       }
       setForm({ name: "", sku: "", brandMode: "select", brand: "", quantity: "" })
+      setSearch("")
+      setBrandFilter("all")
       fetchData()
     } catch (err) {
       console.error(err)
@@ -552,6 +574,7 @@ export function StockManagement() {
             <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
               {filtered.length} items
             </Badge>
+            
           </div>
         </CardHeader>
         <CardContent>
@@ -568,6 +591,7 @@ export function StockManagement() {
                     <TableHead>SKU</TableHead>
                     <TableHead>Marca</TableHead>
                     <TableHead>Stock</TableHead>
+                    <TableHead>Diferencia</TableHead>
                     <TableHead>Última modificación</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
@@ -590,6 +614,16 @@ export function StockManagement() {
                           )}
                           <History className="w-4 h-4" />
                         </button>
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {diffByProductId[p.id] != null ? (
+                          <span className={diffByProductId[p.id]! >= 0 ? "text-green-600" : "text-red-600"}>
+                            {diffByProductId[p.id]! >= 0 ? "+" : ""}
+                            {diffByProductId[p.id]}
+                          </span>
+                        ) : (
+                          "-"
+                        )}
                       </TableCell>
                       <TableCell>{p.brand}</TableCell>
                       <TableCell>
@@ -651,47 +685,7 @@ export function StockManagement() {
         </CardContent>
       </Card>
 
-      <Card className="shadow-sm border bg-white">
-        <CardHeader>
-          <CardTitle className="text-sm">Verificación de SKU</CardTitle>
-          <CardDescription>Comprobar existencia del producto 102032000</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={async () => {
-                const res = await fetch("/api/stock", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  credentials: "include",
-                  body: JSON.stringify({ action: "verifyProduct", payload: { sku: "102032000" } }),
-                })
-                const json = await res.json()
-                if (res.ok && json?.ok) {
-                  setSkuCheckResult({ exists: !!json.exists, product: json.product })
-                } else {
-                  setSkuCheckResult({ exists: false })
-                }
-              }}
-            >
-              Verificar SKU 102032000
-            </Button>
-            {skuCheckResult && (
-              <Badge variant={skuCheckResult.exists ? "default" : "destructive"}>
-                {skuCheckResult.exists ? "Creado" : "No creado"}
-              </Badge>
-            )}
-          </div>
-          {skuCheckResult?.product && (
-            <div className="mt-3 text-sm">
-              <div>Nombre: {skuCheckResult.product.name}</div>
-              <div>Marca: {skuCheckResult.product.brand}</div>
-              <div>Stock: {skuCheckResult.product.quantity}</div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      
 
       <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
         <DialogContent className="max-w-3xl">

@@ -79,11 +79,6 @@ export async function POST(req: NextRequest) {
         const { error: bErr } = await supabase.from("stock_brands").insert({ name: brandV })
         if (bErr) return NextResponse.json({ error: bErr.message }, { status: 400 })
       }
-      // Ensure sku unique
-      const { data: existingProd } = await supabase.from("stock_products").select("id").eq("sku", skuV).maybeSingle()
-      if (existingProd) {
-        return NextResponse.json({ error: "SKU existente" }, { status: 409 })
-      }
       const { data: inserted, error: insErr } = await supabase
         .from("stock_products")
         .insert([{ sku: skuV, name: nameV, brand: brandV, quantity: qtyV }])
