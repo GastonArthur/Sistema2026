@@ -300,11 +300,8 @@ export function NotasCreditoManagement() {
       {/* Tarjetas de Resumen */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-pink-600 text-white border-none shadow-md">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Notas</CardTitle>
-            <FileText className="h-4 w-4 text-pink-100" />
-          </CardHeader>
           <CardContent>
+            <p className="text-pink-100 text-sm">Total Notas</p>
             <div className="text-2xl font-bold">{totalNotes}</div>
             <p className="text-xs text-pink-100">
               {formatCurrency(totalAmount)}
@@ -314,11 +311,8 @@ export function NotasCreditoManagement() {
         </Card>
 
         <Card className="bg-emerald-500 text-white border-none shadow-md">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Disponibles</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-emerald-100" />
-          </CardHeader>
           <CardContent>
+            <p className="text-emerald-100 text-sm">Disponibles</p>
             <div className="text-2xl font-bold">{availableNotes.length}</div>
             <p className="text-xs text-emerald-100">
               {formatCurrency(availableAmount)}
@@ -327,11 +321,8 @@ export function NotasCreditoManagement() {
         </Card>
 
         <Card className="bg-slate-600 text-white border-none shadow-md">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Utilizadas</CardTitle>
-            <XCircle className="h-4 w-4 text-slate-100" />
-          </CardHeader>
           <CardContent>
+            <p className="text-slate-100 text-sm">Utilizadas</p>
             <div className="text-2xl font-bold">{usedNotes.length}</div>
             <p className="text-xs text-slate-100">
               {formatCurrency(usedAmount)}

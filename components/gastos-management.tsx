@@ -455,17 +455,19 @@ export function GastosManagement({ onUpdateExpenses }: GastosManagementProps) {
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <Receipt className="h-6 w-6 text-teal-600" />
-            Gestión de Gastos
-          </h2>
-          <p className="text-gray-500">Control integral de egresos, presupuestos y reportes.</p>
-        </div>
+        <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+          <CardHeader className="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-t-lg">
+            <CardTitle className="flex items-center gap-2 text-teal-800">
+              <Receipt className="h-6 w-6 text-teal-600" />
+              Gestión de Gastos
+            </CardTitle>
+            <CardDescription>Control integral de egresos, presupuestos y reportes.</CardDescription>
+          </CardHeader>
+        </Card>
         <div className="flex gap-2">
-            <Button onClick={() => setShowForm(true)} className="bg-teal-600 hover:bg-teal-700">
-                <Plus className="mr-2 h-4 w-4" /> Nuevo Gasto
-            </Button>
+          <Button onClick={() => setShowForm(true)} className="bg-teal-600 hover:bg-teal-700">
+            <Plus className="mr-2 h-4 w-4" /> Nuevo Gasto
+          </Button>
         </div>
       </div>
 
