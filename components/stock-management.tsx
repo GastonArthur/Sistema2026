@@ -60,6 +60,11 @@ export function StockManagement() {
   const [saving, setSaving] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const editQtyRef = useRef<HTMLInputElement>(null)
+  const [persistStatus, setPersistStatus] = useState<"ok" | "fail" | null>(null)
+  const [lastCreatedSku, setLastCreatedSku] = useState<string | null>(null)
+  const [lastLog, setLastLog] = useState<any | null>(null)
+  const [brandFilter, setBrandFilter] = useState<string>("all")
+  const [skuCheckResult, setSkuCheckResult] = useState<{ exists: boolean; product?: StockProduct | null } | null>(null)
 
   useEffect(() => {
     fetchData()
@@ -68,14 +73,16 @@ export function StockManagement() {
   useEffect(() => {
     const q = search.toLowerCase()
     setFiltered(
-      products.filter(
-        (p) =>
+      products.filter((p) => {
+        const matchesSearch =
           p.sku.toLowerCase().includes(q) ||
           p.name.toLowerCase().includes(q) ||
           p.brand.toLowerCase().includes(q)
-      )
+        const matchesBrand = brandFilter === "all" ? true : p.brand === brandFilter
+        return matchesSearch && matchesBrand
+      }),
     )
-  }, [products, search])
+  }, [products, search, brandFilter])
 
   const groupedByBrand = useMemo(() => {
     const groups: Record<string, StockProduct[]> = {}
@@ -230,17 +237,59 @@ export function StockManagement() {
         setBrands((prev) => [...prev, brandValue].sort())
       }
 
+      const logObj = {
+        user_id: user?.id,
+        user_email: user?.email,
+        user_name: user?.name,
+        action: "CREATE_STOCK_PRODUCT",
+        table_name: "stock_products",
+        record_id: newId,
+        old_data: null,
+        new_data: JSON.stringify({ sku, name, brand: brandValue, quantity: qtyNum }),
+        description: "Creación de producto en Stock",
+      }
+      setLastLog(logObj)
       await logActivity("CREATE_STOCK_PRODUCT", "stock_products", newId, null, { sku, name, brand: brandValue, quantity: qtyNum }, "Creación de producto en Stock")
-      toast({ title: "Guardado", description: "Producto creado" })
+
+      setLastCreatedSku(sku)
+      const verifyRes = await fetch("/api/stock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ action: "verifyProduct", payload: { sku } }),
+      })
+      const verifyJson = await verifyRes.json()
+      if (verifyRes.ok && verifyJson?.ok && verifyJson?.exists) {
+        setPersistStatus("ok")
+        const nowItem: StockProduct = {
+          id: newId,
+          sku,
+          name,
+          brand: brandValue,
+          quantity: qtyNum,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+        setProducts((prev) => [...prev, nowItem])
+        toast({ title: "Guardado", description: "Producto creado y verificado" })
+      } else {
+        setPersistStatus("fail")
+        toast({
+          title: "Error de verificación",
+          description: "El producto no fue verificado en la base de datos",
+          variant: "destructive",
+        })
+      }
       setForm({ name: "", sku: "", brandMode: "select", brand: "", quantity: "" })
       fetchData()
     } catch (err) {
       console.error(err)
       toast({
         title: "Error",
-        description: "No se pudo guardar el producto",
+        description: "No se pudo guardar el producto. Verifique su conexión o permisos.",
         variant: "destructive",
       })
+      setPersistStatus("fail")
     } finally {
       setSaving(false)
     }
@@ -372,19 +421,13 @@ export function StockManagement() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white rounded-lg shadow-sm border border-blue-100">
-              <Layers className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <span className="bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent font-bold text-xl">
-                Stock de Productos
-              </span>
-              <CardDescription className="mt-1">Base de datos independiente</CardDescription>
-            </div>
-          </div>
+      <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
+          <CardTitle className="flex items-center gap-2 text-blue-800">
+            <Layers className="w-5 h-5" />
+            Stock
+          </CardTitle>
+          <CardDescription>Base de datos independiente</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid md:grid-cols-5 gap-4">
@@ -467,19 +510,34 @@ export function StockManagement() {
               />
             </div>
           </div>
-          <div className="mt-4">
+          <div className="mt-4 flex items-center gap-3">
             <Button onClick={saveProduct} disabled={saving || readOnly} className="bg-emerald-600 hover:bg-emerald-700">
               Guardar
             </Button>
+            {lastCreatedSku && (
+              <Badge variant={persistStatus === "ok" ? "default" : "destructive"}>
+                {persistStatus === "ok" ? "Persistencia BD: OK" : "Persistencia BD: ERROR"}
+              </Badge>
+            )}
           </div>
+          {lastLog && (
+            <div className="mt-4 bg-slate-50 border rounded-md p-3 text-sm">
+              <div className="font-semibold mb-2">Log registrado:</div>
+              <div className="font-mono whitespace-pre-wrap">
+                {"{user_id: " + (lastLog.user_id ?? "null") + ", user_email: '" + (lastLog.user_email ?? "") + "', user_name: '" + (lastLog.user_name ?? "") + "', action: 'CREATE_STOCK_PRODUCT', table_name: 'stock_products', ...}"}
+              </div>
+              <div className="mt-1">action: "CREATE_STOCK_PRODUCT"</div>
+              <div className="mt-1">description: "Creación de producto en Stock"</div>
+              <div className="mt-1 font-mono">new_data: "{lastLog.new_data}"</div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm">
-        <CardHeader className="flex items-center justify-between">
-          <CardTitle>Listado de Productos</CardTitle>
-          <div className="flex items-center gap-2">
-            <div className="relative">
+        <CardHeader>
+          <div className="bg-white p-3 rounded-lg border flex flex-wrap gap-3 items-center">
+            <div className="relative flex-1 min-w-[220px]">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
               <Input
                 value={search}
@@ -488,6 +546,19 @@ export function StockManagement() {
                 placeholder="Buscar por nombre, SKU o marca"
               />
             </div>
+            <Select value={brandFilter} onValueChange={(val) => setBrandFilter(val)}>
+              <SelectTrigger className="w-[200px] h-9 text-sm">
+                <SelectValue placeholder="Marca" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las marcas</SelectItem>
+                {brands.map((b) => (
+                  <SelectItem key={b} value={b}>
+                    {b}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
               {filtered.length} items
             </Badge>
@@ -587,6 +658,48 @@ export function StockManagement() {
               </Table>
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-sm border bg-white">
+        <CardHeader>
+          <CardTitle className="text-sm">Verificación de SKU</CardTitle>
+          <CardDescription>Comprobar existencia del producto 102032000</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={async () => {
+                const res = await fetch("/api/stock", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  credentials: "include",
+                  body: JSON.stringify({ action: "verifyProduct", payload: { sku: "102032000" } }),
+                })
+                const json = await res.json()
+                if (res.ok && json?.ok) {
+                  setSkuCheckResult({ exists: !!json.exists, product: json.product })
+                } else {
+                  setSkuCheckResult({ exists: false })
+                }
+              }}
+            >
+              Verificar SKU 102032000
+            </Button>
+            {skuCheckResult && (
+              <Badge variant={skuCheckResult.exists ? "default" : "destructive"}>
+                {skuCheckResult.exists ? "Creado" : "No creado"}
+              </Badge>
+            )}
+          </div>
+          {skuCheckResult?.product && (
+            <div className="mt-3 text-sm">
+              <div>Nombre: {skuCheckResult.product.name}</div>
+              <div>Marca: {skuCheckResult.product.brand}</div>
+              <div>Stock: {skuCheckResult.product.quantity}</div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

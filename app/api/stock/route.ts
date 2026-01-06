@@ -9,6 +9,7 @@ type Action =
   | "updateQuantity"
   | "deleteProduct"
   | "getChangeCounts"
+  | "verifyProduct"
 
 export async function POST(req: NextRequest) {
   try {
@@ -162,9 +163,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, counts })
     }
 
+    if (action === "verifyProduct") {
+      const sku: string = (body?.payload?.sku || "").toString().trim().toUpperCase()
+      if (!sku) {
+        return NextResponse.json({ error: "SKU requerido" }, { status: 400 })
+      }
+      const { data, error } = await supabase
+        .from("stock_products")
+        .select("id, sku, name, brand, quantity, created_at, updated_at")
+        .eq("sku", sku)
+        .maybeSingle()
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 400 })
+      }
+      return NextResponse.json({ ok: true, exists: !!data, product: data || null })
+    }
+
     return NextResponse.json({ error: "Acción no soportada" }, { status: 400 })
   } catch (err: any) {
     return NextResponse.json({ error: err?.message || "Error interno" }, { status: 500 })
   }
 }
-
