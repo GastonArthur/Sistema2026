@@ -102,12 +102,22 @@ export function StockManagement() {
         .order("brand", { ascending: true })
         .order("name", { ascending: true })
       if (pErr) throw pErr
-      const { data: counts } = await supabase
-        .from("stock_changes")
-        .select("sku, count:id")
-        .group("sku")
-      const countMap = new Map<string, number>()
-      counts?.forEach((c: any) => countMap.set(c.sku, Number(c.count)))
+      // Obtener conteos de cambios por SKU desde API (service role)
+      let countMap = new Map<string, number>()
+      try {
+        const res = await fetch("/api/stock", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ action: "getChangeCounts" }),
+        })
+        const json = await res.json()
+        if (res.ok && json?.ok && json?.counts) {
+          countMap = new Map<string, number>(Object.entries(json.counts))
+        }
+      } catch (e) {
+        // Ignorar error de conteo para no bloquear carga principal
+      }
       const enriched = (prods || []).map((p) => ({
         ...p,
         change_count: countMap.get(p.sku) || 0,
@@ -200,36 +210,24 @@ export function StockManagement() {
         return
       }
 
-      // Ensure brand exists
-      if (!brands.includes(brandValue)) {
-        const { error: brandErr } = await supabase.from("stock_brands").insert({ name: brandValue })
-        if (brandErr) throw brandErr
-        setBrands((prev) => [...prev, brandValue].sort())
+      // Crear producto y asegurar marca vía API con service role
+      const resp = await fetch("/api/stock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "createProduct",
+          payload: { sku, name, brand: brandValue, quantity: qtyNum },
+        }),
+      })
+      const json = await resp.json()
+      if (!resp.ok || !json?.ok) {
+        throw new Error(json?.error || "Error creando producto")
       }
-
-      // Insert product
-      const { data: inserted, error: insErr } = await supabase
-        .from("stock_products")
-        .insert([{ sku, name, brand: brandValue, quantity: qtyNum }])
-        .select("id")
-        .single()
-      if (insErr) throw insErr
-      newId = inserted.id
-
-      // Log initial change
-      const { error: chErr } = await supabase.from("stock_changes").insert([
-        {
-          product_id: newId,
-          sku,
-          old_quantity: 0,
-          new_quantity: qtyNum,
-          user_email: user?.email || "usuario",
-        },
-      ])
-      if (chErr) {
-        // rollback product
-        await supabase.from("stock_products").delete().eq("id", newId)
-        throw chErr
+      newId = json.id
+      // Actualizar lista de marcas local si era nueva
+      if (!brands.includes(brandValue)) {
+        setBrands((prev) => [...prev, brandValue].sort())
       }
 
       await logActivity("CREATE_STOCK_PRODUCT", "stock_products", newId, null, { sku, name, brand: brandValue, quantity: qtyNum }, "Creación de producto en Stock")
@@ -276,25 +274,23 @@ export function StockManagement() {
         return
       }
 
-      const { error: updErr } = await supabase
-        .from("stock_products")
-        .update({ quantity: newQty })
-        .eq("id", product.id)
-      if (updErr) throw updErr
-
-      const { error: chErr } = await supabase.from("stock_changes").insert([
-        {
-          product_id: product.id,
-          sku: product.sku,
-          old_quantity: oldQty,
-          new_quantity: newQty,
-          user_email: user?.email || "usuario",
-        },
-      ])
-      if (chErr) {
-        // rollback
-        await supabase.from("stock_products").update({ quantity: oldQty }).eq("id", product.id)
-        throw chErr
+      const resp = await fetch("/api/stock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "updateQuantity",
+          payload: {
+            product_id: product.id,
+            sku: product.sku,
+            old_quantity: oldQty,
+            new_quantity: newQty,
+          },
+        }),
+      })
+      const json = await resp.json()
+      if (!resp.ok || !json?.ok) {
+        throw new Error(json?.error || "Error actualizando stock")
       }
       await logActivity("UPDATE_STOCK_QTY", "stock_products", product.id, { quantity: oldQty }, { quantity: newQty }, "Actualización de stock")
       toast({ title: "Actualizado", description: "Stock modificado" })
@@ -321,10 +317,19 @@ export function StockManagement() {
         toast({ title: "Eliminado", description: "Producto eliminado" })
         return
       }
-      // delete changes first
-      await supabase.from("stock_changes").delete().eq("product_id", product.id)
-      const { error } = await supabase.from("stock_products").delete().eq("id", product.id)
-      if (error) throw error
+      const resp = await fetch("/api/stock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "deleteProduct",
+          payload: { product_id: product.id },
+        }),
+      })
+      const json = await resp.json()
+      if (!resp.ok || !json?.ok) {
+        throw new Error(json?.error || "Error eliminando")
+      }
       await logActivity("DELETE_STOCK_PRODUCT", "stock_products", product.id, product, null, "Eliminación de producto en Stock")
       toast({ title: "Eliminado", description: "Producto eliminado" })
       fetchData()
@@ -628,4 +633,3 @@ export function StockManagement() {
     </div>
   )
 }
-
