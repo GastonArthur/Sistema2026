@@ -152,6 +152,17 @@ export function AppSidebar({
                   <span className="text-sm font-medium tracking-tight">Productos</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={activeTab === "stock"}
+                  onClick={() => handleNavigation("stock")}
+                  tooltip="Stock"
+                  className="h-11 px-3 rounded-none text-zinc-300 bg-transparent border-none hover:bg-transparent hover:text-white data-[active=true]:bg-transparent data-[active=true]:text-white transition-colors group-data-[collapsible=icon]:p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:[&>svg]:text-violet-400"
+                >
+                  <Store className="size-5 shrink-0" strokeWidth={2} />
+                  <span className="text-sm font-medium tracking-tight">Stock</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
