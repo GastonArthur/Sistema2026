@@ -457,13 +457,15 @@ export function ClientesManagement() {
   return (
     <div className="space-y-4">
       <div className="space-y-4 flex flex-col">
-        <div className="flex items-center gap-2 mb-4">
-          <Users className="w-5 h-5 text-purple-600" />
-          <div>
-            <h2 className="text-xl font-semibold">Gestión General de Clientes</h2>
-            <p className="text-sm text-gray-500">Administre todos los clientes mayoristas y minoristas en un solo lugar.</p>
-          </div>
-        </div>
+        <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+          <CardHeader className="bg-gradient-to-r from-cyan-50 to-sky-50 rounded-t-lg">
+            <CardTitle className="flex items-center gap-2 text-cyan-800">
+              <Users className="w-5 h-5" />
+              Clientes
+            </CardTitle>
+            <CardDescription>Administre todos los clientes mayoristas y minoristas en un solo lugar</CardDescription>
+          </CardHeader>
+        </Card>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
