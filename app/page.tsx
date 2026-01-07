@@ -32,6 +32,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { StockManagement } from "@/components/stock-management"
+import { StockList } from "@/components/stock-list"
 import { Progress } from "@/components/ui/progress"
 import {
   DropdownMenu,
@@ -4014,7 +4015,10 @@ ${csvRows
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-6">
-                    <StockManagement />
+                    <div className="space-y-8">
+                      <StockManagement />
+                      <StockList />
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
