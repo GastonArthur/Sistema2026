@@ -11,6 +11,7 @@ type Action =
   | "getChangeCounts"
   | "verifyProduct"
   | "updateCreatedAt"
+  | "updateProduct"
 
 export async function POST(req: NextRequest) {
   try {
@@ -189,6 +190,52 @@ export async function POST(req: NextRequest) {
       const { error: updErr } = await supabase.from("stock_products").update({ created_at: dt }).eq("id", pid)
       if (updErr) {
         return NextResponse.json({ error: updErr.message }, { status: 400 })
+      }
+      return NextResponse.json({ ok: true })
+    }
+
+    if (action === "updateProduct") {
+      const { product_id, sku, name, brand, quantity, created_at } = body?.payload || {}
+      const pid = Number(product_id)
+      const skuV = String(sku || "").toUpperCase().trim()
+      const nameV = String(name || "").trim()
+      const brandV = String(brand || "").trim()
+      const qtyNum = Number(quantity)
+      const dt = created_at ? String(created_at) : null
+      if (!Number.isFinite(pid) || !skuV || !nameV || !brandV || !Number.isFinite(qtyNum) || qtyNum < 0) {
+        return NextResponse.json({ error: "Datos inválidos" }, { status: 400 })
+      }
+      if (dt) {
+        const parsed = new Date(dt)
+        if (isNaN(parsed.getTime())) {
+          return NextResponse.json({ error: "Fecha inválida" }, { status: 400 })
+        }
+      }
+      const { data: existing } = await supabase.from("stock_products").select("*").eq("id", pid).maybeSingle()
+      if (!existing) {
+        return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 })
+      }
+      const { data: existingBrand } = await supabase.from("stock_brands").select("name").eq("name", brandV).maybeSingle()
+      if (!existingBrand) {
+        const { error: bErr } = await supabase.from("stock_brands").insert({ name: brandV })
+        if (bErr) return NextResponse.json({ error: bErr.message }, { status: 400 })
+      }
+      const updateData: any = { sku: skuV, name: nameV, brand: brandV, quantity: qtyNum }
+      if (dt) updateData.created_at = dt
+      const { error: updErr } = await supabase.from("stock_products").update(updateData).eq("id", pid)
+      if (updErr) {
+        return NextResponse.json({ error: updErr.message }, { status: 400 })
+      }
+      if (Number(existing.quantity) !== qtyNum) {
+        await supabase.from("stock_changes").insert([
+          {
+            product_id: pid,
+            sku: skuV,
+            old_quantity: Number(existing.quantity),
+            new_quantity: qtyNum,
+            user_email: session.users.email || "usuario",
+          },
+        ])
       }
       return NextResponse.json({ ok: true })
     }

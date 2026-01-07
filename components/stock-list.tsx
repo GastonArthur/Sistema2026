@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Package, Search } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
@@ -33,6 +34,16 @@ export function StockList() {
   const [saving, setSaving] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editingDateId, setEditingDateId] = useState<number | null>(null)
+  const [editOpen, setEditOpen] = useState(false)
+  const [editItem, setEditItem] = useState<StockItem | null>(null)
+  const [editForm, setEditForm] = useState({
+    name: "",
+    sku: "",
+    brandMode: "select" as "select" | "new",
+    brand: "",
+    quantity: "",
+    created_at: "",
+  })
 
   const [filters, setFilters] = useState({
     search: "",
@@ -108,7 +119,7 @@ export function StockList() {
       }
     })
     return map
-  }
+  }, [items])
 
   const filteredData = useMemo(() => {
     const q = filters.search.toLowerCase()
@@ -324,6 +335,85 @@ export function StockList() {
     } catch (err) {
       console.error(err)
       toast({ title: "Error", description: "No se pudo eliminar", variant: "destructive" })
+    }
+  }
+
+  function openEditDialog(item: StockItem) {
+    setEditItem(item)
+    setEditOpen(true)
+    setEditForm({
+      name: item.name,
+      sku: item.sku,
+      brandMode: brands.includes(item.brand) ? "select" : "new",
+      brand: item.brand,
+      quantity: String(item.quantity),
+      created_at: new Date(item.created_at).toISOString().slice(0, 16),
+    })
+  }
+
+  async function saveEditDialog() {
+    if (!editItem || readOnly) return
+    try {
+      const name = String(editForm.name || "").trim()
+      const sku = String(editForm.sku || "").trim().toUpperCase()
+      const brandValue = String(editForm.brand || "").trim()
+      const qtyNum = Number(editForm.quantity)
+      const createdLocal = String(editForm.created_at || "")
+      if (!name || !sku || !brandValue || !Number.isFinite(qtyNum) || qtyNum < 0 || !createdLocal) {
+        toast({ title: "Datos inválidos", description: "Complete todos los campos", variant: "destructive" })
+        return
+      }
+      if (!isSupabaseConfigured) {
+        const next = items.map((i) =>
+          i.id === editItem.id
+            ? {
+                ...i,
+                name,
+                sku,
+                brand: brandValue,
+                quantity: qtyNum,
+                created_at: new Date(createdLocal).toISOString(),
+                updated_at: new Date().toISOString(),
+              }
+            : i,
+        )
+        setItems(next)
+        localStorage.setItem("stock:products", JSON.stringify(next))
+        if (!brands.includes(brandValue)) setBrands((prev) => [...prev, brandValue].sort())
+        toast({ title: "Actualizado", description: "Producto modificado" })
+        setEditOpen(false)
+        setEditItem(null)
+        return
+      }
+      const resp = await fetch("/api/stock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "updateProduct",
+          payload: {
+            product_id: editItem.id,
+            sku,
+            name,
+            brand: brandValue,
+            quantity: qtyNum,
+            created_at: createdLocal,
+          },
+        }),
+      })
+      const json = await resp.json()
+      if (!resp.ok || !json?.ok) {
+        throw new Error(json?.error || "Error actualizando producto")
+      }
+      await logActivity("UPDATE_STOCK_PRODUCT", "stock_products", editItem.id, editItem, { sku, name, brand: brandValue, quantity: qtyNum, created_at: createdLocal }, "Edición de producto en Stock")
+      toast({ title: "Actualizado", description: "Producto modificado" })
+      setEditOpen(false)
+      setEditItem(null)
+      loadData()
+      if (!brands.includes(brandValue)) setBrands((prev) => [...prev, brandValue].sort())
+    } catch (err) {
+      console.error(err)
+      toast({ title: "Error", description: "No se pudo modificar el producto", variant: "destructive" })
     }
   }
 
@@ -544,7 +634,7 @@ export function StockList() {
                     <TableCell className="text-right">
                       {!readOnly && (
                         <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="sm" onClick={() => setEditingId(item.id)}>
+                          <Button variant="outline" size="sm" onClick={() => openEditDialog(item)}>
                             Editar
                           </Button>
                           <Button variant="destructive" size="sm" onClick={() => deleteItem(item)}>
@@ -615,6 +705,67 @@ export function StockList() {
           </div>
         </CardContent>
       </Card>
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar producto</DialogTitle>
+          </DialogHeader>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <Label>Nombre</Label>
+              <Input value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} />
+            </div>
+            <div>
+              <Label>SKU</Label>
+              <Input value={editForm.sku} onChange={(e) => setEditForm((f) => ({ ...f, sku: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Marca</Label>
+              {editForm.brandMode === "select" ? (
+                <Select
+                  value={editForm.brand}
+                  onValueChange={(val) => {
+                    if (val === "__new__") {
+                      setEditForm((f) => ({ ...f, brandMode: "new", brand: "" }))
+                    } else {
+                      setEditForm((f) => ({ ...f, brand: val }))
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar marca" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {brands.map((b) => (
+                      <SelectItem key={b} value={b}>
+                        {b}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="__new__">+ Nueva marca…</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="flex gap-2">
+                  <Input value={editForm.brand} onChange={(e) => setEditForm((f) => ({ ...f, brand: e.target.value }))} placeholder="Escribir marca" />
+                  <Button variant="outline" onClick={() => setEditForm((f) => ({ ...f, brandMode: "select", brand: "" }))}>Usar lista</Button>
+                </div>
+              )}
+            </div>
+            <div>
+              <Label>Cantidad</Label>
+              <Input type="number" value={editForm.quantity} onChange={(e) => setEditForm((f) => ({ ...f, quantity: e.target.value }))} />
+            </div>
+            <div className="md:col-span-2">
+              <Label>Fecha</Label>
+              <Input type="datetime-local" value={editForm.created_at} onChange={(e) => setEditForm((f) => ({ ...f, created_at: e.target.value }))} />
+            </div>
+          </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setEditOpen(false)}>Cancelar</Button>
+            <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={saveEditDialog}>Guardar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
