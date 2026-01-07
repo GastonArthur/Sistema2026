@@ -3999,28 +3999,7 @@ ${csvRows
                 </Card>
               </TabsContent>
               <TabsContent value="stock" className="space-y-6">
-                <Card className="shadow-xl border-0 bg-white/90 backdrop-blur-sm overflow-hidden">
-                  <CardHeader className="bg-gradient-to-r from-slate-50 via-blue-50 to-indigo-50 border-b border-blue-100">
-                    <CardTitle className="flex items-center justify-between gap-3 text-slate-800">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-white rounded-lg shadow-sm border border-blue-100">
-                          <Package className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <span className="bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent font-bold text-xl">
-                            Stock
-                          </span>
-                        </div>
-                      </div>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <div className="space-y-8">
-                      <StockManagement />
-                      <StockList />
-                    </div>
-                  </CardContent>
-                </Card>
+                <StockList />
               </TabsContent>
 
               <TabsContent value="import">

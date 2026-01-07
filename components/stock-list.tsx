@@ -30,6 +30,9 @@ export function StockList() {
   const [items, setItems] = useState<StockItem[]>([])
   const [brands, setBrands] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editingDateId, setEditingDateId] = useState<number | null>(null)
 
   const [filters, setFilters] = useState({
     search: "",
@@ -52,6 +55,8 @@ export function StockList() {
     quantity: "",
   })
   const qtyRef = useRef<HTMLInputElement>(null)
+  const editQtyRef = useRef<HTMLInputElement>(null)
+  const editDateRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     loadData()
@@ -103,7 +108,7 @@ export function StockList() {
       }
     })
     return map
-  }, [items])
+  }
 
   const filteredData = useMemo(() => {
     const q = filters.search.toLowerCase()
@@ -133,6 +138,7 @@ export function StockList() {
   async function saveItem() {
     if (readOnly) return
     try {
+      setSaving(true)
       const name = String(form.name || "").trim()
       const sku = String(form.sku || "").trim().toUpperCase()
       const brandValue =
@@ -205,6 +211,119 @@ export function StockList() {
     } catch (err) {
       console.error(err)
       toast({ title: "Error", description: "No se pudo guardar el producto", variant: "destructive" })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function updateQuantity(item: StockItem, newQty: number) {
+    if (readOnly) return
+    try {
+      if (!Number.isFinite(newQty) || newQty < 0) {
+        toast({ title: "Cantidad inválida", description: "Ingrese un número válido", variant: "destructive" })
+        return
+      }
+      if (!isSupabaseConfigured) {
+        const next = items.map((i) => (i.id === item.id ? { ...i, quantity: newQty, updated_at: new Date().toISOString() } : i))
+        setItems(next)
+        localStorage.setItem("stock:products", JSON.stringify(next))
+        toast({ title: "Actualizado", description: "Stock modificado" })
+        return
+      }
+      const resp = await fetch("/api/stock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "updateQuantity",
+          payload: { product_id: item.id, sku: item.sku, old_quantity: item.quantity, new_quantity: newQty },
+        }),
+      })
+      const json = await resp.json()
+      if (!resp.ok || !json?.ok) {
+        throw new Error(json?.error || "Error actualizando stock")
+      }
+      await logActivity("UPDATE_STOCK_QTY", "stock_products", item.id, { quantity: item.quantity }, { quantity: newQty }, "Actualización de stock")
+      toast({ title: "Actualizado", description: "Stock modificado" })
+      loadData()
+    } catch (err) {
+      console.error(err)
+      toast({ title: "Error", description: "No se pudo modificar el stock", variant: "destructive" })
+    } finally {
+      setEditingId(null)
+    }
+  }
+
+  async function updateCreatedAt(item: StockItem, newDateISO: string) {
+    if (readOnly) return
+    try {
+      const date = new Date(newDateISO)
+      if (isNaN(date.getTime())) {
+        toast({ title: "Fecha inválida", description: "Ingrese una fecha válida", variant: "destructive" })
+        return
+      }
+      if (!isSupabaseConfigured) {
+        const next = items.map((i) => (i.id === item.id ? { ...i, created_at: new Date(newDateISO).toISOString() } : i))
+        setItems(next)
+        localStorage.setItem("stock:products", JSON.stringify(next))
+        toast({ title: "Actualizado", description: "Fecha modificada" })
+        return
+      }
+      const resp = await fetch("/api/stock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "updateCreatedAt",
+          payload: { product_id: item.id, created_at: newDateISO },
+        }),
+      })
+      const json = await resp.json()
+      if (!resp.ok || !json?.ok) {
+        throw new Error(json?.error || "Error actualizando fecha")
+      }
+      await logActivity("UPDATE_STOCK_DATE", "stock_products", item.id, { created_at: item.created_at }, { created_at: newDateISO }, "Actualización de fecha")
+      toast({ title: "Actualizado", description: "Fecha modificada" })
+      loadData()
+    } catch (err) {
+      console.error(err)
+      toast({ title: "Error", description: "No se pudo modificar la fecha", variant: "destructive" })
+    } finally {
+      setEditingDateId(null)
+    }
+  }
+
+  async function deleteItem(item: StockItem) {
+    if (readOnly) return
+    const ok = window.confirm(`¿Eliminar producto ${item.sku}?`)
+    if (!ok) return
+    try {
+      if (!isSupabaseConfigured) {
+        const next = items.filter((i) => i.id !== item.id)
+        setItems(next)
+        localStorage.setItem("stock:products", JSON.stringify(next))
+        toast({ title: "Eliminado", description: "Producto eliminado" })
+        return
+      }
+      const resp = await fetch("/api/stock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "deleteProduct",
+          payload: { product_id: item.id },
+        }),
+      })
+      const json = await resp.json()
+      if (!resp.ok || !json?.ok) {
+        throw new Error(json?.error || "Error eliminando")
+      }
+      await logActivity("DELETE_STOCK_PRODUCT", "stock_products", item.id, item, null, "Eliminación de producto en Stock")
+      toast({ title: "Eliminado", description: "Producto eliminado" })
+      loadData()
+    } catch (err) {
+      console.error(err)
+      toast({ title: "Error", description: "No se pudo eliminar", variant: "destructive" })
     }
   }
 
@@ -359,32 +478,86 @@ export function StockList() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50">
+                  <TableHead className="font-semibold">Fecha</TableHead>
                   <TableHead className="font-semibold">SKU</TableHead>
                   <TableHead className="font-semibold">Nombre</TableHead>
                   <TableHead className="font-semibold">Marca</TableHead>
                   <TableHead className="font-semibold">Cantidad</TableHead>
-                  <TableHead className="font-semibold">Diferencia</TableHead>
-                  <TableHead className="font-semibold">Fecha creación</TableHead>
-                  <TableHead className="font-semibold">Última actualización</TableHead>
+                  <TableHead className="font-semibold">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {currentItems.map((item) => (
                   <TableRow key={item.id} className="hover:bg-slate-50/50">
+                    <TableCell className="text-xs">
+                      {editingDateId === item.id ? (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            ref={editDateRef}
+                            type="datetime-local"
+                            defaultValue={new Date(item.created_at).toISOString().slice(0, 16)}
+                            className="h-8"
+                          />
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              const v = editDateRef.current?.value || new Date(item.created_at).toISOString().slice(0, 16)
+                              updateCreatedAt(item, v as string)
+                            }}
+                          >
+                            Guardar
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setEditingDateId(null)}>
+                            Cancelar
+                          </Button>
+                        </div>
+                      ) : (
+                        <button className="text-blue-700 hover:underline" onClick={() => setEditingDateId(item.id)}>
+                          {new Date(item.created_at).toLocaleString()}
+                        </button>
+                      )}
+                    </TableCell>
                     <TableCell className="font-medium">{item.sku}</TableCell>
                     <TableCell>{item.name}</TableCell>
                     <TableCell>{item.brand}</TableCell>
-                    <TableCell className="font-bold">{item.quantity}</TableCell>
-                    <TableCell className={diffById[item.id] != null ? (diffById[item.id]! >= 0 ? "text-emerald-700" : "text-red-700") : ""}>
-                      {diffById[item.id] != null ? (diffById[item.id]! >= 0 ? "+" : "") + diffById[item.id] : "-"}
+                    <TableCell>
+                      {editingId === item.id ? (
+                        <div className="flex items-center gap-2">
+                          <Input ref={editQtyRef} type="number" defaultValue={item.quantity} className="h-8 w-24" />
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              const v = Number(editQtyRef.current?.value || item.quantity)
+                              updateQuantity(item, v)
+                            }}
+                          >
+                            Guardar
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
+                            Cancelar
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="font-bold">{item.quantity}</span>
+                      )}
                     </TableCell>
-                    <TableCell className="text-xs">{new Date(item.created_at).toLocaleString()}</TableCell>
-                    <TableCell className="text-xs">{new Date(item.updated_at || item.created_at).toLocaleString()}</TableCell>
+                    <TableCell className="text-right">
+                      {!readOnly && (
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" size="sm" onClick={() => setEditingId(item.id)}>
+                            Editar
+                          </Button>
+                          <Button variant="destructive" size="sm" onClick={() => deleteItem(item)}>
+                            Eliminar
+                          </Button>
+                        </div>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
                 {currentItems.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
                       Sin resultados
                     </TableCell>
                   </TableRow>
@@ -445,4 +618,3 @@ export function StockList() {
     </div>
   )
 }
-

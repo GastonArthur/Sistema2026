@@ -10,6 +10,7 @@ type Action =
   | "deleteProduct"
   | "getChangeCounts"
   | "verifyProduct"
+  | "updateCreatedAt"
 
 export async function POST(req: NextRequest) {
   try {
@@ -172,6 +173,24 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 400 })
       }
       return NextResponse.json({ ok: true, exists: !!data, product: data || null })
+    }
+
+    if (action === "updateCreatedAt") {
+      const { product_id, created_at } = body?.payload || {}
+      const pid = Number(product_id)
+      const dt = String(created_at || "")
+      if (!Number.isFinite(pid) || !dt) {
+        return NextResponse.json({ error: "Datos inválidos" }, { status: 400 })
+      }
+      const parsed = new Date(dt)
+      if (isNaN(parsed.getTime())) {
+        return NextResponse.json({ error: "Fecha inválida" }, { status: 400 })
+      }
+      const { error: updErr } = await supabase.from("stock_products").update({ created_at: dt }).eq("id", pid)
+      if (updErr) {
+        return NextResponse.json({ error: updErr.message }, { status: 400 })
+      }
+      return NextResponse.json({ ok: true })
     }
 
     return NextResponse.json({ error: "Acción no soportada" }, { status: 400 })
