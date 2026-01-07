@@ -12,6 +12,7 @@ type Action =
   | "verifyProduct"
   | "updateCreatedAt"
   | "updateProduct"
+  | "listAll"
 
 export async function POST(req: NextRequest) {
   try {
@@ -238,6 +239,28 @@ export async function POST(req: NextRequest) {
         ])
       }
       return NextResponse.json({ ok: true })
+    }
+
+    if (action === "listAll") {
+      const { data: prods, error: pErr } = await supabase
+        .from("stock_products")
+        .select("id, sku, name, brand, quantity, created_at, updated_at")
+        .order("created_at", { ascending: false })
+      if (pErr) {
+        return NextResponse.json({ error: pErr.message }, { status: 400 })
+      }
+      const { data: brandRows, error: bErr } = await supabase
+        .from("stock_brands")
+        .select("name")
+        .order("name", { ascending: true })
+      if (bErr) {
+        return NextResponse.json({ error: bErr.message }, { status: 400 })
+      }
+      return NextResponse.json({
+        ok: true,
+        products: prods || [],
+        brands: (brandRows || []).map((b: any) => b.name),
+      })
     }
 
     return NextResponse.json({ error: "Acción no soportada" }, { status: 400 })

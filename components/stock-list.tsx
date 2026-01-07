@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Package, Search } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
-import { supabase, isSupabaseConfigured } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase"
 import { getCurrentUser, logActivity } from "@/lib/auth"
 
 type StockItem = {
@@ -76,15 +76,18 @@ export function StockList() {
   async function loadData() {
     try {
       setLoading(true)
-      const { data: prods, error } = await supabase
-        .from("stock_products")
-        .select("id, sku, name, brand, quantity, created_at, updated_at")
-        .order("created_at", { ascending: false })
-        .limit(2000)
-      if (error) throw error
-      setItems((prods || []) as StockItem[])
-      const { data: brandRows } = await supabase.from("stock_brands").select("name").order("name", { ascending: true })
-      setBrands((brandRows || []).map((b: any) => b.name))
+      const resp = await fetch("/api/stock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ action: "listAll" }),
+      })
+      const json = await resp.json()
+      if (!resp.ok || !json?.ok) {
+        throw new Error(json?.error || "Error cargando Stock")
+      }
+      setItems(json.products || [])
+      setBrands(json.brands || [])
     } catch (err) {
       console.error(err)
       toast({ title: "Error", description: "No se pudo cargar Stock", variant: "destructive" })
