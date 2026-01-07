@@ -68,6 +68,30 @@ export function StockList() {
   const qtyRef = useRef<HTMLInputElement>(null)
   const editQtyRef = useRef<HTMLInputElement>(null)
   const editDateRef = useRef<HTMLInputElement>(null)
+  async function deleteBrandByName(b: string) {
+    if (readOnly) return
+    const ok = window.confirm(`¿Eliminar marca "${b}"?`)
+    if (!ok) return
+    try {
+      const resp = await fetch("/api/stock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ action: "deleteBrand", payload: { name: b } }),
+      })
+      const json = await resp.json()
+      if (!resp.ok || !json?.ok) {
+        throw new Error(json?.error || "Error eliminando marca")
+      }
+      setBrands((prev) => prev.filter((x) => x !== b))
+      if (form.brand === b) setForm((f) => ({ ...f, brand: "" }))
+      if (editForm.brand === b) setEditForm((f) => ({ ...f, brand: "" }))
+      toast({ title: "Eliminado", description: "Marca eliminada" })
+    } catch (err) {
+      console.error(err)
+      toast({ title: "Error", description: "No se pudo eliminar la marca", variant: "destructive" })
+    }
+  }
 
   useEffect(() => {
     loadData()
@@ -440,10 +464,25 @@ export function StockList() {
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar marca" />
                   </SelectTrigger>
-                  <SelectContent>
+                <SelectContent>
                     {brands.map((b) => (
                       <SelectItem key={b} value={b}>
-                        {b}
+                        <div className="flex items-center justify-between">
+                          <span>{b}</span>
+                          {!readOnly && (
+                            <button
+                              type="button"
+                              className="text-red-600 hover:text-red-700"
+                              title="Eliminar marca"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                deleteBrandByName(b)
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       </SelectItem>
                     ))}
                     <SelectItem value="__new__">+ Nueva marca…</SelectItem>
@@ -699,10 +738,25 @@ export function StockList() {
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar marca" />
                   </SelectTrigger>
-                  <SelectContent>
+                <SelectContent>
                     {brands.map((b) => (
                       <SelectItem key={b} value={b}>
-                        {b}
+                        <div className="flex items-center justify-between">
+                          <span>{b}</span>
+                          {!readOnly && (
+                            <button
+                              type="button"
+                              className="text-red-600 hover:text-red-700"
+                              title="Eliminar marca"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                deleteBrandByName(b)
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       </SelectItem>
                     ))}
                     <SelectItem value="__new__">+ Nueva marca…</SelectItem>

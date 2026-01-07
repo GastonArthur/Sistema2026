@@ -13,6 +13,7 @@ type Action =
   | "updateCreatedAt"
   | "updateProduct"
   | "listAll"
+  | "deleteBrand"
 
 export async function POST(req: NextRequest) {
   try {
@@ -261,6 +262,18 @@ export async function POST(req: NextRequest) {
         products: prods || [],
         brands: (brandRows || []).map((b: any) => b.name),
       })
+    }
+
+    if (action === "deleteBrand") {
+      const name: string = (body?.payload?.name || "").toString().trim()
+      if (!name) {
+        return NextResponse.json({ error: "Nombre de marca requerido" }, { status: 400 })
+      }
+      const { error: delErr } = await supabase.from("stock_brands").delete().eq("name", name)
+      if (delErr) {
+        return NextResponse.json({ error: delErr.message }, { status: 400 })
+      }
+      return NextResponse.json({ ok: true })
     }
 
     return NextResponse.json({ error: "Acción no soportada" }, { status: 400 })
