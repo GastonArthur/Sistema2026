@@ -76,14 +76,6 @@ export function StockList() {
   async function loadData() {
     try {
       setLoading(true)
-      if (!isSupabaseConfigured) {
-        const raw = localStorage.getItem("stock:products")
-        const list: StockItem[] = raw ? JSON.parse(raw) : []
-        setItems(list)
-        const b = Array.from(new Set(list.map((i) => i.brand))).sort()
-        setBrands(b)
-        return
-      }
       const { data: prods, error } = await supabase
         .from("stock_products")
         .select("id, sku, name, brand, quantity, created_at, updated_at")
@@ -160,29 +152,6 @@ export function StockList() {
         return
       }
 
-      if (!isSupabaseConfigured) {
-        const newId = Math.max(0, ...items.map((i) => i.id)) + 1
-        const now = new Date().toISOString()
-        const nextItem: StockItem = {
-          id: newId,
-          sku,
-          name,
-          brand: brandValue,
-          quantity: qtyNum,
-          created_at: now,
-          updated_at: now,
-        }
-        const next = [nextItem, ...items]
-        setItems(next)
-        localStorage.setItem("stock:products", JSON.stringify(next))
-        if (!brands.includes(brandValue)) {
-          setBrands((prev) => [...prev, brandValue].sort())
-        }
-        toast({ title: "Guardado", description: "Producto creado" })
-        setForm({ name: "", sku: "", brandMode: "select", brand: "", quantity: "" })
-        return
-      }
-
       const resp = await fetch("/api/stock", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -219,6 +188,7 @@ export function StockList() {
       )
       toast({ title: "Guardado", description: "Producto creado" })
       setForm({ name: "", sku: "", brandMode: "select", brand: "", quantity: "" })
+      await loadData()
     } catch (err) {
       console.error(err)
       toast({ title: "Error", description: "No se pudo guardar el producto", variant: "destructive" })
@@ -232,13 +202,6 @@ export function StockList() {
     try {
       if (!Number.isFinite(newQty) || newQty < 0) {
         toast({ title: "Cantidad inválida", description: "Ingrese un número válido", variant: "destructive" })
-        return
-      }
-      if (!isSupabaseConfigured) {
-        const next = items.map((i) => (i.id === item.id ? { ...i, quantity: newQty, updated_at: new Date().toISOString() } : i))
-        setItems(next)
-        localStorage.setItem("stock:products", JSON.stringify(next))
-        toast({ title: "Actualizado", description: "Stock modificado" })
         return
       }
       const resp = await fetch("/api/stock", {
@@ -256,7 +219,7 @@ export function StockList() {
       }
       await logActivity("UPDATE_STOCK_QTY", "stock_products", item.id, { quantity: item.quantity }, { quantity: newQty }, "Actualización de stock")
       toast({ title: "Actualizado", description: "Stock modificado" })
-      loadData()
+      await loadData()
     } catch (err) {
       console.error(err)
       toast({ title: "Error", description: "No se pudo modificar el stock", variant: "destructive" })
@@ -271,13 +234,6 @@ export function StockList() {
       const date = new Date(newDateISO)
       if (isNaN(date.getTime())) {
         toast({ title: "Fecha inválida", description: "Ingrese una fecha válida", variant: "destructive" })
-        return
-      }
-      if (!isSupabaseConfigured) {
-        const next = items.map((i) => (i.id === item.id ? { ...i, created_at: new Date(newDateISO).toISOString() } : i))
-        setItems(next)
-        localStorage.setItem("stock:products", JSON.stringify(next))
-        toast({ title: "Actualizado", description: "Fecha modificada" })
         return
       }
       const resp = await fetch("/api/stock", {
@@ -295,7 +251,7 @@ export function StockList() {
       }
       await logActivity("UPDATE_STOCK_DATE", "stock_products", item.id, { created_at: item.created_at }, { created_at: newDateISO }, "Actualización de fecha")
       toast({ title: "Actualizado", description: "Fecha modificada" })
-      loadData()
+      await loadData()
     } catch (err) {
       console.error(err)
       toast({ title: "Error", description: "No se pudo modificar la fecha", variant: "destructive" })
@@ -309,13 +265,6 @@ export function StockList() {
     const ok = window.confirm(`¿Eliminar producto ${item.sku}?`)
     if (!ok) return
     try {
-      if (!isSupabaseConfigured) {
-        const next = items.filter((i) => i.id !== item.id)
-        setItems(next)
-        localStorage.setItem("stock:products", JSON.stringify(next))
-        toast({ title: "Eliminado", description: "Producto eliminado" })
-        return
-      }
       const resp = await fetch("/api/stock", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -331,7 +280,7 @@ export function StockList() {
       }
       await logActivity("DELETE_STOCK_PRODUCT", "stock_products", item.id, item, null, "Eliminación de producto en Stock")
       toast({ title: "Eliminado", description: "Producto eliminado" })
-      loadData()
+      await loadData()
     } catch (err) {
       console.error(err)
       toast({ title: "Error", description: "No se pudo eliminar", variant: "destructive" })
@@ -347,7 +296,7 @@ export function StockList() {
       brandMode: brands.includes(item.brand) ? "select" : "new",
       brand: item.brand,
       quantity: String(item.quantity),
-      created_at: new Date(item.created_at).toISOString().slice(0, 16),
+      created_at: new Date(item.created_at).toISOString().slice(0, 10),
     })
   }
 
@@ -358,7 +307,8 @@ export function StockList() {
       const sku = String(editForm.sku || "").trim().toUpperCase()
       const brandValue = String(editForm.brand || "").trim()
       const qtyNum = Number(editForm.quantity)
-      const createdLocal = String(editForm.created_at || "")
+      const createdLocalDate = String(editForm.created_at || "")
+      const createdLocal = createdLocalDate ? createdLocalDate + "T00:00:00" : ""
       if (!name || !sku || !brandValue || !Number.isFinite(qtyNum) || qtyNum < 0 || !createdLocal) {
         toast({ title: "Datos inválidos", description: "Complete todos los campos", variant: "destructive" })
         return
@@ -439,15 +389,6 @@ export function StockList() {
         </CardHeader>
         <CardContent className="p-6 space-y-4">
           <div className="grid md:grid-cols-5 gap-4">
-            <div className="md:col-span-2">
-              <Label>Nombre</Label>
-              <Input
-                value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                disabled={readOnly}
-                placeholder="Nombre del producto"
-              />
-            </div>
             <div>
               <Label>SKU</Label>
               <div className="relative">
@@ -460,6 +401,15 @@ export function StockList() {
                   placeholder="SKU"
                 />
               </div>
+            </div>
+            <div className="md:col-span-2">
+              <Label>Nombre</Label>
+              <Input
+                value={form.name}
+                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                disabled={readOnly}
+                placeholder="Nombre del producto"
+              />
             </div>
             <div>
               <Label>Marca</Label>
@@ -584,14 +534,15 @@ export function StockList() {
                         <div className="flex items-center gap-2">
                           <Input
                             ref={editDateRef}
-                            type="datetime-local"
-                            defaultValue={new Date(item.created_at).toISOString().slice(0, 16)}
+                            type="date"
+                            defaultValue={new Date(item.created_at).toISOString().slice(0, 10)}
                             className="h-8"
                           />
                           <Button
                             size="sm"
                             onClick={() => {
-                              const v = editDateRef.current?.value || new Date(item.created_at).toISOString().slice(0, 16)
+                              const raw = editDateRef.current?.value || new Date(item.created_at).toISOString().slice(0, 10)
+                              const v = String(raw) + "T00:00:00"
                               updateCreatedAt(item, v as string)
                             }}
                           >
@@ -603,7 +554,7 @@ export function StockList() {
                         </div>
                       ) : (
                         <button className="text-blue-700 hover:underline" onClick={() => setEditingDateId(item.id)}>
-                          {new Date(item.created_at).toLocaleString()}
+                          {new Date(item.created_at).toLocaleDateString()}
                         </button>
                       )}
                     </TableCell>
@@ -757,7 +708,7 @@ export function StockList() {
             </div>
             <div className="md:col-span-2">
               <Label>Fecha</Label>
-              <Input type="datetime-local" value={editForm.created_at} onChange={(e) => setEditForm((f) => ({ ...f, created_at: e.target.value }))} />
+              <Input type="date" value={editForm.created_at} onChange={(e) => setEditForm((f) => ({ ...f, created_at: e.target.value }))} />
             </div>
           </div>
           <div className="mt-4 flex justify-end gap-2">
