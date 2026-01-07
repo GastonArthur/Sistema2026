@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Package, Search } from "lucide-react"
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Package, Search, Pencil, Trash2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { supabase } from "@/lib/supabase"
 import { getCurrentUser, logActivity } from "@/lib/auth"
@@ -398,7 +398,17 @@ export function StockList() {
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
                 <Input
                   value={form.sku}
-                  onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    setForm((f) => ({ ...f, sku: v }))
+                    const existing = items.find((i) => i.sku.toLowerCase() === v.toLowerCase())
+                    if (existing) {
+                      setForm((f) => ({ ...f, name: existing.name, brandMode: "select", brand: existing.brand }))
+                      if (!brands.includes(existing.brand)) {
+                        setBrands((prev) => [...prev, existing.brand].sort())
+                      }
+                    }
+                  }}
                   disabled={readOnly}
                   className="pl-8"
                   placeholder="SKU"
@@ -588,11 +598,11 @@ export function StockList() {
                     <TableCell className="text-right">
                       {!readOnly && (
                         <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="sm" onClick={() => openEditDialog(item)}>
-                            Editar
+                          <Button variant="outline" size="icon" title="Editar" onClick={() => openEditDialog(item)}>
+                            <Pencil className="w-4 h-4" />
                           </Button>
-                          <Button variant="destructive" size="sm" onClick={() => deleteItem(item)}>
-                            Eliminar
+                          <Button variant="destructive" size="icon" title="Eliminar" onClick={() => deleteItem(item)}>
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       )}
