@@ -84,7 +84,11 @@ export function StockList() {
       if (!resp.ok || !json?.ok) {
         throw new Error(json?.error || "Error eliminando marca")
       }
-      setBrands((prev) => prev.filter((x) => x !== b))
+      if (Array.isArray(json?.brands)) {
+        setBrands(json.brands)
+      } else {
+        setBrands((prev) => prev.filter((x) => x !== b))
+      }
       if (form.brand === b) setForm((f) => ({ ...f, brand: "" }))
       if (editForm.brand === b) setEditForm((f) => ({ ...f, brand: "" }))
       toast({ title: "Eliminado", description: "Marca eliminada" })

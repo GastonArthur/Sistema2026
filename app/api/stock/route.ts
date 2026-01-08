@@ -269,11 +269,43 @@ export async function POST(req: NextRequest) {
       if (!name) {
         return NextResponse.json({ error: "Nombre de marca requerido" }, { status: 400 })
       }
+      const { count, error: cErr } = await supabase
+        .from("stock_products")
+        .select("id", { count: "exact", head: true })
+        .eq("brand", name)
+      if (cErr) {
+        return NextResponse.json({ error: cErr.message }, { status: 400 })
+      }
+      if ((count || 0) > 0) {
+        const placeholder = "Sin marca"
+        const { data: existingPlaceholder } = await supabase
+          .from("stock_brands")
+          .select("name")
+          .eq("name", placeholder)
+          .maybeSingle()
+        if (!existingPlaceholder) {
+          const { error: insErr } = await supabase.from("stock_brands").insert({ name: placeholder })
+          if (insErr) {
+            return NextResponse.json({ error: insErr.message }, { status: 400 })
+          }
+        }
+        const { error: updErr } = await supabase
+          .from("stock_products")
+          .update({ brand: placeholder })
+          .eq("brand", name)
+        if (updErr) {
+          return NextResponse.json({ error: updErr.message }, { status: 400 })
+        }
+      }
       const { error: delErr } = await supabase.from("stock_brands").delete().eq("name", name)
       if (delErr) {
         return NextResponse.json({ error: delErr.message }, { status: 400 })
       }
-      return NextResponse.json({ ok: true })
+      const { data: brandRows } = await supabase
+        .from("stock_brands")
+        .select("name")
+        .order("name", { ascending: true })
+      return NextResponse.json({ ok: true, brands: (brandRows || []).map((b: any) => b.name) })
     }
 
     return NextResponse.json({ error: "Acción no soportada" }, { status: 400 })
