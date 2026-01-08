@@ -65,6 +65,7 @@ export function StockList() {
     brand: "",
     quantity: "",
   })
+  const [brandDialogOpen, setBrandDialogOpen] = useState(false)
   const qtyRef = useRef<HTMLInputElement>(null)
   const editQtyRef = useRef<HTMLInputElement>(null)
   const editDateRef = useRef<HTMLInputElement>(null)
@@ -474,6 +475,7 @@ export function StockList() {
                               type="button"
                               className="text-red-600 hover:text-red-700 ml-2 shrink-0"
                               title="Eliminar marca"
+                              onPointerDown={(e) => e.preventDefault()}
                               onMouseDown={(e) => e.preventDefault()}
                               onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteBrandByName(b) }}
                             >
@@ -486,6 +488,13 @@ export function StockList() {
                     <SelectItem value="__new__">+ Nueva marca…</SelectItem>
                   </SelectContent>
                 </Select>
+                {!readOnly && (
+                  <div className="mt-1">
+                    <Button variant="link" className="p-0 h-auto text-red-600" onClick={() => setBrandDialogOpen(true)}>
+                      Administrar marcas
+                    </Button>
+                  </div>
+                )}
               ) : (
                 <div className="flex gap-2">
                   <Input
@@ -706,6 +715,31 @@ export function StockList() {
           </div>
         </CardContent>
       </Card>
+      <Dialog open={brandDialogOpen} onOpenChange={setBrandDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Administrar marcas</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            {brands.length === 0 && <div className="text-sm text-slate-500">No hay marcas disponibles</div>}
+            {brands.map((b) => (
+              <div key={b} className="flex items-center justify-between border rounded px-3 py-2">
+                <span className="text-sm">{b}</span>
+                {!readOnly && (
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    title="Eliminar marca"
+                    onClick={() => deleteBrandByName(b)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent>
           <DialogHeader>
@@ -746,6 +780,7 @@ export function StockList() {
                               type="button"
                               className="text-red-600 hover:text-red-700 ml-2 shrink-0"
                               title="Eliminar marca"
+                              onPointerDown={(e) => e.preventDefault()}
                               onMouseDown={(e) => e.preventDefault()}
                               onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteBrandByName(b) }}
                             >
@@ -758,6 +793,13 @@ export function StockList() {
                     <SelectItem value="__new__">+ Nueva marca…</SelectItem>
                   </SelectContent>
                 </Select>
+                {!readOnly && (
+                  <div className="mt-1">
+                    <Button variant="link" className="p-0 h-auto text-red-600" onClick={() => setBrandDialogOpen(true)}>
+                      Administrar marcas
+                    </Button>
+                  </div>
+                )}
               ) : (
                 <div className="flex gap-2">
                   <Input value={editForm.brand} onChange={(e) => setEditForm((f) => ({ ...f, brand: e.target.value }))} placeholder="Escribir marca" />
