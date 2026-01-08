@@ -1974,9 +1974,13 @@ Este reporte contiene información confidencial y está destinado únicamente pa
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-4">
           <ShoppingCart className="w-5 h-5 text-purple-600" />
-          <h2 className="text-xl font-semibold">Ventas Mayoristas</h2>
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <span className="px-2 py-1 rounded-md bg-purple-600 text-white">Mayoristas</span>
+            <span className="text-sm font-normal text-gray-600">
+              Gestión completa de ventas mayoristas, precios y clientes
+            </span>
+          </h2>
         </div>
-        <p className="text-sm text-gray-500 mb-4">Gestión completa de ventas mayoristas, precios y clientes</p>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-5">
