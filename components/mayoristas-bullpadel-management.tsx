@@ -474,12 +474,18 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
 
       setOrders(ordersData || [])
 
-      const { data: vendorsData } = await supabase
-        .from("wholesale_vendors")
-        .select("*")
-        .eq("section", "bullpadel")
-        .order("name")
-      setVendors(vendorsData || [])
+      // Fetch vendors from API (to bypass RLS issues)
+      try {
+        const vendorsRes = await fetch("/api/wholesale/vendors?section=bullpadel")
+        if (vendorsRes.ok) {
+          const vendorsJson = await vendorsRes.json()
+          setVendors(vendorsJson.data || [])
+        } else {
+          console.error("Error fetching vendors:", await vendorsRes.text())
+        }
+      } catch (error) {
+        console.error("Error calling vendors API:", error)
+      }
 
       // Fetch config
       const { data: configData, error: configError } = await supabase

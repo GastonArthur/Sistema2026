@@ -464,11 +464,18 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
       if (ordersError) throw ordersError
       setOrders(ordersData || [])
 
-      const { data: vendorsData } = await supabase
-        .from("wholesale_vendors")
-        .select("*")
-        .order("name")
-      setVendors(vendorsData || [])
+      // Fetch vendors from API (to bypass RLS issues)
+      try {
+        const vendorsRes = await fetch("/api/wholesale/vendors")
+        if (vendorsRes.ok) {
+          const vendorsJson = await vendorsRes.json()
+          setVendors(vendorsJson.data || [])
+        } else {
+          console.error("Error fetching vendors:", await vendorsRes.text())
+        }
+      } catch (error) {
+        console.error("Error calling vendors API:", error)
+      }
 
       // Fetch config
       const { data: configData, error: configError } = await supabase
