@@ -467,17 +467,15 @@ export function StockList() {
                 <SelectContent>
                     {brands.map((b) => (
                       <SelectItem key={b} value={b}>
-                        <div className="flex items-center justify-between">
-                          <span>{b}</span>
+                        <div className="flex items-center justify-between w-full">
+                          <span className="flex-1 truncate">{b}</span>
                           {!readOnly && (
                             <button
                               type="button"
-                              className="text-red-600 hover:text-red-700 ml-2"
+                              className="text-red-600 hover:text-red-700 ml-2 shrink-0"
                               title="Eliminar marca"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                deleteBrandByName(b)
-                              }}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteBrandByName(b) }}
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
@@ -741,17 +739,15 @@ export function StockList() {
                 <SelectContent>
                     {brands.map((b) => (
                       <SelectItem key={b} value={b}>
-                        <div className="flex items-center justify-between">
-                          <span>{b}</span>
+                        <div className="flex items-center justify-between w-full">
+                          <span className="flex-1 truncate">{b}</span>
                           {!readOnly && (
                             <button
                               type="button"
-                              className="text-red-600 hover:text-red-700 ml-2"
+                              className="text-red-600 hover:text-red-700 ml-2 shrink-0"
                               title="Eliminar marca"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                deleteBrandByName(b)
-                              }}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteBrandByName(b) }}
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
