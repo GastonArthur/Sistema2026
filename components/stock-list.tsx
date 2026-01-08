@@ -472,7 +472,7 @@ export function StockList() {
                 <SelectContent>
                     {brands.map((b) => (
                       <SelectItem key={b} value={b}>
-                        <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center justify-between w-full gap-10 pr-2">
                           <span className="flex-1 truncate">{b}</span>
                           {!readOnly && (
                             <button
@@ -484,7 +484,7 @@ export function StockList() {
                               onPointerUp={(e) => { e.preventDefault(); e.stopPropagation(); deleteBrandByName(b) }}
                               onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteBrandByName(b) }}
                             >
-                              <Trash2 className="w-3 h-3" />
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           )}
                         </div>
@@ -771,7 +771,7 @@ export function StockList() {
                 <SelectContent>
                     {brands.map((b) => (
                       <SelectItem key={b} value={b}>
-                        <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center justify-between w-full gap-10 pr-2">
                           <span className="flex-1 truncate">{b}</span>
                           {!readOnly && (
                             <button
@@ -783,7 +783,7 @@ export function StockList() {
                               onPointerUp={(e) => { e.preventDefault(); e.stopPropagation(); deleteBrandByName(b) }}
                               onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteBrandByName(b) }}
                             >
-                              <Trash2 className="w-3 h-3" />
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           )}
                         </div>
