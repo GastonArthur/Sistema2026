@@ -2710,17 +2710,20 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                       if (!newVendor.trim()) return
                       if (isSupabaseConfigured) {
                         try {
-                          const { data, error } = await supabase
-                            .from("wholesale_vendors")
-                            .insert({ name: newVendor.trim() })
-                            .select()
-                            .single()
-                          if (error) throw error
-                          if (data) {
-                            setVendors((prev) => [...prev, data])
-                            setNewVendor("")
-                            toast({ title: "Vendedor agregado", description: data.name })
+                          const res = await fetch("/api/wholesale/vendors", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ name: newVendor.trim() })
+                          })
+                          const json = await res.json()
+                          if (!res.ok) {
+                            throw new Error(json?.error || `Error ${res.status}`)
                           }
+                          const data = json?.data
+                          if (!data) throw new Error("Respuesta inválida del servidor")
+                          setVendors((prev) => [...prev, data])
+                          setNewVendor("")
+                          toast({ title: "Vendedor agregado", description: data.name })
                         } catch (err: any) {
                           const status = String(err?.status || "")
                           const msg = typeof err?.message === "string" ? err.message : "No se pudo agregar el vendedor"
