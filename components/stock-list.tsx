@@ -472,14 +472,14 @@ export function StockList() {
                           {!readOnly && (
                             <button
                               type="button"
-                              className="text-red-600 hover:text-red-700"
+                              className="text-red-600 hover:text-red-700 ml-2"
                               title="Eliminar marca"
                               onClick={(e) => {
                                 e.stopPropagation()
                                 deleteBrandByName(b)
                               }}
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3 h-3" />
                             </button>
                           )}
                         </div>
@@ -746,14 +746,14 @@ export function StockList() {
                           {!readOnly && (
                             <button
                               type="button"
-                              className="text-red-600 hover:text-red-700"
+                              className="text-red-600 hover:text-red-700 ml-2"
                               title="Eliminar marca"
                               onClick={(e) => {
                                 e.stopPropagation()
                                 deleteBrandByName(b)
                               }}
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3 h-3" />
                             </button>
                           )}
                         </div>
