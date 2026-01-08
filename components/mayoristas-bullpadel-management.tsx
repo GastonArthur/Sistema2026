@@ -212,6 +212,83 @@ export function MayoristasBullpadelManagement({ inventory, suppliers, brands }: 
   const [expandedOrders, setExpandedOrders] = useState<number[]>([])
   const [vendors, setVendors] = useState<{ id: number; name: string }[]>([])
   const [newVendor, setNewVendor] = useState("")
+  const [showVendorDialog, setShowVendorDialog] = useState(false)
+  const [editingVendor, setEditingVendor] = useState<{ id: number; name: string } | null>(null)
+  const [vendorNameDraft, setVendorNameDraft] = useState("")
+
+  const sortVendorsByName = (list: { id: number; name: string }[]) =>
+    [...list].sort((a, b) => a.name.localeCompare(b.name))
+
+  const openVendorEdit = (vendor: { id: number; name: string }) => {
+    setEditingVendor(vendor)
+    setVendorNameDraft(vendor.name)
+    setShowVendorDialog(true)
+  }
+
+  const saveVendorEdit = async () => {
+    if (!editingVendor) return
+    const nextName = vendorNameDraft.trim()
+    if (!nextName) {
+      toast({ title: "Nombre requerido", description: "Ingrese un nombre válido", variant: "destructive" })
+      return
+    }
+
+    if (isSupabaseConfigured) {
+      try {
+        const res = await fetch("/api/wholesale/vendors", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: editingVendor.id, name: nextName }),
+        })
+        const json = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(json?.error || `Error ${res.status}`)
+        const data = json?.data
+        if (!data) throw new Error("Respuesta inválida del servidor")
+
+        setVendors((prev) =>
+          sortVendorsByName(prev.map((v) => (v.id === data.id ? { id: data.id, name: data.name } : v))),
+        )
+        setShowVendorDialog(false)
+        setEditingVendor(null)
+        setVendorNameDraft("")
+        toast({ title: "Vendedor actualizado", description: data.name })
+      } catch (error) {
+        logError("Error updating vendor:", error)
+        toast({ title: "Error", description: "No se pudo actualizar el vendedor", variant: "destructive" })
+      }
+    } else {
+      setVendors((prev) =>
+        sortVendorsByName(prev.map((v) => (v.id === editingVendor.id ? { ...v, name: nextName } : v))),
+      )
+      setShowVendorDialog(false)
+      setEditingVendor(null)
+      setVendorNameDraft("")
+      toast({ title: "Vendedor actualizado", description: nextName })
+    }
+  }
+
+  const deleteVendor = async (vendor: { id: number; name: string }) => {
+    const ok = window.confirm(`Eliminar vendedor "${vendor.name}"?`)
+    if (!ok) return
+
+    if (isSupabaseConfigured) {
+      try {
+        const res = await fetch(`/api/wholesale/vendors?id=${encodeURIComponent(String(vendor.id))}`, {
+          method: "DELETE",
+        })
+        const json = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(json?.error || `Error ${res.status}`)
+        setVendors((prev) => prev.filter((v) => v.id !== vendor.id))
+        toast({ title: "Vendedor eliminado", description: vendor.name })
+      } catch (error) {
+        logError("Error deleting vendor:", error)
+        toast({ title: "Error", description: "No se pudo eliminar el vendedor", variant: "destructive" })
+      }
+    } else {
+      setVendors((prev) => prev.filter((v) => v.id !== vendor.id))
+      toast({ title: "Vendedor eliminado", description: vendor.name })
+    }
+  }
 
   const toggleOrderExpansion = (orderId: number) => {
     setExpandedOrders(prev =>
@@ -2048,7 +2125,7 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                           }
                           const data = json?.data
                           if (!data) throw new Error("Respuesta inválida del servidor")
-                          setVendors((prev) => [...prev, data])
+                          setVendors((prev) => sortVendorsByName([...prev, data]))
                           setNewVendor("")
                           toast({ title: "Vendedor agregado", description: data.name })
                         } catch (err: any) {
@@ -2089,22 +2166,79 @@ Este reporte contiene información confidencial y está destinado únicamente pa
                     <TableHeader>
                       <TableRow>
                         <TableHead>Nombre</TableHead>
+                        <TableHead className="text-right">Acciones</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {vendors.map((v) => (
                         <TableRow key={v.id}>
                           <TableCell className="font-medium">{v.name}</TableCell>
+                          <TableCell className="text-right">
+                            {!isReadOnly && (
+                              <div className="flex gap-2 justify-end">
+                                <Button variant="ghost" size="sm" onClick={() => openVendorEdit(v)} title="Editar vendedor">
+                                  <Edit className="w-3 h-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => deleteVendor(v)}
+                                  title="Eliminar vendedor"
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            )}
+                          </TableCell>
                         </TableRow>
                       ))}
                       {vendors.length === 0 && (
                         <TableRow>
-                          <TableCell className="text-center text-gray-500">No hay vendedores cargados</TableCell>
+                          <TableCell colSpan={2} className="text-center text-gray-500">
+                            No hay vendedores cargados
+                          </TableCell>
                         </TableRow>
                       )}
                     </TableBody>
                   </Table>
                 </div>
+                <Dialog
+                  open={showVendorDialog}
+                  onOpenChange={(open) => {
+                    setShowVendorDialog(open)
+                    if (!open) {
+                      setEditingVendor(null)
+                      setVendorNameDraft("")
+                    }
+                  }}
+                >
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Editar vendedor</DialogTitle>
+                      <DialogDescription>Modificar nombre del vendedor</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-2">
+                      <Label>Nombre</Label>
+                      <Input value={vendorNameDraft} onChange={(e) => setVendorNameDraft(e.target.value)} />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setShowVendorDialog(false)
+                          setEditingVendor(null)
+                          setVendorNameDraft("")
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button onClick={saveVendorEdit} className="bg-indigo-600 hover:bg-indigo-700">
+                        Guardar
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </CardContent>
             </Card>
           </TabsContent>
