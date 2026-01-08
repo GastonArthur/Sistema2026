@@ -473,10 +473,11 @@ export function StockList() {
                           {!readOnly && (
                             <button
                               type="button"
-                              className="text-red-600 hover:text-red-700 ml-2 shrink-0"
+                              className="text-red-600 hover:text-red-700 ml-auto shrink-0"
                               title="Eliminar marca"
                               onPointerDown={(e) => e.preventDefault()}
                               onMouseDown={(e) => e.preventDefault()}
+                              onPointerUp={(e) => { e.preventDefault(); e.stopPropagation(); deleteBrandByName(b) }}
                               onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteBrandByName(b) }}
                             >
                               <Trash2 className="w-3 h-3" />
@@ -488,13 +489,6 @@ export function StockList() {
                     <SelectItem value="__new__">+ Nueva marca…</SelectItem>
                   </SelectContent>
                 </Select>
-                {!readOnly && (
-                  <div className="mt-1">
-                    <Button variant="link" className="p-0 h-auto text-red-600" onClick={() => setBrandDialogOpen(true)}>
-                      Administrar marcas
-                    </Button>
-                  </div>
-                )}
               ) : (
                 <div className="flex gap-2">
                   <Input
@@ -778,10 +772,11 @@ export function StockList() {
                           {!readOnly && (
                             <button
                               type="button"
-                              className="text-red-600 hover:text-red-700 ml-2 shrink-0"
+                              className="text-red-600 hover:text-red-700 ml-auto shrink-0"
                               title="Eliminar marca"
                               onPointerDown={(e) => e.preventDefault()}
                               onMouseDown={(e) => e.preventDefault()}
+                              onPointerUp={(e) => { e.preventDefault(); e.stopPropagation(); deleteBrandByName(b) }}
                               onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteBrandByName(b) }}
                             >
                               <Trash2 className="w-3 h-3" />
@@ -793,13 +788,6 @@ export function StockList() {
                     <SelectItem value="__new__">+ Nueva marca…</SelectItem>
                   </SelectContent>
                 </Select>
-                {!readOnly && (
-                  <div className="mt-1">
-                    <Button variant="link" className="p-0 h-auto text-red-600" onClick={() => setBrandDialogOpen(true)}>
-                      Administrar marcas
-                    </Button>
-                  </div>
-                )}
               ) : (
                 <div className="flex gap-2">
                   <Input value={editForm.brand} onChange={(e) => setEditForm((f) => ({ ...f, brand: e.target.value }))} placeholder="Escribir marca" />
