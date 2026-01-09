@@ -46,6 +46,7 @@ import { toast } from "@/hooks/use-toast"
 import { logActivity, hasPermission, getCurrentUser } from "@/lib/auth"
 import { logError } from "@/lib/logger"
 import { supabase, isSupabaseConfigured } from "@/lib/supabase"
+import { getFromCache, setInCache, invalidateCache } from "@/lib/cache"
 import { formatCurrency } from "@/lib/utils"
 
 type InventoryItem = {
@@ -215,6 +216,7 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
   const [showVendorDialog, setShowVendorDialog] = useState(false)
   const [editingVendor, setEditingVendor] = useState<{ id: number; name: string } | null>(null)
   const [vendorNameDraft, setVendorNameDraft] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
   const sortVendorsByName = (list: { id: number; name: string }[]) =>
     [...list].sort((a, b) => a.name.localeCompare(b.name))
@@ -252,6 +254,7 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
         setEditingVendor(null)
         setVendorNameDraft("")
         toast({ title: "Vendedor actualizado", description: data.name })
+        invalidateCache("wholesale_vendors")
       } catch (error) {
         logError("Error updating vendor:", error)
         toast({ title: "Error", description: "No se pudo actualizar el vendedor", variant: "destructive" })
@@ -280,6 +283,7 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
         if (!res.ok) throw new Error(json?.error || `Error ${res.status}`)
         setVendors((prev) => prev.filter((v) => v.id !== vendor.id))
         toast({ title: "Vendedor eliminado", description: vendor.name })
+        invalidateCache("wholesale_vendors")
       } catch (error) {
         logError("Error deleting vendor:", error)
         toast({ title: "Error", description: "No se pudo eliminar el vendedor", variant: "destructive" })
@@ -388,7 +392,6 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
     // Let's use: Clients in this period who have ordered before (lifetime) or >1 in this period?
     // Standard retention: % of customers from previous period who bought in this period.
     // Simple retention for this dashboard: % of active clients who are "repeat" buyers (have > 1 order lifetime or within period)
-    // Let's stick to "Repeat Buyers in Period" or similar.
     // Original logic was: Clients with > 1 order.
     const clientOrderCounts = currentPeriodOrders.reduce((acc, order) => {
       acc[order.client_id] = (acc[order.client_id] || 0) + 1
@@ -472,7 +475,34 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
     loadWholesaleData()
   }, [])
 
-  const loadWholesaleData = async () => {
+  const loadWholesaleData = async (force = false) => {
+    if (isLoading) return
+    setIsLoading(true)
+
+    if (!force) {
+      const cachedClients = getFromCache("wholesale_clients")
+      const cachedOrders = getFromCache("wholesale_orders")
+      const cachedVendors = getFromCache("wholesale_vendors")
+      const cachedConfig = getFromCache("wholesale_config")
+
+      if (cachedClients && cachedOrders && cachedVendors && cachedConfig) {
+        setClients(cachedClients)
+        setOrders(cachedOrders)
+        setVendors(cachedVendors)
+        setWholesaleConfig(cachedConfig)
+        toast({
+          title: "Datos cargados desde caché",
+          description: "Mostrando datos almacenados localmente.",
+        })
+        setIsLoading(false)
+        return
+      }
+    }
+
+    if (force) {
+      invalidateCache()
+    }
+
     if (!isSupabaseConfigured) {
       // Simular carga de datos (en modo offline)
       setClients([
@@ -519,6 +549,7 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
         title: "Datos cargados (Offline)",
         description: "Información de mayoristas cargada en modo offline",
       })
+      setIsLoading(false)
       return
     }
 
@@ -531,6 +562,7 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
 
       if (clientsError) throw clientsError
       setClients(clientsData || [])
+      setInCache("wholesale_clients", clientsData || [])
 
       // Fetch orders
       const { data: ordersData, error: ordersError } = await supabase
@@ -540,6 +572,7 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
 
       if (ordersError) throw ordersError
       setOrders(ordersData || [])
+      setInCache("wholesale_orders", ordersData || [])
 
       // Fetch vendors from API (to bypass RLS issues)
       try {
@@ -547,6 +580,7 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
         if (vendorsRes.ok) {
           const vendorsJson = await vendorsRes.json()
           setVendors(vendorsJson.data || [])
+          setInCache("wholesale_vendors", vendorsJson.data || [])
         } else {
           console.error("Error fetching vendors:", await vendorsRes.text())
         }
@@ -561,11 +595,13 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
         .single()
 
       if (configData) {
-        setWholesaleConfig({
+        const config = {
           percentage_1: Number(configData.wholesale_percentage_1),
           percentage_2: Number(configData.wholesale_percentage_2),
           percentage_3: Number(configData.wholesale_percentage_3),
-        })
+        }
+        setWholesaleConfig(config)
+        setInCache("wholesale_config", config)
       }
 
       toast({
@@ -579,6 +615,8 @@ export function MayoristasManagement({ inventory, suppliers, brands }: Mayorista
         description: "No se pudieron cargar los datos de mayoristas",
         variant: "destructive",
       })
+    } finally {
+      setIsLoading(false)
     }
   }
 
